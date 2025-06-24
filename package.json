@@ -21,6 +21,7 @@
     "r3f-forcegraph": "^1.0.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
     "three": "^0.177.0",
     "three-spritetext": "^1.9.6",
     "typewriter-effect": "^2.22.0"

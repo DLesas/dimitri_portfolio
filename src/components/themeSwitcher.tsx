@@ -2,6 +2,9 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Button } from "@heroui/button";
+import { MdSunny } from "react-icons/md";
+import { MdDarkMode } from "react-icons/md";
 
 export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false);
@@ -14,12 +17,13 @@ export function ThemeSwitcher() {
   if (!mounted) return null;
 
   return (
-    <button
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="ml-4 p-2 rounded transition-colors bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+    <Button
+      onPress={() => setTheme(theme === "light" ? "dark" : "light")}
+      isIconOnly
+      variant="light"
       aria-label="Toggle theme"
     >
-      {theme === "light" ? "🌞" : "🌙"}
-    </button>
+      {theme === "light" ? <MdSunny size={20} /> : <MdDarkMode size={20} />}
+    </Button>
   );
 }

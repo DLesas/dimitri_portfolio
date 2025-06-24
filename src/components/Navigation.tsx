@@ -12,8 +12,8 @@ export function Navigation() {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
-    { href: "/skills", label: "Skills" },
-    { href: "/projects", label: "Projects" },
+    { href: "/experience", label: "Experience" },
+    { href: "/cv", label: "CV" },
     { href: "/contact", label: "Contact" },
     { href: "/blog", label: "Blog" },
   ];
@@ -41,8 +41,8 @@ export function Navigation() {
             href={item.href}
             className={`transition-colors ${
               pathname === item.href
-                ? "text-blue-600 font-medium"
-                : "text-gray-700 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400"
+                ? "text-primary font-medium"
+                : "text-foreground/70 hover:text-foreground"
             }`}
           >
             {item.label}
