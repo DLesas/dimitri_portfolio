@@ -9,14 +9,7 @@ import {
   Switch,
   Divider,
 } from "@heroui/react";
-import {
-  FaCog,
-  FaDesktop,
-  FaPalette,
-  FaChevronLeft,
-  FaBug,
-  FaInfoCircle,
-} from "react-icons/fa";
+import { FaCog, FaDesktop, FaPalette, FaChevronLeft } from "react-icons/fa";
 import { NetworkBackgroundSettings } from "./panels/NetworkBackgroundSettings";
 import { useDebug } from "@/contexts/DebugContext";
 import { useHardwarePerformance } from "@/contexts/HardwarePerformanceContext";
@@ -29,7 +22,7 @@ import { useHardwarePerformance } from "@/contexts/HardwarePerformanceContext";
  * Delay before closing submenus when mouse leaves (in milliseconds)
  * This prevents accidental closures when user briefly moves outside the menu
  */
-const SUBMENU_CLOSE_DELAY = 350;
+const SUBMENU_CLOSE_DELAY = 250;
 
 // ============================================================================
 // Component

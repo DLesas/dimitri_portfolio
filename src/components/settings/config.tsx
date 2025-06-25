@@ -1,5 +1,7 @@
 import React from "react";
-import { FaCircle, FaProjectDiagram, FaMouse } from "react-icons/fa";
+import { BsMouseFill } from "react-icons/bs";
+import { FaShareNodes } from "react-icons/fa6";
+import { TbCircleDashed } from "react-icons/tb";
 import { NetworkSettingsConfig, SettingsCategory } from "./types";
 
 // ============================================================================
@@ -25,15 +27,15 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     min: 30,
     max: 300,
     step: 1,
-    tooltip: "Number of nodes in the network visualization",
+    tooltip: "Number of nodes in the network",
   },
 
   organicMovementSpeed: {
-    label: "Organic Movement Speed",
+    label: "Node Movement Speed",
     min: 0,
     max: 5,
     step: 0.1,
-    tooltip: "Speed of natural node drift animation",
+    tooltip: "Speed of natural node drift",
   },
 
   nodeRadius: {
@@ -98,7 +100,7 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     min: 2,
     max: 30,
     step: 1,
-    tooltip: "Force strength of mouse repulsion effect",
+    tooltip: "Strength of mouse repulsion effect",
   },
 };
 
@@ -121,7 +123,7 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
 export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   {
     title: "Nodes",
-    icon: <FaCircle className="w-4 h-4" />,
+    icon: <TbCircleDashed className="w-4 h-4 text-primary/70" />,
     settings: [
       "nodeCount",
       "organicMovementSpeed",
@@ -131,12 +133,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   },
   {
     title: "Connections",
-    icon: <FaProjectDiagram className="w-4 h-4" />,
+    icon: <FaShareNodes className="w-4 h-4 text-primary/70" />,
     settings: ["connectionDistance", "maxConnections", "connectionLineWidth"],
   },
   {
     title: "Mouse Interaction",
-    icon: <FaMouse className="w-4 h-4" />,
+    icon: <BsMouseFill className="w-4 h-4 text-primary/70" />,
     settings: ["mouseRepulsionRadius", "mouseRepulsionStrength"],
   },
 ];
