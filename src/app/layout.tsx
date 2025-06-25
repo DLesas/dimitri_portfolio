@@ -37,11 +37,11 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <Providers>
           <Navigation />
-          <main>{children}</main>
+          <main className="flex-1">{children}</main>
         </Providers>
       </body>
     </html>
