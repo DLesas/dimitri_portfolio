@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { ThemeSwitcher } from "./themeSwitcher";
+import { SettingsMenu } from "./settings/SettingsMenu";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -49,6 +50,7 @@ export function Navigation() {
           </Link>
         ))}
         <ThemeSwitcher />
+        <SettingsMenu />
       </div>
     </motion.nav>
   );
