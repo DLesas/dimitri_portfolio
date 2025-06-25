@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import { PERFORMANCE_CONFIGS } from "@/components/NetworkBackground/constants";
+import { retryWithBackoff, RetryPresets } from "@/lib/retry";
 
 // ============================================================================
 // Types & Interfaces
@@ -85,8 +86,8 @@ interface HardwarePerformanceContextType {
   setPerformanceLevel: (level: PerformanceLevel) => void;
   /** Whether detection is complete */
   isDetectionComplete: boolean;
-  /** Function to run hardware detection on demand */
-  runHardwareDetection: () => void;
+  /** Whether detection failed */
+  hasDetectionFailed: boolean;
 }
 
 // ============================================================================
@@ -345,6 +346,7 @@ const HardwarePerformanceContext = createContext<
  * - Optimized settings for network background, animations, and display
  * - Manual performance level override capability
  * - Browser and OS detection for compatibility adjustments
+ * - Automatic retry on detection failure
  */
 export function HardwarePerformanceProvider({
   children,
@@ -359,57 +361,89 @@ export function HardwarePerformanceProvider({
   const [manualPerformanceLevel, setManualPerformanceLevel] =
     useState<PerformanceLevel | null>(null);
   const [isDetectionComplete, setIsDetectionComplete] = useState(false);
-  const [isDetectionRequested, setIsDetectionRequested] = useState(false);
+  const [hasDetectionFailed, setHasDetectionFailed] = useState(false);
 
   // ========================================
   // Hardware Detection Function
   // ========================================
 
-  const runHardwareDetection = () => {
-    if (isDetectionRequested) return; // Prevent multiple detections
+  const runDetection = () => {
+    const detectHardware = async () => {
+      // Use the generalized retry utility for hardware detection
+      const result = await retryWithBackoff(
+        async () => {
+          const info = detectHardwareInfo();
+          return info;
+        },
+        {
+          ...RetryPresets.slow, // Use slow preset for hardware detection
+          retryDelay: 2000, // 2 second delay between retries
+          maxRetries: 3, // Maximum 3 retries
+          onRetry: (error, attempt, delay) => {
+            console.log(
+              `Retrying hardware detection in ${delay}ms (attempt ${
+                attempt + 1
+              }/3): ${error.message}`
+            );
+            setHasDetectionFailed(false); // Clear failure state during retry
+          },
+          onSuccess: (info, totalAttempts) => {
+            setHardwareInfo(info);
+            setIsDetectionComplete(true);
+            setHasDetectionFailed(false);
 
-    setIsDetectionRequested(true);
+            // Log detection results in development
+            if (process.env.NODE_ENV === "development") {
+              console.log("Hardware Performance Detection:", {
+                level:
+                  manualPerformanceLevel || determinePerformanceLevel(info),
+                info,
+                totalAttempts,
+              });
+            }
+          },
+          onMaxRetriesReached: (lastError, totalAttempts) => {
+            console.warn(
+              `Hardware detection failed after ${totalAttempts} attempts, using fallback values:`,
+              lastError
+            );
+            setHasDetectionFailed(true);
+            setIsDetectionComplete(true);
 
-    const detectHardware = () => {
-      try {
-        const info = detectHardwareInfo();
-        setHardwareInfo(info);
-        setIsDetectionComplete(true);
-
-        // Log detection results in development
-        if (process.env.NODE_ENV === "development") {
-          console.log("Hardware Performance Detection:", {
-            level: manualPerformanceLevel || determinePerformanceLevel(info),
-            info,
-          });
+            // Set fallback hardware info
+            setHardwareInfo({
+              cores: 2,
+              memory: 4,
+              userAgent:
+                typeof navigator !== "undefined" ? navigator.userAgent : "",
+              isMobile: false,
+              isTablet: false,
+              isDesktop: true,
+              hasHardwareAcceleration: false,
+              browser: { name: "Unknown", version: "unknown" },
+              os: { name: "Unknown", version: "unknown" },
+            });
+          },
         }
-      } catch (error) {
-        console.warn("Hardware detection failed:", error);
-        // Fallback to safe defaults
-        setHardwareInfo({
-          cores: 2,
-          memory: 4,
-          userAgent:
-            typeof navigator !== "undefined" ? navigator.userAgent : "",
-          isMobile: false,
-          isTablet: false,
-          isDesktop: true,
-          hasHardwareAcceleration: false,
-          browser: { name: "Unknown", version: "unknown" },
-          os: { name: "Unknown", version: "unknown" },
-        });
+      );
+
+      // Handle the result (success is already handled in onSuccess callback)
+      if (!result.success && !result.retriesExhausted) {
+        // This case handles when shouldRetry returns false
+        console.warn("Hardware detection aborted:", result.error);
+        setHasDetectionFailed(true);
         setIsDetectionComplete(true);
       }
     };
 
-    // Use requestIdleCallback for truly non-blocking detection
+    // Use requestIdleCallback for non-blocking detection during idle time
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(detectHardware, {
-        timeout: 1000, // Shorter timeout since it's user-requested
+      window.requestIdleCallback(() => detectHardware(), {
+        timeout: 3000, // Reasonable timeout for hardware detection
       });
     } else {
-      // Fallback for older browsers
-      setTimeout(detectHardware, 0);
+      // Fallback for older browsers - use setTimeout with delay
+      setTimeout(() => detectHardware(), 100);
     }
   };
 
@@ -422,52 +456,7 @@ export function HardwarePerformanceProvider({
    * This ensures hardware info is available without blocking initial render
    */
   useEffect(() => {
-    // Only run if detection hasn't been completed yet
-    if (!isDetectionComplete && !isDetectionRequested) {
-      setIsDetectionRequested(true);
-
-      const detectHardware = () => {
-        try {
-          const info = detectHardwareInfo();
-          setHardwareInfo(info);
-          setIsDetectionComplete(true);
-
-          // Log detection results in development
-          if (process.env.NODE_ENV === "development") {
-            console.log("Automatic Hardware Performance Detection:", {
-              level: manualPerformanceLevel || determinePerformanceLevel(info),
-              info,
-            });
-          }
-        } catch (error) {
-          console.warn("Hardware detection failed:", error);
-          // Fallback to safe defaults
-          setHardwareInfo({
-            cores: 2,
-            memory: 4,
-            userAgent:
-              typeof navigator !== "undefined" ? navigator.userAgent : "",
-            isMobile: false,
-            isTablet: false,
-            isDesktop: true,
-            hasHardwareAcceleration: false,
-            browser: { name: "Unknown", version: "unknown" },
-            os: { name: "Unknown", version: "unknown" },
-          });
-          setIsDetectionComplete(true);
-        }
-      };
-
-      // Use requestIdleCallback for non-blocking detection during idle time
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        window.requestIdleCallback(detectHardware, {
-          timeout: 5000, // Allow longer timeout for automatic detection
-        });
-      } else {
-        // Fallback for older browsers - use setTimeout with delay
-        setTimeout(detectHardware, 100);
-      }
-    }
+    runDetection();
   }, []); // Empty dependency array - only run on mount
 
   // ========================================
@@ -518,7 +507,7 @@ export function HardwarePerformanceProvider({
     performanceSettings,
     setPerformanceLevel,
     isDetectionComplete,
-    runHardwareDetection, // Expose the detection function
+    hasDetectionFailed,
   };
 
   return (
