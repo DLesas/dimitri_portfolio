@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dimitri's Portfolio
 
-## Getting Started
+## Technical Achievements
 
-First, run the development server:
+### **🔥 Performance & Optimization**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Hardware detection system** (CPU cores, memory, GPU specs)
+- **Adaptive performance scaling** based on device capabilities
+- **`requestIdleCallback`** for non-blocking operations
+- **Hardware-aware 3D rendering** optimization
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### **⚡ Advanced React Architecture**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Multiple specialized contexts** (Debug, Hardware, Theme, Settings)
+- **TypeScript generics** for reusable retry utility
+- **Server-safe hydration** with fallback colors
+- **Proper cleanup** of timeouts and event listeners
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### **🎨 External API Integration**
 
-## Learn More
+- **The Color API integration** with exponential backoff retry
+- **Color theory aware implementation** (analogic, complement schemes)
+- **Automatic theme generation** from single primary color
+- **HSL/Hex/RGBA conversion** utilities
 
-To learn more about Next.js, take a look at the following resources:
+### **🎮 3D Graphics & Interactions**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Three.js particle system** with physics
+- **Mouse-responsive and DOM collision detection**
+- **Performance-scaled animation loops**
+- **Real-time FPS monitoring**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### **🛡️ Error Handling & Resilience**
 
-## Deploy on Vercel
+- **Generalized exponential backoff** utility
+- **Graceful API failure degradation**
+- **Context-aware retry strategies**
+- **Comprehensive error logging**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### **🚀 Build & Developer Experience**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Zero TypeScript compilation errors**
+- **Complex nested popover navigation**
+- **Debug mode** with hardware info display
+- **Optimized bundle** with proper tree shaking
+
+---
+
+**Tech Stack**: Next.js 15, React 18, TypeScript, Three.js, HeroUI, The Color API
+
+_Engineering achievement log - full docs pending_
