@@ -5,8 +5,10 @@ import {
   ANIMATION_CONFIG,
   VISUAL_CONFIG,
   PERFORMANCE_CONFIGS,
+  TRIG_CONFIG,
+  PRECOMPUTED_TABLES,
 } from "./constants";
-import { smoothstep, fastSin } from "./utils";
+import { smoothstep, fastSin } from "../../utils/3D/utils";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface Connection {
@@ -120,6 +122,17 @@ export function DynamicNetworkConnections({
   // Get settings from context
   const { networkSettings } = useSettings();
 
+  // Create trig config and tables for fast trig functions
+  const trigConfig = {
+    tableSize: TRIG_CONFIG.TABLE_SIZE,
+    TWO_PI: TRIG_CONFIG.TWO_PI,
+  };
+
+  const trigTables = {
+    sin: PRECOMPUTED_TABLES.SIN,
+    cos: PRECOMPUTED_TABLES.COS,
+  };
+
   // Cleanup function
   const cleanup = () => {
     isAnimatingRef.current = false;
@@ -197,7 +210,8 @@ export function DynamicNetworkConnections({
     // Recalculate connections based on performance config UPDATE_INTERVAL
     if (shouldRecalculateConnections) {
       const newConnections: Connection[] = [];
-      const dynamicDistance = maxDistance + fastSin(currentTime * 0.4) * 1;
+      const dynamicDistance =
+        maxDistance + fastSin(currentTime * 0.4, trigConfig, trigTables) * 1;
       const maxDistanceSquared = dynamicDistance * dynamicDistance;
 
       // Use settings from context, with performance config as fallback
@@ -339,7 +353,7 @@ export function DynamicNetworkConnections({
           // Optional subtle pulse (can be disabled by setting pulse = 1)
           const pulse = 1; // Disabled pulsing - pure distance-based opacity
           // Alternative with very subtle pulse:
-          // const pulse = 0.95 + 0.05 * fastSin(currentTime * 0.5 + index * 0.1);
+          // const pulse = 0.95 + 0.05 * fastSin(currentTime * 0.5 + index * 0.1, trigConfig, trigTables);
 
           material.opacity = Math.max(
             0,

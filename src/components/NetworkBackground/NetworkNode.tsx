@@ -1,16 +1,21 @@
 import React, { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { ANIMATION_CONFIG, VISUAL_CONFIG } from "./constants";
-import { calculateDistance, fastSin, fastCos } from "./utils";
+import {
+  ANIMATION_CONFIG,
+  VISUAL_CONFIG,
+  TRIG_CONFIG,
+  PRECOMPUTED_TABLES,
+} from "./constants";
+import { calculateDistance, fastSin, fastCos } from "../../utils/3D/utils";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface NetworkNodeProps {
   position: number[];
   index: number;
-  nodeRefsArray: React.MutableRefObject<THREE.Vector3[]>;
-  mousePos: React.MutableRefObject<{ x: number; y: number; isActive: boolean }>;
-  domColliders: React.MutableRefObject<
+  nodeRefsArray: React.RefObject<THREE.Vector3[]>;
+  mousePos: React.RefObject<{ x: number; y: number; isActive: boolean }>;
+  domColliders: React.RefObject<
     Array<{
       x: number;
       y: number;
@@ -39,6 +44,23 @@ export function NetworkNode({
   // Get settings from context
   const { networkSettings } = useSettings();
 
+  // Create trig config and tables for fast trig functions
+  const trigConfig = useMemo(
+    () => ({
+      tableSize: TRIG_CONFIG.TABLE_SIZE,
+      TWO_PI: TRIG_CONFIG.TWO_PI,
+    }),
+    []
+  );
+
+  const trigTables = useMemo(
+    () => ({
+      sin: PRECOMPUTED_TABLES.SIN,
+      cos: PRECOMPUTED_TABLES.COS,
+    }),
+    []
+  );
+
   useFrame(({ clock }) => {
     // Early return if component is unmounting or not visible
     if (!isAnimatingRef.current || !mesh.current || !shouldAnimate) return;
@@ -51,13 +73,16 @@ export function NetworkNode({
         index * 0.2;
       const targetX =
         basePosition[0] +
-        fastSin(time) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_X;
+        fastSin(time, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_X;
       const targetY =
         basePosition[1] +
-        fastCos(time * 0.8) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Y;
+        fastCos(time * 0.8, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Y;
       const z =
         basePosition[2] +
-        fastSin(time * 0.6) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Z;
+        fastSin(time * 0.6, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Z;
 
       // Mouse repulsion effect with velocity-based movement
       if (mousePos.current.isActive) {
@@ -100,19 +125,19 @@ export function NetworkNode({
           const left =
             collider.x -
             collider.width / 2 -
-            ANIMATION_CONFIG.DOM_COLLISION_PADDING;
+            networkSettings.domCollisionPadding;
           const right =
             collider.x +
             collider.width / 2 +
-            ANIMATION_CONFIG.DOM_COLLISION_PADDING;
+            networkSettings.domCollisionPadding;
           const top =
             collider.y +
             collider.height / 2 +
-            ANIMATION_CONFIG.DOM_COLLISION_PADDING;
+            networkSettings.domCollisionPadding;
           const bottom =
             collider.y -
             collider.height / 2 -
-            ANIMATION_CONFIG.DOM_COLLISION_PADDING;
+            networkSettings.domCollisionPadding;
 
           // Calculate distance to closest edge of collision area
           const dx = Math.max(left - nodeX, 0, nodeX - right);
@@ -120,7 +145,7 @@ export function NetworkNode({
           const distanceToEdge = Math.sqrt(dx * dx + dy * dy);
 
           // Only apply force if node is inside or very close to collision area
-          if (distanceToEdge < ANIMATION_CONFIG.DOM_COLLISION_THRESHOLD) {
+          if (distanceToEdge < networkSettings.domCollisionThreshold) {
             // Calculate repulsion direction from center of DOM element
             const centerDistance = calculateDistance(
               nodeX,
@@ -132,10 +157,10 @@ export function NetworkNode({
             if (centerDistance > 0) {
               // Apply smooth repulsion force based on distance from edge
               const forceStrength =
-                (ANIMATION_CONFIG.DOM_COLLISION_THRESHOLD - distanceToEdge) /
-                ANIMATION_CONFIG.DOM_COLLISION_THRESHOLD;
+                (networkSettings.domCollisionThreshold - distanceToEdge) /
+                networkSettings.domCollisionThreshold;
               const force =
-                ANIMATION_CONFIG.DOM_REPULSION_FORCE * forceStrength;
+                networkSettings.domCollisionStrength * forceStrength;
               const dirX = (nodeX - collider.x) / centerDistance;
               const dirY = (nodeY - collider.y) / centerDistance;
 
@@ -178,7 +203,9 @@ export function NetworkNode({
       const scale =
         1 +
         fastSin(
-          clock.getElapsedTime() * ANIMATION_CONFIG.SCALE_PULSE_SPEED + index
+          clock.getElapsedTime() * ANIMATION_CONFIG.SCALE_PULSE_SPEED + index,
+          trigConfig,
+          trigTables
         ) *
           ANIMATION_CONFIG.SCALE_PULSE_AMPLITUDE;
       mesh.current.scale.setScalar(scale);
@@ -196,13 +223,16 @@ export function NetworkNode({
 
       const initialX =
         basePosition[0] +
-        fastSin(time) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_X;
+        fastSin(time, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_X;
       const initialY =
         basePosition[1] +
-        fastCos(time * 0.8) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Y;
+        fastCos(time * 0.8, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Y;
       const initialZ =
         basePosition[2] +
-        fastSin(time * 0.6) * ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Z;
+        fastSin(time * 0.6, trigConfig, trigTables) *
+          ANIMATION_CONFIG.ORGANIC_MOVEMENT_AMPLITUDE_Z;
 
       // Set mesh to the calculated organic position
       mesh.current.position.set(initialX, initialY, initialZ);
@@ -225,6 +255,8 @@ export function NetworkNode({
     index,
     basePosition,
     networkSettings.organicMovementSpeed,
+    trigConfig,
+    trigTables,
   ]);
 
   // Cleanup animation on unmount

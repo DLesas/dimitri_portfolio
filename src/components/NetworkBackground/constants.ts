@@ -1,3 +1,5 @@
+import { createTrigLookupTables } from "../../utils/3D/utils";
+
 // Animation constants
 export const ANIMATION_CONFIG = {
   // Node movement - Controls how nodes drift organically through space
@@ -17,7 +19,7 @@ export const ANIMATION_CONFIG = {
 
   // DOM collision - How nodes avoid overlapping with HTML text elements
   DOM_COLLISION_PADDING: 0, // Extra space around DOM elements for collision detection
-  DOM_COLLISION_THRESHOLD: 0.5, // Distance from DOM elements where collision starts
+  DOM_COLLISION_THRESHOLD: 3.5, // Distance from DOM elements where collision starts
   DOM_REPULSION_FORCE: 0.8, // Force strength pushing nodes away from DOM elements
 
   // Connections - Visual behavior of lines between nodes
@@ -59,30 +61,18 @@ export const TRIG_CONFIG = {
  * Precision: 0.1 degree accuracy (3600 samples over 360 degrees)
  * This is more than sufficient for smooth organic node movement.
  */
-const generateTrigTables = () => {
-  const sinTable = new Float32Array(TRIG_CONFIG.TABLE_SIZE);
-  const cosTable = new Float32Array(TRIG_CONFIG.TABLE_SIZE);
 
-  for (let i = 0; i < TRIG_CONFIG.TABLE_SIZE; i++) {
-    const angle = (i * TRIG_CONFIG.TWO_PI) / TRIG_CONFIG.TABLE_SIZE;
-    sinTable[i] = Math.sin(angle);
-    cosTable[i] = Math.cos(angle);
-  }
-
-  return { sinTable, cosTable };
-};
-
-const { sinTable, cosTable } = generateTrigTables();
+const { trigTables } = createTrigLookupTables(TRIG_CONFIG.TABLE_SIZE);
 
 export const PRECOMPUTED_TABLES = {
-  SIN: sinTable,
-  COS: cosTable,
+  SIN: trigTables.sin,
+  COS: trigTables.cos,
 } as const;
 
 // World coordinate system - Defines the 3D space boundaries
 export const WORLD_CONFIG = {
-  WIDTH: 40, // Default width of 3D world (used as fallback, now dynamically calculated)
-  HEIGHT: 40, // Default height of 3D world (used as fallback, now dynamically calculated)
+  WIDTH: 80, // Default width of 3D world (used as fallback, now dynamically calculated)
+  HEIGHT: 60, // Default height of 3D world (used as fallback, now dynamically calculated)
   DEPTH: 3, // Total depth of 3D world (-1 to +1 world units)
 } as const;
 
@@ -98,7 +88,7 @@ export const VISUAL_CONFIG = {
   CONNECTION_COLOR: "#3b82f6", // Color of connection lines (blue)
 
   CAMERA_POSITION: [0, 0, 10] as const, // 3D position of camera [x, y, z]
-  CAMERA_ZOOM: 40, // Orthographic camera zoom level (higher = more zoomed in)
+  CAMERA_ZOOM: 20, // Orthographic camera zoom level (higher = more zoomed in)
   AMBIENT_LIGHT_INTENSITY: 0.6, // Overall brightness of scene lighting
 } as const;
 

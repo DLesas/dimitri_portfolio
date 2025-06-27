@@ -3,7 +3,8 @@ import * as THREE from "three";
 import {
   convertMouseToWorldCoordinates,
   convertDOMToWorldCoordinates,
-} from "./utils";
+  PIXEL_TO_WORLD_RATIO,
+} from "../../utils/3D/utils";
 import { WORLD_CONFIG, MOUSE_CONFIG } from "./constants";
 
 // Smart hook for mouse tracking with auto-disable and throttling
@@ -49,9 +50,7 @@ export function useMouseTracking(
         const worldCoords = convertMouseToWorldCoordinates(
           event.clientX,
           event.clientY,
-          rect,
-          worldWidth,
-          worldHeight
+          rect
         );
 
         // Update position and mark as active
@@ -111,7 +110,7 @@ export function useMouseTracking(
         }
       };
     }
-  }, [containerRef]);
+  }, [containerRef, worldWidth, worldHeight]);
 
   return mousePos;
 }
@@ -120,7 +119,8 @@ export function useMouseTracking(
 export function useDOMColliders(
   containerRef: React.RefObject<HTMLDivElement | null>,
   worldWidth?: number,
-  worldHeight?: number
+  worldHeight?: number,
+  collisionPadding: number = 0
 ) {
   const domColliders = useRef<
     Array<{
@@ -152,18 +152,16 @@ export function useDOMColliders(
         centerX,
         centerY,
         containerRect.width,
-        containerRect.height,
-        worldWidth,
-        worldHeight
+        containerRect.height
       );
 
-      // Scale dimensions to world coordinates
-      const finalWorldWidth = worldWidth || WORLD_CONFIG.WIDTH;
-      const finalWorldHeight = worldHeight || WORLD_CONFIG.HEIGHT;
+      // Convert pixel dimensions to world units using consistent ratio
+      // This ensures DOM elements maintain their size regardless of container size
+      // Include padding in the world dimensions
       const elementWorldWidth =
-        (rect.width / containerRect.width) * finalWorldWidth;
+        rect.width / PIXEL_TO_WORLD_RATIO + collisionPadding * 2;
       const elementWorldHeight =
-        (rect.height / containerRect.height) * finalWorldHeight;
+        rect.height / PIXEL_TO_WORLD_RATIO + collisionPadding * 2;
 
       return {
         x: worldCoords.x,
@@ -198,7 +196,7 @@ export function useDOMColliders(
       observer.disconnect();
       domColliders.current = [];
     };
-  }, [containerRef]);
+  }, [containerRef, worldWidth, worldHeight, collisionPadding]);
 
   return domColliders;
 }
@@ -420,17 +418,30 @@ export function useStableNodePositions(
       const currentLength = currentNodes.length;
 
       if (nodeCount > currentLength) {
-        // Generate only the new nodes needed
+        // Generate only the new nodes needed using the new bounds-based function
+        const bounds = {
+          minX: -worldWidth / 2,
+          maxX: worldWidth / 2,
+          minY: -worldHeight / 2,
+          maxY: worldHeight / 2,
+          minZ: -worldDepth / 2,
+          maxZ: worldDepth / 2,
+        };
+
         const newNodes = Array.from(
           { length: nodeCount - currentLength },
-          (_, i) => ({
-            position: [
-              (Math.random() - 0.5) * worldWidth,
-              (Math.random() - 0.5) * worldHeight,
-              (Math.random() - 0.5) * worldDepth,
-            ],
-            index: currentLength + i, // Continue indexing from where we left off
-          })
+          (_, i) => {
+            // Generate single position using the same logic as generateNodePositions
+            const position = [
+              Math.random() * (bounds.maxX - bounds.minX) + bounds.minX,
+              Math.random() * (bounds.maxY - bounds.minY) + bounds.minY,
+              Math.random() * (bounds.maxZ - bounds.minZ) + bounds.minZ,
+            ];
+            return {
+              position,
+              index: currentLength + i, // Continue indexing from where we left off
+            };
+          }
         );
 
         return [...currentNodes, ...newNodes];
