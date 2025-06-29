@@ -4,7 +4,7 @@ import {
   convertMouseToWorldCoordinates,
   convertDOMToWorldCoordinates,
   PIXEL_TO_WORLD_RATIO,
-} from "../../utils/3D/utils";
+} from "../../utils/3D";
 import { WORLD_CONFIG, MOUSE_CONFIG } from "./constants";
 
 // Smart hook for mouse tracking with auto-disable and throttling
