@@ -5,9 +5,16 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useRef,
   ReactNode,
+  useEffect,
 } from "react";
-import { retryWithBackoff, RetryPresets } from "@/lib/retry";
+import { retryWithBackoff, RetryPresets } from "@/utils/retry";
+import {
+  generateThemeFromPrimary,
+  applyThemeToCSS,
+  type GeneratedTheme,
+} from "@/lib/colorApi";
 
 // ============================================================================
 // Types & Interfaces
@@ -116,6 +123,16 @@ interface ThemeContextType {
   isInitialized: boolean;
   /** Whether theme extraction failed */
   hasExtractionFailed: boolean;
+  /** Set primary color for theme generation */
+  setPrimaryColor: (color: string) => void;
+  /** Current primary color being used */
+  primaryColor: string;
+  /** Whether theme is being generated */
+  isGeneratingTheme: boolean;
+  /** Error from theme generation */
+  themeGenerationError: Error | null;
+  /** Reset theme to default */
+  resetTheme: () => void;
 }
 
 // ============================================================================
@@ -466,6 +483,10 @@ const extractThemeColors = (forceFallback: boolean = false): ThemeColors => {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Storage key for custom theme
+const CUSTOM_THEME_KEY = "dimitri-portfolio-custom-theme";
+const DEFAULT_PRIMARY_COLOR = "#3b82f6";
+
 /**
  * Theme context provider component
  *
@@ -478,6 +499,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
  * - Multiple formats: Each color available in hex, hsl, rgba, hsla
  * - Complete color systems: Shades (50-950) and opacity variants (10-90%)
  * - Retry capability when extraction fails
+ * - Custom theme generation from primary color
  *
  * @param children - React children
  */
@@ -490,11 +512,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasExtractionFailed, setHasExtractionFailed] = useState(false);
   const [isExtractionRequested, setIsExtractionRequested] = useState(false);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Theme generation state
+  const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY_COLOR);
+  const [isGeneratingTheme, setIsGeneratingTheme] = useState(false);
+  const [themeGenerationError, setThemeGenerationError] =
+    useState<Error | null>(null);
+  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Extract theme colors with error handling and automatic retry
    */
-  const runExtraction = (immediate: boolean = false) => {
+  const runExtraction = useCallback((immediate: boolean = false) => {
     const extractThemeColorsIdle = async () => {
       // Use the generalized retry utility for theme extraction
       const result = await retryWithBackoff(
@@ -564,15 +594,167 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setTimeout(() => extractThemeColorsIdle(), 50);
       }
     }
-  };
+  }, []);
 
   /**
    * Manually trigger theme color extraction
    * Call this when the theme changes (e.g., dark/light mode switch)
+   * Includes a delay to allow CSS custom properties to propagate
    */
   const updateTheme = useCallback(() => {
-    runExtraction(true); // Run immediately for theme changes
-  }, []);
+    // Clear any existing timeout to prevent multiple extractions
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    // Add delay to allow CSS custom properties to propagate after theme change
+    updateTimeoutRef.current = setTimeout(() => {
+      runExtraction(true); // Run after CSS has updated
+      updateTimeoutRef.current = null;
+    }, 0); // 200ms to ensure CSS custom properties have fully propagated
+  }, [runExtraction]);
+
+  // Load saved theme on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
+      if (savedTheme) {
+        try {
+          const { primaryColor: savedColor, theme } = JSON.parse(savedTheme);
+          setPrimaryColorState(savedColor);
+          // Apply the saved theme (now applies both light and dark modes)
+          applyThemeToCSS(theme);
+          // Update theme extraction after applying CSS variables
+          setTimeout(() => updateTheme(), 100);
+        } catch (error) {
+          console.error("Failed to load saved theme:", error);
+        }
+      }
+    }
+  }, [updateTheme]);
+
+  /**
+   * Set primary color and generate theme after debounce
+   */
+  const setPrimaryColor = useCallback(
+    (color: string) => {
+      setPrimaryColorState(color);
+      setThemeGenerationError(null);
+
+      // Clear any existing timeout
+      if (generationTimeoutRef.current) {
+        clearTimeout(generationTimeoutRef.current);
+      }
+
+      // Don't show loading immediately - wait for debounce
+      generationTimeoutRef.current = setTimeout(async () => {
+        setIsGeneratingTheme(true);
+
+        try {
+          const theme = await generateThemeFromPrimary({
+            primaryColor: color,
+            secondaryMode: "triad",
+            accentMode: "complement",
+          });
+
+          // Save to localStorage
+          localStorage.setItem(
+            CUSTOM_THEME_KEY,
+            JSON.stringify({
+              primaryColor: color,
+              theme,
+              generatedAt: Date.now(),
+            })
+          );
+
+          // Apply theme to CSS variables (now applies both light and dark modes)
+          applyThemeToCSS(theme);
+
+          // Update theme extraction after applying CSS variables
+          setTimeout(() => updateTheme(), 100);
+        } catch (error) {
+          console.error("Failed to generate theme:", error);
+          setThemeGenerationError(error as Error);
+        } finally {
+          setIsGeneratingTheme(false);
+        }
+      }, 350); // 350ms debounce
+    },
+    [updateTheme]
+  );
+
+  /**
+   * Reset theme to default
+   */
+  const resetTheme = useCallback(() => {
+    localStorage.removeItem(CUSTOM_THEME_KEY);
+
+    // Clear any existing timeout
+    if (generationTimeoutRef.current) {
+      clearTimeout(generationTimeoutRef.current);
+    }
+
+    // Set state and trigger theme generation
+    setPrimaryColorState(DEFAULT_PRIMARY_COLOR);
+    setThemeGenerationError(null);
+
+    // Generate default theme
+    generationTimeoutRef.current = setTimeout(async () => {
+      setIsGeneratingTheme(true);
+
+      try {
+        const theme = await generateThemeFromPrimary({
+          primaryColor: DEFAULT_PRIMARY_COLOR,
+          secondaryMode: "triad",
+          accentMode: "complement",
+        });
+
+        // Apply theme to CSS variables (now applies both light and dark modes)
+        applyThemeToCSS(theme);
+
+        // Update theme extraction after applying CSS variables
+        setTimeout(() => updateTheme(), 100);
+      } catch (error) {
+        console.error("Failed to generate default theme:", error);
+        setThemeGenerationError(error as Error);
+      } finally {
+        setIsGeneratingTheme(false);
+      }
+    }, 100); // Small delay for reset
+  }, [updateTheme]);
+
+  // Update theme when mode changes (light/dark)
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
+      if (savedTheme) {
+        try {
+          const { theme } = JSON.parse(savedTheme);
+          // Apply theme (now applies both light and dark modes automatically)
+          applyThemeToCSS(theme);
+          setTimeout(() => updateTheme(), 100);
+        } catch (error) {
+          console.error("Failed to apply theme for mode change:", error);
+        }
+      }
+    };
+
+    // Watch for class changes on the document element
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          handleThemeChange();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, [updateTheme]);
 
   /**
    * Automatically extract real theme colors on component mount during idle time
@@ -584,13 +766,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setIsExtractionRequested(true);
       runExtraction(false);
     }
-  }, []); // Empty dependency array - only run on mount
+
+    // Cleanup function to clear any pending timeout on unmount
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
+      if (generationTimeoutRef.current) {
+        clearTimeout(generationTimeoutRef.current);
+        generationTimeoutRef.current = null;
+      }
+    };
+  }, [isInitialized, isExtractionRequested, runExtraction]);
 
   const contextValue: ThemeContextType = {
     colors,
     updateTheme,
     isInitialized,
     hasExtractionFailed,
+    setPrimaryColor,
+    primaryColor,
+    isGeneratingTheme,
+    themeGenerationError,
+    resetTheme,
   };
 
   return (
