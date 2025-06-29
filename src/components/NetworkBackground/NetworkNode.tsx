@@ -7,8 +7,9 @@ import {
   TRIG_CONFIG,
   PRECOMPUTED_TABLES,
 } from "./constants";
-import { calculateDistance, fastSin, fastCos } from "../../utils/3D/utils";
+import { calculateDistance, fastSin, fastCos } from "../../utils/3D";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface NetworkNodeProps {
   position: number[];
@@ -43,6 +44,9 @@ export function NetworkNode({
 
   // Get settings from context
   const { networkSettings } = useSettings();
+
+  // Get theme colors
+  const { colors } = useTheme();
 
   // Create trig config and tables for fast trig functions
   const trigConfig = useMemo(
@@ -263,6 +267,14 @@ export function NetworkNode({
   useEffect(() => {
     return () => {
       isAnimatingRef.current = false;
+
+      // Dispose of mesh geometry and material when component unmounts
+      if (mesh.current) {
+        mesh.current.geometry?.dispose();
+        if (mesh.current.material instanceof THREE.Material) {
+          mesh.current.material.dispose();
+        }
+      }
     };
   }, []);
 
@@ -276,15 +288,11 @@ export function NetworkNode({
         ]}
       />
       <meshStandardMaterial
-        args={[
-          {
-            color: VISUAL_CONFIG.NODE_COLOR,
-            opacity: networkSettings.nodeOpacity,
-            transparent: true,
-            emissive: VISUAL_CONFIG.NODE_EMISSIVE,
-            emissiveIntensity: VISUAL_CONFIG.NODE_EMISSIVE_INTENSITY,
-          },
-        ]}
+        color={colors.secondary.shades[500].hex}
+        opacity={networkSettings.nodeOpacity}
+        transparent={true}
+        emissive={colors.primary.shades[500].hex}
+        emissiveIntensity={VISUAL_CONFIG.NODE_EMISSIVE_INTENSITY}
       />
     </mesh>
   );

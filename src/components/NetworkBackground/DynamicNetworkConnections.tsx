@@ -1,15 +1,21 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, extend } from "@react-three/fiber";
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 import {
   ANIMATION_CONFIG,
-  VISUAL_CONFIG,
   PERFORMANCE_CONFIGS,
   TRIG_CONFIG,
   PRECOMPUTED_TABLES,
 } from "./constants";
-import { smoothstep, fastSin } from "../../utils/3D/utils";
+import { smoothstep, fastSin } from "../../utils/3D";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useTheme } from "@/contexts/ThemeContext";
+
+// Extend Three.js with Line2 components for React Three Fiber
+extend({ Line2, LineGeometry, LineMaterial });
 
 interface Connection {
   start: number;
@@ -27,7 +33,7 @@ interface DynamicNetworkConnectionsProps {
 }
 
 /**
- * ObjectPool class for managing Three.js geometry and material instances.
+ * ObjectPool class for managing Line2 geometry and material instances.
  *
  * PERFORMANCE CRITICAL: Without object pooling, creating/disposing geometries
  * and materials every frame causes:
@@ -39,52 +45,53 @@ interface DynamicNetworkConnectionsProps {
  * and eliminating GC pressure during animation loops.
  */
 class ObjectPool {
-  private geometryPool: THREE.BufferGeometry[] = [];
-  private materialPool: THREE.LineBasicMaterial[] = [];
-  private usedGeometries = new Set<THREE.BufferGeometry>();
-  private usedMaterials = new Set<THREE.LineBasicMaterial>();
+  private geometryPool: LineGeometry[] = [];
+  private materialPool: LineMaterial[] = [];
+  private usedGeometries = new Set<LineGeometry>();
+  private usedMaterials = new Set<LineMaterial>();
 
-  getGeometry(): THREE.BufferGeometry {
+  getGeometry(): LineGeometry {
     let geometry = this.geometryPool.pop();
     if (!geometry) {
-      geometry = new THREE.BufferGeometry();
-      // Pre-allocate position attribute to avoid recreating it
-      geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(new Float32Array(6), 3)
-      );
-    } else {
-      // Reset the geometry for reuse
-      geometry.attributes.position.needsUpdate = true;
+      geometry = new LineGeometry();
     }
     this.usedGeometries.add(geometry);
     return geometry;
   }
 
-  getMaterial(lineWidth: number = 1): THREE.LineBasicMaterial {
+  getMaterial(
+    lineWidth: number = 1,
+    color: string,
+    resolution: THREE.Vector2
+  ): LineMaterial {
     let material = this.materialPool.pop();
     if (!material) {
-      material = new THREE.LineBasicMaterial({
-        color: VISUAL_CONFIG.CONNECTION_COLOR,
+      material = new LineMaterial({
+        color: new THREE.Color(color),
+        linewidth: lineWidth, // Line width in pixels - works properly with Line2!
         transparent: true,
-        linewidth: lineWidth, // Note: linewidth only works on some platforms
+        resolution: resolution,
+        worldUnits: false, // Use screen pixels for consistent appearance
+        alphaToCoverage: true, // Better anti-aliasing for transparent lines
       });
     } else {
-      // Update linewidth for reused materials
+      // Update properties for reused materials
       material.linewidth = lineWidth;
+      material.color = new THREE.Color(color);
+      material.resolution = resolution;
     }
     this.usedMaterials.add(material);
     return material;
   }
 
-  releaseGeometry(geometry: THREE.BufferGeometry) {
+  releaseGeometry(geometry: LineGeometry) {
     if (this.usedGeometries.has(geometry)) {
       this.usedGeometries.delete(geometry);
       this.geometryPool.push(geometry);
     }
   }
 
-  releaseMaterial(material: THREE.LineBasicMaterial) {
+  releaseMaterial(material: LineMaterial) {
     if (this.usedMaterials.has(material)) {
       this.usedMaterials.delete(material);
       this.materialPool.push(material);
@@ -110,17 +117,20 @@ export function DynamicNetworkConnections({
   const linesGroup = useRef<THREE.Group>(null!);
   const objectPool = useRef(new ObjectPool());
   const connectionObjects = useRef<
-    Map<
-      string,
-      { geometry: THREE.BufferGeometry; material: THREE.LineBasicMaterial }
-    >
+    Map<string, { geometry: LineGeometry; material: LineMaterial; line: Line2 }>
   >(new Map());
   const [connections, setConnections] = useState<Connection[]>([]);
   const isAnimatingRef = useRef(true);
   const frameCounter = useRef(0);
+  const resolution = useRef(
+    new THREE.Vector2(window.innerWidth, window.innerHeight)
+  );
 
   // Get settings from context
   const { networkSettings } = useSettings();
+
+  // Get theme colors
+  const { colors } = useTheme();
 
   // Create trig config and tables for fast trig functions
   const trigConfig = {
@@ -133,24 +143,55 @@ export function DynamicNetworkConnections({
     cos: PRECOMPUTED_TABLES.COS,
   };
 
+  // Update resolution on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      resolution.current.set(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Cleanup function
   const cleanup = () => {
     isAnimatingRef.current = false;
 
-    // Clear all line objects from the group
+    // Dispose all connection objects first
+    connectionObjects.current.forEach((obj) => {
+      if (
+        obj.line &&
+        linesGroup.current &&
+        obj.line.parent === linesGroup.current
+      ) {
+        linesGroup.current.remove(obj.line);
+      }
+      obj.geometry?.dispose();
+      obj.material?.dispose();
+    });
+
+    // Clear all remaining children from the group
     if (linesGroup.current) {
       while (linesGroup.current.children.length > 0) {
         const child = linesGroup.current.children[0];
         linesGroup.current.remove(child);
+
+        // Extra safety: dispose any remaining Line2 instances
+        if (child instanceof Line2) {
+          child.geometry?.dispose();
+          child.material?.dispose();
+        }
       }
     }
 
-    // Dispose object pool and clear connection objects
-    objectPool.current.dispose();
+    // Clear connection objects map
     connectionObjects.current.clear();
+
+    // Dispose object pool
+    objectPool.current.dispose();
   };
 
   useEffect(() => {
+    // Cleanup on unmount
     return cleanup;
   }, []);
 
@@ -181,28 +222,16 @@ export function DynamicNetworkConnections({
     // Always update connection positions every frame for smooth movement
     if (linesGroup.current && connections.length > 0) {
       const children = linesGroup.current.children;
-      children.forEach((line, index) => {
+      children.forEach((child, index) => {
         const conn = connections[index];
         if (!conn) return;
 
         const posA = nodeRefsArray.current[conn.start];
         const posB = nodeRefsArray.current[conn.end];
 
-        if (posA && posB && line instanceof THREE.Line) {
-          const geometry = line.geometry;
-          const positionAttribute = geometry.attributes
-            .position as THREE.Float32BufferAttribute;
-          const array = positionAttribute.array as Float32Array;
-
-          // Update positions directly every frame for smooth movement
-          array[0] = posA.x;
-          array[1] = posA.y;
-          array[2] = posA.z;
-          array[3] = posB.x;
-          array[4] = posB.y;
-          array[5] = posB.z;
-
-          positionAttribute.needsUpdate = true;
+        if (posA && posB && child instanceof Line2) {
+          const positions = [posA.x, posA.y, posA.z, posB.x, posB.y, posB.z];
+          child.geometry.setPositions(positions);
         }
       });
     }
@@ -320,9 +349,10 @@ export function DynamicNetworkConnections({
     // Update opacity animations every frame (lightweight)
     if (linesGroup.current && connections.length > 0) {
       const children = linesGroup.current.children;
-      children.forEach((line, index) => {
-        const material = (line as THREE.Line)
-          .material as THREE.LineBasicMaterial;
+      children.forEach((child, index) => {
+        if (!(child instanceof Line2)) return;
+
+        const material = child.material as LineMaterial;
         const conn = connections[index];
 
         if (material && conn) {
@@ -362,6 +392,19 @@ export function DynamicNetworkConnections({
               distanceOpacity *
               ANIMATION_CONFIG.CONNECTION_OPACITY_MULTIPLIER
           );
+
+          // Distance-based line width scaling
+          // Closer connections are thicker, distant ones are thinner
+          const distanceWidthFactor =
+            1 -
+            normalizedDistance * ANIMATION_CONFIG.CONNECTION_LINE_WIDTH_SCALE;
+          const targetLineWidth = Math.max(
+            ANIMATION_CONFIG.CONNECTION_MIN_LINE_WIDTH,
+            networkSettings.connectionLineWidth * distanceWidthFactor
+          );
+
+          // Update line width in real time
+          material.linewidth = targetLineWidth;
         }
       });
     }
@@ -371,13 +414,33 @@ export function DynamicNetworkConnections({
   useEffect(() => {
     if (!linesGroup.current) return;
 
-    // Clear existing lines
-    while (linesGroup.current.children.length > 0) {
-      const child = linesGroup.current.children[0];
-      linesGroup.current.remove(child);
-      // Dispose of the line object if it exists
-      if (child instanceof THREE.Line) {
-        // Don't dispose geometry/material here - they're managed by the pool
+    // Create a set of active connection keys
+    const activeConnectionKeys = new Set(
+      connections.map((conn) => `${conn.start}-${conn.end}`)
+    );
+
+    // Remove lines that are no longer active
+    connectionObjects.current.forEach((obj, key) => {
+      if (!activeConnectionKeys.has(key)) {
+        if (obj.line && obj.line.parent === linesGroup.current) {
+          linesGroup.current.remove(obj.line);
+        }
+        // Return to pool
+        objectPool.current.releaseGeometry(obj.geometry);
+        objectPool.current.releaseMaterial(obj.material);
+        connectionObjects.current.delete(key);
+      }
+    });
+
+    // Clear any remaining children that shouldn't be there
+    const validLines = new Set(
+      Array.from(connectionObjects.current.values()).map((obj) => obj.line)
+    );
+
+    for (let i = linesGroup.current.children.length - 1; i >= 0; i--) {
+      const child = linesGroup.current.children[i];
+      if (!validLines.has(child as Line2)) {
+        linesGroup.current.remove(child);
       }
     }
 
@@ -390,41 +453,52 @@ export function DynamicNetworkConnections({
 
       const connectionKey = `${conn.start}-${conn.end}`;
 
-      // Get or create geometry and material from pool
+      // Calculate line width based on distance (needed for both new and existing connections)
+      const distance = conn.distance;
+      const normalizedDistance = Math.min(distance / maxDistance, 1);
+      const distanceWidthFactor =
+        1 - normalizedDistance * ANIMATION_CONFIG.CONNECTION_LINE_WIDTH_SCALE;
+      const targetLineWidth = Math.max(
+        ANIMATION_CONFIG.CONNECTION_MIN_LINE_WIDTH,
+        networkSettings.connectionLineWidth * distanceWidthFactor
+      );
+
+      // Get or create geometry, material, and line from pool
       let connectionObj = connectionObjects.current.get(connectionKey);
       if (!connectionObj) {
-        connectionObj = {
-          geometry: objectPool.current.getGeometry(),
-          material: objectPool.current.getMaterial(
-            networkSettings.connectionLineWidth
-          ),
-        };
+        const geometry = objectPool.current.getGeometry();
+        const material = objectPool.current.getMaterial(
+          targetLineWidth,
+          colors.primary.shades[500].hex, // Use primary color for connections
+          resolution.current
+        );
+        const line = new Line2(geometry, material);
+
+        connectionObj = { geometry, material, line };
         connectionObjects.current.set(connectionKey, connectionObj);
+      } else {
+        // IMPORTANT: Update existing materials with new theme color and line width
+        connectionObj.material.color.set(colors.primary.shades[500].hex);
+        connectionObj.material.linewidth = targetLineWidth;
+        connectionObj.material.resolution.copy(resolution.current);
       }
 
-      // Update geometry with new points efficiently - avoid setFromPoints
-      const positionAttribute = connectionObj.geometry.attributes
-        .position as THREE.Float32BufferAttribute;
-      const array = positionAttribute.array as Float32Array;
+      // Update geometry with new points
+      const positions = [posA.x, posA.y, posA.z, posB.x, posB.y, posB.z];
+      connectionObj.geometry.setPositions(positions);
 
-      // Update positions directly in the buffer
-      array[0] = posA.x;
-      array[1] = posA.y;
-      array[2] = posA.z;
-      array[3] = posB.x;
-      array[4] = posB.y;
-      array[5] = posB.z;
-
-      positionAttribute.needsUpdate = true;
-
-      // Create line object and add to group
-      const line = new THREE.Line(
-        connectionObj.geometry,
-        connectionObj.material
-      );
-      linesGroup.current.add(line);
+      // Add line to group if not already added
+      if (connectionObj.line.parent !== linesGroup.current) {
+        linesGroup.current.add(connectionObj.line);
+      }
     });
-  }, [connections, nodeRefsArray]);
+  }, [
+    connections,
+    nodeRefsArray,
+    colors.primary.shades,
+    maxDistance,
+    networkSettings.connectionLineWidth,
+  ]);
 
   return <group ref={linesGroup} />;
 }
