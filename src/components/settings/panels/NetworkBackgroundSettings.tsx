@@ -4,7 +4,7 @@ import React from "react";
 import { Button } from "@heroui/react";
 import { FaUndo } from "react-icons/fa";
 import { useSettings } from "@/contexts/SettingsContext";
-import { SettingsCategory } from "../controls/SettingsCategory";
+import { SettingsCategory } from "../SettingsSection";
 import { SETTINGS_CATEGORIES } from "../config";
 
 // ============================================================================
@@ -23,6 +23,7 @@ import { SETTINGS_CATEGORIES } from "../config";
  * - Automatic rendering of all settings without repetitive code
  * - Reset functionality to restore defaults
  * - Organized by logical setting categories
+ * - Scrollable when content exceeds 80% of screen height
  *
  * The panel structure is entirely driven by the SETTINGS_CATEGORIES
  * configuration, making it easy to add, remove, or reorganize settings
@@ -40,10 +41,10 @@ export function NetworkBackgroundSettings() {
   // ========================================
 
   return (
-    <div className="w-80 p-4 space-y-6">
-      {/* Panel Header with Reset Button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Network Background</h3>
+    <div className="w-80 max-h-[80vh] flex flex-col">
+      {/* Panel Header with Reset Button - Fixed at top */}
+      <div className="flex items-center justify-between p-4 flex-shrink-0">
+        <h3 className="text-lg font-bold">Network Background</h3>
         <Button
           size="sm"
           variant="flat"
@@ -56,8 +57,8 @@ export function NetworkBackgroundSettings() {
         </Button>
       </div>
 
-      {/* Settings Categories */}
-      <div className="space-y-6">
+      {/* Scrollable Settings Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-8">
         {SETTINGS_CATEGORIES.map((category) => (
           <SettingsCategory key={category.title} category={category} />
         ))}

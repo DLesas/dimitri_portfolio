@@ -10,7 +10,7 @@ import {
   Divider,
 } from "@heroui/react";
 import { FaCog, FaDesktop, FaPalette, FaChevronLeft } from "react-icons/fa";
-import { NetworkBackgroundSettings } from "./panels/NetworkBackgroundSettings";
+import { NetworkBackgroundSettings, ColorSettingsPanel } from "./panels";
 import { useDebug } from "@/contexts/DebugContext";
 import { useHardwarePerformance } from "@/contexts/HardwarePerformanceContext";
 
@@ -205,7 +205,7 @@ export function SettingsMenu() {
               </Popover>
             </div>
 
-            {/* Color Settings Submenu (Placeholder) */}
+            {/* Color Settings Submenu */}
             <div className="relative">
               <Popover
                 isOpen={isColorOpen}
@@ -227,18 +227,11 @@ export function SettingsMenu() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-4"
+                  className="p-0"
                   onMouseEnter={colorHandlers.onMouseEnter}
                   onMouseLeave={colorHandlers.onMouseLeave}
                 >
-                  <div className="w-60">
-                    <h3 className="text-lg font-semibold mb-3">
-                      Color Settings
-                    </h3>
-                    <p className="text-sm text-foreground/70">
-                      Color customization coming soon...
-                    </p>
-                  </div>
+                  <ColorSettingsPanel />
                 </PopoverContent>
               </Popover>
             </div>

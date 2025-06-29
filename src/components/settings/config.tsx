@@ -2,6 +2,7 @@ import React from "react";
 import { BsMouseFill } from "react-icons/bs";
 import { FaShareNodes } from "react-icons/fa6";
 import { TbCircleDashed } from "react-icons/tb";
+import { MdWeb } from "react-icons/md";
 import { NetworkSettingsConfig, SettingsCategory } from "./types";
 
 // ============================================================================
@@ -77,10 +78,10 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
   connectionLineWidth: {
     label: "Connection Line Width",
     min: 0.5,
-    max: 5.0,
+    max: 8.0,
     step: 0.1,
-    tooltip: "Thickness of connection lines",
-    note: "Line width may not work on all devices due to WebGL limitations",
+    tooltip:
+      "Maximum thickness of connection lines in pixels (scales with distance)",
   },
 
   // ========================================
@@ -101,6 +102,35 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     max: 30,
     step: 1,
     tooltip: "Strength of mouse repulsion effect",
+  },
+
+  // ========================================
+  // DOM Collision Configuration
+  // ========================================
+
+  domCollisionPadding: {
+    label: "DOM Collision Padding",
+    min: 0,
+    max: 5,
+    step: 0.1,
+    tooltip: "Extra space around DOM elements for collision detection",
+  },
+
+  domCollisionStrength: {
+    label: "DOM Collision Strength",
+    min: 0,
+    max: 2,
+    step: 0.1,
+    tooltip: "Force strength pushing nodes away from DOM elements",
+  },
+
+  domCollisionThreshold: {
+    label: "DOM Collision Threshold",
+    min: 0,
+    max: 10,
+    step: 0.5,
+    tooltip: "Distance from DOM elements where repulsion starts",
+    note: "Larger values create a gentler, more gradual repulsion",
   },
 };
 
@@ -140,5 +170,14 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     title: "Mouse Interaction",
     icon: <BsMouseFill className="w-4 h-4 text-primary/70" />,
     settings: ["mouseRepulsionRadius", "mouseRepulsionStrength"],
+  },
+  {
+    title: "DOM Collision",
+    icon: <MdWeb className="w-4 h-4 text-primary/70" />,
+    settings: [
+      "domCollisionPadding",
+      "domCollisionStrength",
+      "domCollisionThreshold",
+    ],
   },
 ];
