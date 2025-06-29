@@ -36,6 +36,11 @@ export interface NetworkBackgroundSettings {
   // Mouse interaction settings
   mouseRepulsionRadius: number;
   mouseRepulsionStrength: number;
+
+  // DOM collision settings
+  domCollisionPadding: number;
+  domCollisionStrength: number;
+  domCollisionThreshold: number;
 }
 
 /**
@@ -80,11 +85,16 @@ function generateDefaultNetworkSettings(
     // Connection configuration
     connectionDistance: performanceConfig.CONNECTION_DISTANCE as number,
     maxConnections: performanceConfig.MAX_CONNECTIONS as number,
-    connectionLineWidth: 1.0,
+    connectionLineWidth: 2.0,
 
     // Mouse interaction configuration
     mouseRepulsionRadius: ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS,
     mouseRepulsionStrength: ANIMATION_CONFIG.MOUSE_REPULSION_STRENGTH,
+
+    // DOM collision configuration
+    domCollisionPadding: ANIMATION_CONFIG.DOM_COLLISION_PADDING,
+    domCollisionStrength: ANIMATION_CONFIG.DOM_REPULSION_FORCE,
+    domCollisionThreshold: ANIMATION_CONFIG.DOM_COLLISION_THRESHOLD,
   };
 }
 
