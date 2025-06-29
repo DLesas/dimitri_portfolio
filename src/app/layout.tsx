@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./provider";
 import { Navigation } from "@/components/Navigation";
+import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <Providers>
+          <ConsoleEasterEgg />
           <Navigation />
           <main className="flex-1">{children}</main>
         </Providers>
