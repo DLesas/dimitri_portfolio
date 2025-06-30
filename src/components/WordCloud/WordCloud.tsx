@@ -9,10 +9,36 @@ import {
 } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import Word, { type SkillRecord } from "./Word";
+import { Perf } from "r3f-perf";
+import Word from "./Word";
+import { type SkillRecord } from "@/hooks/queries/useSkillsData";
 import RotatingGroup from "./RotatingGroup";
 import { fibonacciSphere } from "@/utils/3D";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useDebug } from "@/contexts/DebugContext";
+
+// Separate component for debug performance monitoring to avoid re-renders
+function DebugPerf() {
+  const { isDebugEnabled } = useDebug();
+
+  return (
+    <Perf
+      position="bottom-right"
+      antialias={false}
+      showGraph={isDebugEnabled}
+      deepAnalyze={false}
+      minimal={!isDebugEnabled}
+      matrixUpdate={false}
+      overClock={false}
+      style={{
+        opacity: isDebugEnabled ? 1 : 0,
+        pointerEvents: isDebugEnabled ? "auto" : "none",
+        visibility: isDebugEnabled ? "visible" : "hidden",
+      }}
+    />
+  );
+}
 
 // Component to handle dynamic scene updates (fog, etc.)
 function SceneSettings({
@@ -68,6 +94,9 @@ export default function WordCloud({
   style = { width: "100%", height: "100vh" },
   onHoverChange,
 }: WordCloudProps) {
+  // Get rotation speeds from settings
+  const { wordCloudSettings } = useSettings();
+
   // Fixed configuration values
   const radius = 22;
   const cameraPosition: [number, number, number] = [0, 0, 42];
@@ -75,9 +104,7 @@ export default function WordCloud({
   const fogFar = 100;
   const ambientLightIntensity = 0.8;
   const enableDamping = true;
-  const dampingFactor = 0.1;
-  const rotationSpeedY = -0.001;
-  const rotationSpeedX = -0.001;
+  const dampingFactor = 0.07;
   const rotationLerpFactor = 0.08;
   const [isHovering, setIsHovering] = useState(false);
 
@@ -155,8 +182,8 @@ export default function WordCloud({
       <Suspense fallback={null}>
         <RotatingGroup
           isHovering={isHovering}
-          rotationSpeedY={rotationSpeedY}
-          rotationSpeedX={rotationSpeedX}
+          rotationSpeedY={wordCloudSettings.rotationSpeedY}
+          rotationSpeedX={wordCloudSettings.rotationSpeedX}
           lerpFactor={rotationLerpFactor}
         >
           {skills.map((skill, idx) => (
@@ -175,6 +202,9 @@ export default function WordCloud({
         dampingFactor={dampingFactor}
         enableZoom={false}
       />
+
+      {/* Performance Monitor - Only visible in debug mode */}
+      <DebugPerf />
     </Canvas>
   );
 }

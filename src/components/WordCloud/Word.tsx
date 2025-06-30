@@ -4,12 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
 import { useSpring, animated } from "@react-spring/three";
 import { useTheme } from "@/contexts/ThemeContext";
-
-interface SkillRecord {
-  name: string;
-  type: string;
-  value: number;
-}
+import { useSettings } from "@/contexts/SettingsContext";
+import { SkillRecord } from "@/hooks/queries/useSkillsData";
 
 interface WordProps {
   skill: SkillRecord;
@@ -29,6 +25,15 @@ export default function Word({ skill, position, index, onHover }: WordProps) {
 
   // Get theme colors
   const { colors } = useTheme();
+  const { wordCloudSettings } = useSettings();
+
+  // Handle click to open link
+  const handleClick = (e: any) => {
+    e.stopPropagation(); // Prevent event bubbling
+    if (skill.link) {
+      window.open(skill.link, "_blank", "noopener,noreferrer");
+    }
+  };
 
   // Map skill types to theme colors
   const colorFor = (type: string): string => {
@@ -103,7 +108,7 @@ export default function Word({ skill, position, index, onHover }: WordProps) {
 
   // Font size scales compensates for word length
   const lengthFactor = Math.max(0.5, (12 - skill.name.length) * 0.1);
-  const fontSize = 1.3 + lengthFactor;
+  const fontSize = wordCloudSettings.baseFontSize + lengthFactor;
 
   const fontProps = {
     font: "/fonts/Inter-Bold.ttf",
@@ -116,6 +121,7 @@ export default function Word({ skill, position, index, onHover }: WordProps) {
     <animated.group scale={scale}>
       <Billboard
         position={position}
+        onClick={handleClick}
         onPointerOver={(e) => {
           e.stopPropagation(); // Prevent event bubbling
           setHovered(true);
