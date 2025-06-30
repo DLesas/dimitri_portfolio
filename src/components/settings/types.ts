@@ -37,6 +37,17 @@ export type NetworkSettingsConfig = {
   [K in keyof import("@/contexts/SettingsContext").NetworkBackgroundSettings]: SliderConfig;
 };
 
+/**
+ * Complete configuration mapping for all wordCloud settings
+ *
+ * This type ensures that every setting in WordCloudSettings has
+ * a corresponding SliderConfig. It provides compile-time safety and
+ * centralizes all slider configurations for maintainability.
+ */
+export type WordCloudSettingsConfig = {
+  [K in keyof import("@/contexts/SettingsContext").WordCloudSettings]: SliderConfig;
+};
+
 // ============================================================================
 // Settings Organization Types
 // ============================================================================

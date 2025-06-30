@@ -3,7 +3,11 @@ import { BsMouseFill } from "react-icons/bs";
 import { FaShareNodes } from "react-icons/fa6";
 import { TbCircleDashed } from "react-icons/tb";
 import { MdWeb } from "react-icons/md";
-import { NetworkSettingsConfig, SettingsCategory } from "./types";
+import {
+  NetworkSettingsConfig,
+  WordCloudSettingsConfig,
+  SettingsCategory,
+} from "./types";
 
 // ============================================================================
 // Network Settings Configuration
@@ -131,6 +135,42 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     step: 0.5,
     tooltip: "Distance from DOM elements where repulsion starts",
     note: "Larger values create a gentler, more gradual repulsion",
+  },
+};
+
+// ============================================================================
+// WordCloud Settings Configuration
+// ============================================================================
+
+/**
+ * Centralized configuration for all word cloud settings sliders
+ */
+export const WORDCLOUD_SETTINGS_CONFIG: WordCloudSettingsConfig = {
+  rotationSpeedX: {
+    label: "Rotation Speed X",
+    min: -0.1,
+    max: 0.1,
+    step: 0.001,
+    tooltip: "Horizontal rotation speed of the word cloud",
+    note: "Negative values rotate left, positive rotate right",
+  },
+
+  rotationSpeedY: {
+    label: "Rotation Speed Y",
+    min: -0.1,
+    max: 0.1,
+    step: 0.001,
+    tooltip: "Vertical rotation speed of the word cloud",
+    note: "Negative values rotate up, positive rotate down",
+  },
+
+  baseFontSize: {
+    label: "Base Font Size",
+    min: 0.5,
+    max: 3.0,
+    step: 0.05,
+    tooltip: "Base font size applied to all words before length adjustment",
+    note: "Larger values make the word cloud text bigger",
   },
 };
 
