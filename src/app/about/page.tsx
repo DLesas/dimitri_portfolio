@@ -8,25 +8,13 @@ import {
   CardBody,
   Chip,
   Progress,
-  Button,
   Skeleton,
-  Input,
-  Textarea,
-  Divider,
 } from "@heroui/react";
-import Link from "next/link";
 import { FaLink } from "react-icons/fa";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { useSkillsData } from "@/hooks/queries/useSkillsData";
 import type { SkillRecord } from "@/hooks/queries/useSkillsData";
 import { Timeline } from "./timeline";
-
-// Animation variants
-const pageVariants = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
-};
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
