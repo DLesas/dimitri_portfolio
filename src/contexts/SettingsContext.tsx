@@ -44,6 +44,21 @@ export interface NetworkBackgroundSettings {
 }
 
 /**
+ * WordCloud settings interface
+ * Contains all configurable parameters for the word cloud visualization
+ */
+export interface WordCloudSettings {
+  // Rotation settings
+  rotationSpeedX: number;
+  rotationSpeedY: number;
+  /**
+   * Base font size scaling factor applied to every word before length compensation
+   * This controls the overall size of words in the 3D word cloud.
+   */
+  baseFontSize: number;
+}
+
+/**
  * Settings context interface
  * Provides settings state and methods to update/reset settings
  */
@@ -51,6 +66,9 @@ interface SettingsContextType {
   networkSettings: NetworkBackgroundSettings;
   updateNetworkSettings: (updates: Partial<NetworkBackgroundSettings>) => void;
   resetNetworkSettings: () => void;
+  wordCloudSettings: WordCloudSettings;
+  updateWordCloudSettings: (updates: Partial<WordCloudSettings>) => void;
+  resetWordCloudSettings: () => void;
   resetGeneration: number; // Counter that increments on reset to invalidate pending debounced updates
 }
 
@@ -67,6 +85,15 @@ const STORAGE_KEY = "dimitri-portfolio-settings";
  * Debounce delay for localStorage saves (milliseconds)
  */
 const STORAGE_SAVE_DELAY = 500;
+
+/**
+ * Default WordCloud settings
+ */
+const DEFAULT_WORDCLOUD_SETTINGS: WordCloudSettings = {
+  rotationSpeedX: -0.003,
+  rotationSpeedY: 0.004,
+  baseFontSize: 1.3,
+};
 
 /**
  * Generate default network background settings based on hardware performance
@@ -156,6 +183,32 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       return mediumDefaults;
     });
 
+  const [wordCloudSettings, setWordCloudSettings] = useState<WordCloudSettings>(
+    () => {
+      // Try to load from localStorage on first render only
+      try {
+        if (typeof window !== "undefined") {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.wordCloudSettings) {
+              return {
+                ...DEFAULT_WORDCLOUD_SETTINGS,
+                ...parsed.wordCloudSettings,
+              };
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to load wordCloud settings from localStorage:",
+          error
+        );
+      }
+      return DEFAULT_WORDCLOUD_SETTINGS;
+    }
+  );
+
   /**
    * Reset generation counter
    * Incremented on each reset to invalidate pending debounced updates
@@ -175,7 +228,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const timeoutId = setTimeout(() => {
       try {
         if (typeof window !== "undefined") {
-          const settingsToSave = { networkSettings };
+          const settingsToSave = { networkSettings, wordCloudSettings };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
         }
       } catch (error) {
@@ -184,7 +237,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }, STORAGE_SAVE_DELAY);
 
     return () => clearTimeout(timeoutId);
-  }, [networkSettings]);
+  }, [networkSettings, wordCloudSettings]);
 
   // ========================================
   // Settings Methods
@@ -219,6 +272,26 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * Update specific wordCloud settings
+   * Merges updates with existing settings
+   */
+  const updateWordCloudSettings = (updates: Partial<WordCloudSettings>) => {
+    setWordCloudSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  /**
+   * Reset all wordCloud settings to defaults
+   */
+  const resetWordCloudSettings = () => {
+    setWordCloudSettings(DEFAULT_WORDCLOUD_SETTINGS);
+    setResetGeneration((prev) => prev + 1);
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("Reset WordCloud to defaults:", DEFAULT_WORDCLOUD_SETTINGS);
+    }
+  };
+
   // ========================================
   // Context Value
   // ========================================
@@ -227,6 +300,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     networkSettings,
     updateNetworkSettings,
     resetNetworkSettings,
+    wordCloudSettings,
+    updateWordCloudSettings,
+    resetWordCloudSettings,
     resetGeneration,
   };
 
