@@ -2,15 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Button,
-  Input,
-  Textarea,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
+import { Button, Input, Textarea } from "@heroui/react";
 import {
   FaEnvelope,
   FaPhone,
@@ -23,7 +15,16 @@ import {
   useContactFormMutation,
   type ContactFormData,
 } from "@/hooks/mutations/useContactFormMutation";
-import Map from "./Map";
+
+// Dynamically import the map component to avoid SSR issues
+const Map = dynamic(() => import("./Map"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Loading map...</p>
+    </div>
+  ),
+});
 
 export default function ContactPage() {
   const [formData, setFormData] = useState<ContactFormData>({
@@ -85,33 +86,90 @@ export default function ContactPage() {
 
   return (
     <motion.div
-      className="min-h-screen py-12 px-6"
+      className="pt-16 px-6"
       initial="initial"
       animate="animate"
       exit="exit"
       variants={pageVariants}
       transition={{ duration: 0.5 }}
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Get In Touch</h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Have a project in mind or want to discuss opportunities? I'd love to
-            hear from you. Drop me a message and I'll get back to you as soon as
-            possible.
-          </p>
-        </div>
-
+      <div className="max-w-5xl mx-auto h-full">
         {/* Two Column Layout */}
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="flex flex-col lg:flex-row gap-12 h-full">
           {/* Contact Form */}
-          <Card className="p-2">
-            <CardHeader className="pb-4">
-              <h2 className="text-2xl font-semibold">Send a Message</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-6">
+          <motion.div
+            className="flex flex-col gap-1 lg:max-w-[40%]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <motion.div
+              className="pb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h1 className="text-2xl font-bold mb-4">Get In Touch</h1>
+              <p className="text-foreground/70 text-sm">
+                Have a project in mind or want to discuss opportunities? I'd
+                love to hear from you. Drop me a message and I'll get back to
+                you as soon as possible.
+              </p>
+            </motion.div>
+
+            {/* Contact Links */}
+            <motion.div
+              className="flex flex-wrap justify-between gap-4 mb-6 text-foreground/70 text-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <FaEnvelope className="text-primary" />
+                <a
+                  href="mailto:dimitri.lesas@email.com"
+                  className="hover:text-primary transition-colors text-sm"
+                >
+                  dimitri.lesas@email.com
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <FaMapMarkerAlt className="text-primary" />
+                <span className="text-sm">London, UK</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <FaLinkedin className="text-primary" />
+                <a
+                  href="https://linkedin.com/in/dimitri-lesas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors text-sm"
+                >
+                  LinkedIn
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <FaGithub className="text-primary" />
+                <a
+                  href="https://github.com/dimitri-lesas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors text-sm"
+                >
+                  GitHub
+                </a>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="pt-0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
@@ -181,67 +239,22 @@ export default function ContactPage() {
                   </div>
                 )}
               </form>
-
-              {/* Contact Info */}
-              <div className="mt-8 space-y-4">
-                <h3 className="font-semibold text-lg mb-4">
-                  Contact Information
-                </h3>
-
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                  <FaEnvelope className="text-primary" />
-                  <a
-                    href="mailto:dimitri.lesas@email.com"
-                    className="hover:text-primary transition-colors"
-                  >
-                    dimitri.lesas@email.com
-                  </a>
-                </div>
-
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                  <FaMapMarkerAlt className="text-primary" />
-                  <span>London, United Kingdom</span>
-                </div>
-
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                  <FaLinkedin className="text-primary" />
-                  <a
-                    href="https://linkedin.com/in/dimitri-lesas"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary transition-colors"
-                  >
-                    linkedin.com/in/dimitri-lesas
-                  </a>
-                </div>
-
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                  <FaGithub className="text-primary" />
-                  <a
-                    href="https://github.com/dimitri-lesas"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary transition-colors"
-                  >
-                    github.com/dimitri-lesas
-                  </a>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
+            </motion.div>
+          </motion.div>
 
           {/* Map */}
-          <Card className="p-2 overflow-hidden">
-            <CardHeader className="pb-4">
-              <h2 className="text-2xl font-semibold">Location</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody className="p-0">
+          <motion.div
+            className="p-2 overflow-hidden h-full flex-1"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="p-0">
               <div className="h-[600px] relative">
                 <Map />
               </div>
-            </CardBody>
-          </Card>
+            </div>
+          </motion.div>
         </div>
       </div>
     </motion.div>
