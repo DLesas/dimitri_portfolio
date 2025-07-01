@@ -23,16 +23,7 @@ import {
   useContactFormMutation,
   type ContactFormData,
 } from "@/hooks/mutations/useContactFormMutation";
-
-// Dynamically import the map component to avoid SSR issues
-const Map = dynamic(() => import("./Map"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-      <p className="text-gray-500">Loading map...</p>
-    </div>
-  ),
-});
+import Map from "./Map";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState<ContactFormData>({
