@@ -40,7 +40,7 @@ export default function HomePage() {
             variants={fadeInUp}
             data-network-collider
           >
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Dimitri Lesas
             </span>
           </motion.h1>
