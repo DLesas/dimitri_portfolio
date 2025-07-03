@@ -21,11 +21,14 @@ import {
   FaLinkedin,
   FaTwitter,
 } from "react-icons/fa";
+import Link from "next/link";
+import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
 export default function BlogPage() {
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { getAvailableHeight } = useNavigationSpace();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,14 +95,15 @@ export default function BlogPage() {
 
   return (
     <motion.div
-      className="min-h-full py-12 px-6"
+      className="py-12 px-6 flex items-center justify-center"
+      style={{ minHeight: getAvailableHeight() }}
       initial="initial"
       animate="animate"
       exit="exit"
       variants={pageVariants}
       transition={{ duration: 0.5 }}
     >
-      <div className="max-w-6xl h-full mx-auto">
+      <div className="max-w-6xl w-full mx-auto">
         {/* Hero Section */}
         <div className="text-center flex flex-col items-center justify-center mb-16">
           <motion.div
