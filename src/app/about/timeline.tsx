@@ -6,6 +6,16 @@ import {
   motion,
 } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+import { Chip, cn } from "@heroui/react";
+import { FaMapMarkerAlt } from "react-icons/fa";
+
+export interface WorkExperience {
+  title: string;
+  jobTitle: string;
+  company: string;
+  bullets: string[];
+  skills: string[];
+}
 
 interface TimelineEntry {
   title: string;
@@ -33,10 +43,7 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
   const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
   return (
-    <div
-      className="w-full font-sans md:px-10"
-      ref={containerRef}
-    >
+    <div className="w-full font-sans md:px-10" ref={containerRef}>
       <div ref={ref} className="relative max-w-7xl mx-auto pb-20">
         {data.map((item, index) => (
           <div
@@ -47,13 +54,13 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
               <div className="h-10 absolute left-3 md:left-3 w-10 rounded-full  flex items-center justify-center">
                 <div className="h-4 w-4 rounded-full bg-foreground/60 border border-foreground/80 p-2" />
               </div>
-              <h3 className="hidden md:block text-lg md:pl-20 md:text-2xl font-bold text-foreground/80">
+              <h3 className="hidden md:block text-lg md:pl-20 md:text-2xl font-bold text-foreground/90">
                 {item.title}
               </h3>
             </div>
 
             <div className="relative pl-20 pr-4 md:pl-4 w-full">
-              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-neutral-500 dark:text-neutral-500">
+              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-foregroud">
                 {item.title}
               </h3>
               {item.content}{" "}
@@ -77,4 +84,62 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
       </div>
     </div>
   );
+};
+
+// New component for work experience timeline
+export const WorkExperienceTimeline = ({
+  experiences,
+}: {
+  experiences: WorkExperience[];
+}) => {
+  const timelineData = experiences.map((exp) => ({
+    title: exp.title,
+    content: (
+      <div>
+        <div className="mb-4">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+            {exp.jobTitle.includes("(SC Cleared)") ? (
+              <>
+                {exp.jobTitle.replace(" (SC Cleared)", "")}{" "}
+                <span className="whitespace-nowrap">(SC Cleared)</span>
+              </>
+            ) : (
+              exp.jobTitle
+            )}
+          </h4>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex items-center text-secondary/80 font-medium">
+              <FaMapMarkerAlt className="mr-1" /> {exp.company}
+            </span>
+          </div>
+        </div>
+        <ul className="space-y-2 text-sm text-foreground-600/95">
+          {exp.bullets.map((bullet, index) => (
+            <li key={index} className="flex items-start">
+              <span className="mr-2">•</span>
+              <span dangerouslySetInnerHTML={{ __html: bullet }} />
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {exp.skills.map((skill, index) => (
+            <Chip
+              key={index}
+              size="sm"
+              variant="flat"
+              className={cn(
+                "bg-primary/35",
+                "text-foreground/70",
+                "border-primary/50 border-2"
+              )}
+            >
+              {skill}
+            </Chip>
+          ))}
+        </div>
+      </div>
+    ),
+  }));
+
+  return <Timeline data={timelineData} />;
 };

@@ -9,12 +9,14 @@ import {
   Chip,
   Progress,
   Skeleton,
+  Code,
 } from "@heroui/react";
 import { FaLink } from "react-icons/fa";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { useSkillsData } from "@/hooks/queries/useSkillsData";
 import type { SkillRecord } from "@/hooks/queries/useSkillsData";
-import { Timeline } from "./timeline";
+import { Timeline, WorkExperienceTimeline } from "./timeline";
+import type { WorkExperience } from "./timeline";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -46,236 +48,68 @@ const skillIconVariant = {
 };
 
 // Work Experience Timeline Component
-function WorkExperienceTimeline() {
-  const workExperienceData = [
+function WorkExperienceTimelineSection() {
+  const workExperienceData: WorkExperience[] = [
     {
       title: "Dec 2023 - Present",
-      content: (
-        <div>
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Senior Full Stack & Data Scientist (SC Cleared)
-            </h4>
-            <div className="flex items-center gap-2 mb-3">
-              <Chip size="sm" color="primary" variant="flat">
-                Capita
-              </Chip>
-              <Chip size="sm" color="success" variant="dot">
-                Current
-              </Chip>
-            </div>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Built a production React + TypeScript app on top of Palantir
-                Foundry, enabling advanced tracking for{" "}
-                <strong className="text-primary">500+ RN personnel</strong> via
-                fully data-driven, extensible workflows; owned system design and
-                optimised Spark-based pipelines processing{" "}
-                <strong className="text-primary">
-                  multiple terabytes of data daily
-                </strong>
-                .
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Mentored <strong className="text-primary">5 engineers</strong>{" "}
-                bi-weekly in React, TypeScript, Python, and Spark, supporting
-                their growth across frontend, backend and data engineering best
-                practices.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Delivered automation saving{" "}
-                <strong className="text-success">
-                  5 days of manual effort each month
-                </strong>
-                ; project commended at the{" "}
-                <strong className="text-warning">
-                  Rear Admiral's annual address
-                </strong>
-                .
-              </span>
-            </li>
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Chip size="sm" variant="bordered" color="primary">
-              React
-            </Chip>
-            <Chip size="sm" variant="bordered" color="primary">
-              TypeScript
-            </Chip>
-            <Chip size="sm" variant="bordered" color="primary">
-              Palantir Foundry
-            </Chip>
-            <Chip size="sm" variant="bordered" color="secondary">
-              Spark
-            </Chip>
-            <Chip size="sm" variant="bordered" color="secondary">
-              Python
-            </Chip>
-          </div>
-        </div>
-      ),
+      jobTitle: "Senior Full Stack & Data Scientist (SC Cleared)",
+      company: "Capita",
+      bullets: [
+        "Built a production React + TypeScript app on top of Palantir Foundry, enabling advanced tracking for <strong>500+ RN personnel</strong> via fully data-driven, extensible workflows; owned system design and optimised Spark-based pipelines processing <strong>multiple terabytes of data daily</strong>.",
+        "Mentored <strong>5 engineers</strong> bi-weekly in React, TypeScript, Python, and Spark, supporting their growth across frontend, backend and data engineering best practices.",
+        "Delivered automation saving <strong>5 days of manual effort each month</strong>; project commended at the <strong>Rear Admiral's annual address</strong>.",
+      ],
+      skills: [
+        "React",
+        "TypeScript",
+        "Python",
+        "Apache Spark",
+        "Data Engineering",
+        "Team Leadership",
+        "Palantir Foundry",
+      ],
     },
     {
       title: "June 2022 - Dec 2023",
-      content: (
-        <div>
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Machine Learning Engineer (SC Cleared)
-            </h4>
-            <div className="flex items-center gap-2 mb-3">
-              <Chip size="sm" color="secondary" variant="flat">
-                Roke
-              </Chip>
-            </div>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-            <li className="flex items-start">
-              <span className="text-secondary mr-2">•</span>
-              <span>
-                Tech led{" "}
-                <strong className="text-secondary">
-                  3 cross functional projects
-                </strong>{" "}
-                spanning engineering, data science, and domain teams, delivering
-                scalable production systems for critical National Security use
-                cases.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-secondary mr-2">•</span>
-              <span>
-                Designed and deployed a novel{" "}
-                <strong className="text-secondary">
-                  GAN-based computer vision model
-                </strong>{" "}
-                for real-time image analysis; built entirely from scratch in a
-                restricted environment.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-secondary mr-2">•</span>
-              <span>
-                Integrated diverse cloud-native databases (time-series,
-                columnar, geo-spatial, graph), enabling ingestion of{" "}
-                <strong className="text-secondary">~20–30GB/day</strong> and
-                powering both a live dashboard and a model-driven application.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-secondary mr-2">•</span>
-              <span>
-                Supervised MSc research projects in collaboration with
-                university partners, helping align academic work with production
-                objectives.
-              </span>
-            </li>
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Chip size="sm" variant="bordered" color="secondary">
-              Machine Learning
-            </Chip>
-            <Chip size="sm" variant="bordered" color="secondary">
-              Computer Vision
-            </Chip>
-            <Chip size="sm" variant="bordered" color="secondary">
-              GANs
-            </Chip>
-            <Chip size="sm" variant="bordered" color="warning">
-              Cloud Databases
-            </Chip>
-            <Chip size="sm" variant="bordered" color="warning">
-              National Security
-            </Chip>
-          </div>
-        </div>
-      ),
+      jobTitle: "Machine Learning Engineer (SC Cleared)",
+      company: "Roke",
+      bullets: [
+        "Tech led <strong>3 cross functional projects</strong> spanning engineering, data science, and domain teams, delivering scalable production systems for critical National Security use cases.",
+        "Designed and deployed a novel <strong>GAN-based computer vision model</strong> for real-time image analysis; built entirely from scratch in a restricted environment.",
+        "Integrated diverse cloud-native databases (time-series, columnar, geo-spatial, graph), enabling ingestion of <strong>~20–30GB/day</strong> and powering both a live dashboard and a model-driven application.",
+        "Supervised MSc research projects in collaboration with university partners, helping align academic work with production objectives.",
+      ],
+      skills: [
+        "Machine Learning",
+        "Computer Vision",
+        "Python",
+        "Cloud Architecture",
+        "Data Engineering",
+        "Technical Leadership",
+      ],
     },
     {
       title: "Nov 2020 - May 2022",
-      content: (
-        <div>
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Senior Data Science Consultant (SC Cleared)
-            </h4>
-            <div className="flex items-center gap-2 mb-3">
-              <Chip size="sm" color="primary" variant="flat">
-                Capita
-              </Chip>
-            </div>
-          </div>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Led development of a global carbon reporting platform covering{" "}
-                <strong className="text-success">7,905 cost centres</strong>,
-                enabling a{" "}
-                <strong className="text-success">30% CO₂ reduction</strong> in
-                one year.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Managed a team of{" "}
-                <strong className="text-primary">5 juniors</strong> across
-                delivery and technical planning for multiple enterprise clients.
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Presented complex data insights to C-level and non-technical
-                stakeholders; achieved a{" "}
-                <strong className="text-warning">
-                  60% client contract extension rate
-                </strong>
-                .
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>
-                Mentored <strong className="text-primary">7 engineers</strong>{" "}
-                bi-weekly across two teams in Python and Power BI to improve
-                delivery.
-              </span>
-            </li>
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Chip size="sm" variant="bordered" color="success">
-              Carbon Reporting
-            </Chip>
-            <Chip size="sm" variant="bordered" color="primary">
-              Python
-            </Chip>
-            <Chip size="sm" variant="bordered" color="primary">
-              Power BI
-            </Chip>
-            <Chip size="sm" variant="bordered" color="warning">
-              Team Leadership
-            </Chip>
-            <Chip size="sm" variant="bordered" color="warning">
-              Stakeholder Management
-            </Chip>
-          </div>
-        </div>
-      ),
+      jobTitle: "Senior Data Science Consultant (SC Cleared)",
+      company: "Capita",
+      bullets: [
+        "Led development of a global carbon reporting platform covering <strong>7,905 cost centres</strong>, enabling a <strong>30% CO₂ reduction</strong> in one year.",
+        "Managed a team of <strong>5 juniors</strong> across delivery and technical planning for multiple enterprise clients.",
+        "Presented complex data insights to C-level and non-technical stakeholders; achieved a <strong>60% client contract extension rate</strong>.",
+        "Mentored <strong>7 engineers</strong> bi-weekly across two teams in Python and Power BI to improve delivery.",
+      ],
+      skills: [
+        "Data Science",
+        "Python",
+        "Power BI",
+        "Team Leadership",
+        "Stakeholder Management",
+        "Data Visualization",
+      ],
     },
   ];
 
-  return <Timeline data={workExperienceData} />;
+  return <WorkExperienceTimeline experiences={workExperienceData} />;
 }
 
 // Info Panel Component
@@ -536,7 +370,7 @@ export default function AboutPage() {
           Work Experience
         </motion.h3>
         <motion.div variants={fadeInUp}>
-          <WorkExperienceTimeline />
+          <WorkExperienceTimelineSection />
         </motion.div>
       </motion.section>
     </div>
