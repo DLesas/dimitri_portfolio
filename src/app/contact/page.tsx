@@ -15,6 +15,7 @@ import {
   useContactFormMutation,
   type ContactFormData,
 } from "@/hooks/mutations/useContactFormMutation";
+import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
 // Dynamically import the map component to avoid SSR issues
 const Map = dynamic(() => import("./Map"), {
@@ -27,6 +28,7 @@ const Map = dynamic(() => import("./Map"), {
 });
 
 export default function ContactPage() {
+  const { getAvailableHeight } = useNavigationSpace();
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -86,16 +88,17 @@ export default function ContactPage() {
 
   return (
     <motion.div
-      className="pt-16 px-6"
+      className="px-6 flex items-center justify-center"
+      style={{ minHeight: getAvailableHeight() }}
       initial="initial"
       animate="animate"
       exit="exit"
       variants={pageVariants}
       transition={{ duration: 0.5 }}
     >
-      <div className="max-w-5xl mx-auto h-full">
+      <div className="max-w-5xl mx-auto w-full">
         {/* Two Column Layout */}
-        <div className="flex flex-col lg:flex-row gap-12 h-full">
+        <div className="flex flex-col lg:flex-row gap-12">
           {/* Contact Form */}
           <motion.div
             className="flex flex-col gap-1 lg:max-w-[40%]"
