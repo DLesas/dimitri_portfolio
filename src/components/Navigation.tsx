@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { ThemeSwitcher } from "./themeSwitcher";
 import { SettingsMenu } from "./settings/SettingsMenu";
+import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
-export function Navigation() {
+export default function Navigation() {
   const pathname = usePathname();
+  const { navigationRef } = useNavigationSpace();
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -20,6 +22,7 @@ export function Navigation() {
 
   return (
     <motion.nav
+      ref={navigationRef}
       className="flex justify-between items-center p-6 max-w-6xl mx-auto"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
