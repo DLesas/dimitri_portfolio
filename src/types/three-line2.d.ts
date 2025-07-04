@@ -1,5 +1,5 @@
 declare module "three/examples/jsm/lines/Line2" {
-  import { Line, BufferGeometry, Material } from "three";
+  import { Line } from "three";
   import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
   import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 
@@ -13,7 +13,7 @@ declare module "three/examples/jsm/lines/Line2" {
 }
 
 declare module "three/examples/jsm/lines/LineGeometry" {
-  import { BufferGeometry, BufferAttribute, Line } from "three";
+  import { BufferGeometry, Line } from "three";
 
   export class LineGeometry extends BufferGeometry {
     constructor();

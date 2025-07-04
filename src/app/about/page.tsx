@@ -9,13 +9,13 @@ import {
   Chip,
   Progress,
   Skeleton,
-  Code,
 } from "@heroui/react";
 import { FaLink } from "react-icons/fa";
+import Image from "next/image";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { useSkillsData } from "@/hooks/queries/useSkillsData";
 import type { SkillRecord } from "@/hooks/queries/useSkillsData";
-import { Timeline, WorkExperienceTimeline } from "./timeline";
+import { WorkExperienceTimeline } from "./timeline";
 import type { WorkExperience } from "./timeline";
 
 const fadeInUp = {
@@ -35,15 +35,6 @@ const staggerContainer = {
       staggerChildren: 0.1,
       delayChildren: 0.2,
     },
-  },
-};
-
-const skillIconVariant = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.4 },
   },
 };
 
@@ -158,10 +149,12 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
                 </div>
                 {hoveredSkill.icon && hoveredSkill.icon !== "" && (
                   <div className="w-12 h-12 flex-shrink-0">
-                    <img
+                    <Image
                       src={hoveredSkill.icon}
                       alt={hoveredSkill.name}
                       className="w-full h-full object-contain"
+                      width={48}
+                      height={48}
                     />
                   </div>
                 )}
@@ -238,7 +231,7 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
 }
 
 export default function AboutPage() {
-  const [formData, setFormData] = useState({
+  const [_formData, _setFormData] = useState({
     name: "",
     email: "",
     message: "",
@@ -247,21 +240,6 @@ export default function AboutPage() {
 
   // Fetch skills data using React Query
   const { data: skills, isLoading, error } = useSkillsData();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">

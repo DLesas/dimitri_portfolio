@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Button, Input, Textarea } from "@heroui/react";
 import {
   FaEnvelope,
-  FaPhone,
   FaMapMarkerAlt,
   FaLinkedin,
   FaGithub,
@@ -114,9 +113,9 @@ export default function ContactPage() {
             >
               <h1 className="text-2xl font-bold mb-4">Get In Touch</h1>
               <p className="text-foreground/70 text-sm">
-                Have a project in mind or want to discuss opportunities? I'd
-                love to hear from you. Drop me a message and I'll get back to
-                you as soon as possible.
+                Have a project in mind or want to discuss opportunities?
+                I&apos;d love to hear from you. Drop me a message and I&apos;ll
+                get back to you as soon as possible.
               </p>
             </motion.div>
 

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import {
   convertMouseToWorldCoordinates,
@@ -110,7 +110,14 @@ export function useMouseTracking(
         }
       };
     }
-  }, [containerRef, worldWidth, worldHeight]);
+  }, [
+    containerRef,
+    worldWidth,
+    worldHeight,
+    MOUSE_TIMEOUT,
+    MOVEMENT_THRESHOLD,
+    THROTTLE_INTERVAL,
+  ]);
 
   return mousePos;
 }
@@ -132,7 +139,7 @@ export function useDOMColliders(
     }>
   >([]);
 
-  const updateDOMColliders = () => {
+  const updateDOMColliders = useCallback(() => {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
@@ -171,7 +178,7 @@ export function useDOMColliders(
         element: element as HTMLElement,
       };
     });
-  };
+  }, [containerRef, collisionPadding]);
 
   useEffect(() => {
     updateDOMColliders();
@@ -196,7 +203,13 @@ export function useDOMColliders(
       observer.disconnect();
       domColliders.current = [];
     };
-  }, [containerRef, worldWidth, worldHeight, collisionPadding]);
+  }, [
+    containerRef,
+    worldWidth,
+    worldHeight,
+    collisionPadding,
+    updateDOMColliders,
+  ]);
 
   return domColliders;
 }

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 // Load the 3-D graph only on the client to avoid SSR/WebGL issues
-const SkillsGraph = dynamic(() => import("../../../_archive/skills/R3FGraph"), {
+const SkillsGraph = dynamic(() => import("../skills/R3FGraph"), {
   ssr: false,
 });
 

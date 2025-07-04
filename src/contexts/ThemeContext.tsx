@@ -13,7 +13,7 @@ import { retryWithBackoff, RetryPresets } from "@/utils/retry";
 import {
   generateThemeFromPrimary,
   applyThemeToCSS,
-  type GeneratedTheme,
+  type GeneratedTheme as _GeneratedTheme,
 } from "@/lib/colorApi";
 
 // ============================================================================

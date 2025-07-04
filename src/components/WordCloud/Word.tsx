@@ -28,7 +28,7 @@ export default function Word({ skill, position, index, onHover }: WordProps) {
   const { wordCloudSettings } = useSettings();
 
   // Handle click to open link
-  const handleClick = (e: any) => {
+  const handleClick = (e: { stopPropagation: () => void }) => {
     e.stopPropagation(); // Prevent event bubbling
     if (skill.link) {
       window.open(skill.link, "_blank", "noopener,noreferrer");

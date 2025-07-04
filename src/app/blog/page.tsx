@@ -2,96 +2,19 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Button,
-  Input,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
-import {
-  FaRss,
-  FaCode,
-  FaLightbulb,
-  FaRocket,
-  FaNewspaper,
-  FaEnvelope,
-  FaGithub,
-  FaLinkedin,
-  FaTwitter,
-} from "react-icons/fa";
-import Link from "next/link";
+
+import { FaRss, FaCode, FaLightbulb, FaRocket } from "react-icons/fa";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
 export default function BlogPage() {
-  const [email, setEmail] = useState("");
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_email, _setEmail] = useState("");
   const { getAvailableHeight } = useNavigationSpace();
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setIsLoading(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubscribed(true);
-    setIsLoading(false);
-    setEmail("");
-  };
 
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -20 },
   };
-
-  const cardVariants = {
-    initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1 },
-    hover: { scale: 1.02, transition: { duration: 0.2 } },
-  };
-
-  const iconVariants = {
-    initial: { scale: 0 },
-    animate: { scale: 1 },
-    hover: { scale: 1.2, rotate: 360, transition: { duration: 0.3 } },
-  };
-
-  const upcomingTopics = [
-    {
-      icon: FaCode,
-      title: "Modern Web Development",
-      description:
-        "Deep dives into React, Next.js, and cutting-edge frontend technologies",
-      color: "text-blue-500",
-    },
-    {
-      icon: FaLightbulb,
-      title: "AI & Machine Learning",
-      description:
-        "Practical applications of AI in web development and data science",
-      color: "text-yellow-500",
-    },
-    {
-      icon: FaRocket,
-      title: "Performance Optimization",
-      description:
-        "Tips and tricks for building lightning-fast web applications",
-      color: "text-green-500",
-    },
-    {
-      icon: FaNewspaper,
-      title: "Industry Insights",
-      description:
-        "Thoughts on tech trends, career growth, and software engineering",
-      color: "text-purple-500",
-    },
-  ];
 
   return (
     <motion.div
@@ -140,10 +63,10 @@ export default function BlogPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            I'm working on something exciting! My blog will feature in-depth
-            articles about web development, AI, performance optimization, and
-            insights from my journey as a full-stack engineer. Stay tuned for
-            quality content that helps you level up your skills.
+            I&apos;m working on something exciting! My blog will feature
+            in-depth articles about web development, AI, performance
+            optimization, and insights from my journey as a full-stack engineer.
+            Stay tuned for quality content that helps you level up your skills.
           </motion.p>
 
           <motion.div
@@ -166,68 +89,6 @@ export default function BlogPage() {
             </div>
           </motion.div>
         </div>
-
-        {/* Newsletter Signup */}
-        {/* <motion.div
-          className="mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Card className="max-w-md mx-auto">
-            <CardHeader className="text-center pb-4">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <FaEnvelope className="text-primary" />
-                <h2 className="text-xl font-semibold">Get Notified</h2>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Be the first to know when I publish new articles
-              </p>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-6">
-              {isSubscribed ? (
-                <motion.div
-                  className="text-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200 }}
-                >
-                  <div className="text-green-500 text-4xl mb-4">✓</div>
-                  <h3 className="font-semibold text-green-600 dark:text-green-400 mb-2">
-                    You're all set!
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    I'll email you as soon as the blog launches.
-                  </p>
-                </motion.div>
-              ) : (
-                <form onSubmit={handleSubscribe} className="space-y-4">
-                  <Input
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    variant="bordered"
-                    startContent={<FaEnvelope className="text-gray-400" />}
-                    isRequired
-                  />
-                  <Button
-                    type="submit"
-                    color="primary"
-                    className="w-full"
-                    isLoading={isLoading}
-                  >
-                    {isLoading ? "Subscribing..." : "Notify Me When It's Ready"}
-                  </Button>
-                  <p className="text-xs text-gray-500 text-center">
-                    No spam, unsubscribe anytime
-                  </p>
-                </form>
-              )}
-            </CardBody>
-          </Card>
-        </motion.div> */}
       </div>
     </motion.div>
   );

@@ -226,8 +226,8 @@ function HardwareInfoSection() {
             {hardwareInfo.isMobile
               ? "Mobile"
               : hardwareInfo.isTablet
-              ? "Tablet"
-              : "Desktop"}
+                ? "Tablet"
+                : "Desktop"}
           </div>
           <div>
             <strong>Cores:</strong> {hardwareInfo.cores} |{" "}
@@ -381,9 +381,10 @@ export function SettingsMenu() {
    * Prevents memory leaks from pending timeout operations
    */
   useEffect(() => {
+    const refs = timeoutRefs.current;
     return () => {
-      timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
-      timeoutRefs.current.clear();
+      refs.forEach((timeout) => clearTimeout(timeout));
+      refs.clear();
     };
   }, []);
 

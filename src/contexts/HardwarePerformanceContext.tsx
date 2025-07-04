@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import { PERFORMANCE_CONFIGS } from "@/components/NetworkBackground/constants";
 import { retryWithBackoff, RetryPresets } from "@/utils/retry";
@@ -366,7 +367,7 @@ export function HardwarePerformanceProvider({
   // Hardware Detection Function
   // ========================================
 
-  const runDetection = () => {
+  const runDetection = useCallback(() => {
     const detectHardware = async () => {
       // Use the generalized retry utility for hardware detection
       const result = await retryWithBackoff(
@@ -444,18 +445,19 @@ export function HardwarePerformanceProvider({
       // Fallback for older browsers - use setTimeout with delay
       setTimeout(() => detectHardware(), 100);
     }
-  };
+  }, [manualPerformanceLevel]);
 
   // ========================================
   // Automatic Detection on Mount
   // ========================================
 
   /**
-   * Automatically run hardware detection on component mount during idle time
+   * Automatic run hardware detection on component mount during idle time
    * This ensures hardware info is available without blocking initial render
    */
   useEffect(() => {
     runDetection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run on mount
 
   // ========================================

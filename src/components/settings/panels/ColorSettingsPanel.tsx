@@ -6,7 +6,6 @@ import "react-color-palette/css";
 import { Button, Spinner, Card, CardBody } from "@heroui/react";
 import { FaUndo, FaPalette } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useTheme as useNextTheme } from "next-themes";
 
 // ============================================================================
 // Component
@@ -26,7 +25,6 @@ export function ColorSettingsPanel() {
   // Hooks
   // ========================================
 
-  const { theme: currentThemeMode } = useNextTheme(); // Get light/dark mode from next-themes
   const {
     primaryColor,
     setPrimaryColor,
@@ -100,7 +98,6 @@ export function ColorSettingsPanel() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Color Picker Section */}
         <div className="space-y-3">
-
           {/* Color Picker */}
           <div className="rounded-lg overflow-hidden border border-divider">
             <ColorPicker

@@ -265,14 +265,15 @@ export function NetworkNode({
 
   // Cleanup animation on unmount
   useEffect(() => {
+    const currentMesh = mesh.current;
     return () => {
-      isAnimatingRef.current = false;
+      // isAnimatingRef.current = false; // This is not needed as the component is unmounting
 
       // Dispose of mesh geometry and material when component unmounts
-      if (mesh.current) {
-        mesh.current.geometry?.dispose();
-        if (mesh.current.material instanceof THREE.Material) {
-          mesh.current.material.dispose();
+      if (currentMesh) {
+        currentMesh.geometry?.dispose();
+        if (currentMesh.material instanceof THREE.Material) {
+          currentMesh.material.dispose();
         }
       }
     };

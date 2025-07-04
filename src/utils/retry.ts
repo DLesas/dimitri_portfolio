@@ -120,7 +120,6 @@ export function calculateBackoffDelay(
  * @param _attempt - Current attempt number (unused)
  * @returns Always true (retry for any error)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const defaultShouldRetry = (_error: Error, _attempt: number): boolean => true;
 
 // ============================================================================

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
-import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { useTheme as useNextTheme } from "next-themes";
 import { useTheme } from "@/contexts/ThemeContext";
 import { renderToStaticMarkup } from "react-dom/server";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 // Fix for default markers in Leaflet with Next.js
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 // Custom pin component
