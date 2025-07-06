@@ -26,9 +26,11 @@ export function ThemeSwitcher() {
       }}
       isIconOnly
       variant="light"
+      size="sm"
+      className="text-foreground/70 hover:text-foreground transition-colors"
       aria-label="Toggle theme"
     >
-      {theme === "light" ? <MdSunny size={20} /> : <MdDarkMode size={20} />}
+      {theme === "light" ? <MdSunny size={18} /> : <MdDarkMode size={18} />}
     </Button>
   );
 }
