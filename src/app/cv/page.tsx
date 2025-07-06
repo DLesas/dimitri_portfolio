@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { Button } from "@heroui/react";
-import { FaDownload, FaExpand, FaCompress } from "react-icons/fa";
+import { FaDownload, FaExpand } from "react-icons/fa";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 
 // Dynamically import PDF components to avoid SSR issues
-// @ts-ignore
+// @ts-ignore: dynamic import for PDFViewer, avoids SSR issues
 const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ssr: false,
   loading: () => (
