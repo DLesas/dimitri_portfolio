@@ -68,7 +68,7 @@ export default function HomePage() {
           variants={staggerContainer}
         >
           <motion.h1
-            className="text-6xl md:text-7xl font-bold mb-8 leading-tight"
+            className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
             variants={itemVariants}
             data-network-collider
           >
@@ -78,7 +78,7 @@ export default function HomePage() {
           </motion.h1>
 
           <motion.h2
-            className="text-2xl md:text-3xl text-foreground/90 mb-8 font-light"
+            className="text-xl md:text-3xl text-foreground/90 mb-8 font-light"
             variants={itemVariants}
             data-network-collider
           >
@@ -86,7 +86,7 @@ export default function HomePage() {
           </motion.h2>
 
           <motion.p
-            className="text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed"
+            className="text-md md:text-lg lg:text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed"
             variants={itemVariants}
             data-network-collider
           >
@@ -114,12 +114,12 @@ export default function HomePage() {
             <motion.div variants={buttonVariants} whileHover="hover">
               <Button
                 as={Link}
-                href="/projects"
+                href="/cv"
                 variant="bordered"
                 size="lg"
                 className="font-medium px-8"
               >
-                View My Work
+                View My CV
               </Button>
             </motion.div>
           </motion.div>
