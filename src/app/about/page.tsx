@@ -43,7 +43,7 @@ function WorkExperienceTimelineSection() {
   const workExperienceData: WorkExperience[] = [
     {
       title: "Dec 2023 - Present",
-      jobTitle: "Senior Full Stack & Data Scientist (SC Cleared)",
+      jobTitle: "Senior Full Stack Engineer & Data Scientist (SC Cleared)",
       company: "Capita",
       bullets: [
         "Built a production React + TypeScript app on top of Palantir Foundry, enabling advanced tracking for <strong>500+ RN personnel</strong> via fully data-driven, extensible workflows; owned system design and optimised Spark-based pipelines processing <strong>multiple terabytes of data daily</strong>.",
