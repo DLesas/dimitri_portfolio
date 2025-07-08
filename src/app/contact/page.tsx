@@ -132,7 +132,7 @@ export default function ContactPage() {
                   href="mailto:dimitri.lesas@email.com"
                   className="hover:text-primary transition-colors text-sm"
                 >
-                  dimitri.lesas@email.com
+                  dlesas@hotmail.com
                 </a>
               </div>
 
@@ -144,7 +144,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <FaLinkedin className="text-primary" />
                 <a
-                  href="https://linkedin.com/in/dimitri-lesas"
+                  href="https://www.linkedin.com/in/dimitri-lesas-analytics/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors text-sm"
@@ -156,7 +156,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <FaGithub className="text-primary" />
                 <a
-                  href="https://github.com/dimitri-lesas"
+                  href="https://github.com/DLesas"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors text-sm"
