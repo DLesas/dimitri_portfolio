@@ -409,7 +409,7 @@ export function SettingsMenu() {
             className="text-foreground/70 hover:text-foreground transition-colors"
             aria-label="Settings"
           >
-            <FaCog className="w-[18px] h-[18px]" />
+            <FaCog size={18} />
           </Button>
         </PopoverTrigger>
 
