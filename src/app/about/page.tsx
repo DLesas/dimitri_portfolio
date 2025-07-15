@@ -17,6 +17,7 @@ import { useSkillsData } from "@/hooks/queries/useSkillsData";
 import type { SkillRecord } from "@/hooks/queries/useSkillsData";
 import { WorkExperienceTimeline } from "./timeline";
 import type { WorkExperience } from "./timeline";
+import { FaArrowPointer } from "react-icons/fa6";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -117,7 +118,7 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
         </h3>
       </CardHeader>
 
-      <CardBody className="flex-grow overflow-y-auto">
+      <CardBody className="flex-grow overflow-y-hidden">
         <AnimatePresence mode="wait">
           {hoveredSkill ? (
             <motion.div
@@ -129,22 +130,22 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
               className="space-y-4"
             >
               {/* Skill Name and Type */}
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-4">
                 <div className="flex-grow">
                   <h4 className="text-xl font-semibold">{hoveredSkill.name}</h4>
                   <div className="flex items-center gap-2 mt-1">
-                    <Chip size="sm" variant="flat" color="primary">
-                      {hoveredSkill.type}
-                    </Chip>
                     {hoveredSkill.parent && (
                       <Chip
                         size="sm"
-                        variant="bordered"
-                        startContent={<FaLink className="w-3 h-3" />}
+                        variant="shadow"
+                        color="secondary"
                       >
                         {hoveredSkill.parent}
                       </Chip>
                     )}
+                    <Chip size="sm" variant="flat" color="secondary">
+                      {hoveredSkill.type}
+                    </Chip>
                   </div>
                 </div>
                 {hoveredSkill.icon && hoveredSkill.icon !== "" && (
@@ -187,23 +188,15 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
               {hoveredSkill.tags && hoveredSkill.tags.length > 0 && (
                 <div className="space-y-2">
                   <span className="text-sm font-medium">Applications</span>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 pt-2">
                     {hoveredSkill.tags.map((tag) => (
-                      <Chip key={tag} size="sm" variant="dot" color="secondary">
+                      <Chip key={tag} size="sm" variant="dot" color="primary">
                         {tag}
                       </Chip>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Click hint */}
-              <div className="pt-2 border-t border-default-200">
-                <p className="text-xs text-default-400 italic flex items-center gap-1">
-                  <span>💡</span>
-                  Click on the word to learn more
-                </p>
-              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -213,7 +206,10 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
               className="h-full flex flex-col justify-center items-center text-center px-4"
             >
               <div className="w-16 h-16 mb-4 rounded-full bg-default-100 flex items-center justify-center">
-                <span className="text-2xl">👆</span>
+                <span className="text-2xl">
+                  {" "}
+                  <FaArrowPointer className="pl-1 text-secondary-300" />{" "}
+                </span>
               </div>
               <p className="text-default-600 mb-2">
                 Hover over any skill to explore
