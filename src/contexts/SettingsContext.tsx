@@ -270,7 +270,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [isDetectionComplete, performanceSettings, networkSettings]);
+  }, [
+    isDetectionComplete,
+    performanceSettings,
+    networkSettings,
+    isDebugEnabled,
+  ]);
 
   // ========================================
   // Persistence Effect

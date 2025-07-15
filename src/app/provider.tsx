@@ -27,13 +27,13 @@ const queryClient = new QueryClient({
  * 2. ThemeProvider - Manages light/dark theme switching
  * 3. HeroUIProvider - Provides Hero UI component system
  * 4. HeroUIThemeProvider - Extracts and provides HeroUI theme colors in multiple formats
- * 5. HardwarePerformanceProvider - Detects device capabilities and provides performance settings
- * 6. NavigationProvider - Manages the navigation space
- * 7. SettingsProvider - Manages user settings with hardware-aware defaults
- * 8. DebugProvider - Manages debug mode state for showing/hiding debug information
+ * 5. DebugProvider - Manages debug mode state for showing/hiding debug information
+ * 6. HardwarePerformanceProvider - Detects device capabilities and provides performance settings
+ * 7. NavigationProvider - Manages the navigation space
+ * 8. SettingsProvider - Manages user settings with hardware-aware defaults
  *
- * The order is important: SettingsProvider depends on HardwarePerformanceProvider
- * for determining appropriate default settings based on device performance.
+ * The order is important: SettingsProvider depends on both HardwarePerformanceProvider
+ * and DebugProvider for determining appropriate default settings and debug logging.
  */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -41,13 +41,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <HeroUIProvider>
           <HeroUIThemeProvider>
-            <HardwarePerformanceProvider>
-              <NavigationProvider>
-                <SettingsProvider>
-                  <DebugProvider>{children}</DebugProvider>
-                </SettingsProvider>
-              </NavigationProvider>
-            </HardwarePerformanceProvider>
+            <DebugProvider>
+              <HardwarePerformanceProvider>
+                <NavigationProvider>
+                  <SettingsProvider>{children}</SettingsProvider>
+                </NavigationProvider>
+              </HardwarePerformanceProvider>
+            </DebugProvider>
           </HeroUIThemeProvider>
         </HeroUIProvider>
       </ThemeProvider>

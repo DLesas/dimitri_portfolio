@@ -10,7 +10,7 @@ import {
   Progress,
   Skeleton,
 } from "@heroui/react";
-import { FaLink } from "react-icons/fa";
+
 import Image from "next/image";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { useSkillsData } from "@/hooks/queries/useSkillsData";
@@ -135,11 +135,7 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
                   <h4 className="text-xl font-semibold">{hoveredSkill.name}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     {hoveredSkill.parent && (
-                      <Chip
-                        size="sm"
-                        variant="shadow"
-                        color="secondary"
-                      >
+                      <Chip size="sm" variant="shadow" color="secondary">
                         {hoveredSkill.parent}
                       </Chip>
                     )}
