@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useRef,
 } from "react";
 import {
   ANIMATION_CONFIG,
@@ -13,6 +14,7 @@ import {
   PERFORMANCE_CONFIGS,
 } from "@/components/NetworkBackground/constants";
 import { useHardwarePerformance } from "./HardwarePerformanceContext";
+import { useDebug } from "./DebugContext";
 
 // ============================================================================
 // Types & Interfaces
@@ -148,11 +150,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Hardware Performance Integration
   // ========================================
 
-  const { performanceSettings } = useHardwarePerformance();
+  const { performanceSettings, isDetectionComplete } = useHardwarePerformance();
+  const { isDebugEnabled } = useDebug();
 
   // ========================================
   // State Management
   // ========================================
+
+  // Track if user has manually modified settings from initial defaults
+  const hasUserModifiedSettings = useRef(false);
+  const initialMediumDefaults = useRef<NetworkBackgroundSettings | null>(null);
 
   const [networkSettings, setNetworkSettings] =
     useState<NetworkBackgroundSettings>(() => {
@@ -164,6 +171,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         MAX_CONNECTIONS: PERFORMANCE_CONFIGS.medium.MAX_CONNECTIONS,
       });
 
+      // Store initial defaults for comparison
+      initialMediumDefaults.current = mediumDefaults;
+
       // Try to load from localStorage on first render only
       try {
         if (typeof window !== "undefined") {
@@ -171,6 +181,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           if (saved) {
             const parsed = JSON.parse(saved);
             if (parsed.networkSettings) {
+              // User has saved settings, mark as modified
+              hasUserModifiedSettings.current = true;
               return {
                 ...mediumDefaults,
                 ...parsed.networkSettings,
@@ -218,6 +230,49 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [resetGeneration, setResetGeneration] = useState(0);
 
   // ========================================
+  // Hardware-Based Auto-Update Effect
+  // ========================================
+
+  /**
+   * Automatically update to hardware-appropriate defaults once detection completes
+   * Only updates if user hasn't manually modified settings from initial medium defaults
+   */
+  useEffect(() => {
+    if (
+      isDetectionComplete &&
+      !hasUserModifiedSettings.current &&
+      initialMediumDefaults.current
+    ) {
+      // Check if current settings are still the initial medium defaults
+      const currentSettingsMatch =
+        initialMediumDefaults.current &&
+        JSON.stringify(networkSettings) ===
+          JSON.stringify(initialMediumDefaults.current);
+
+      if (currentSettingsMatch) {
+        // Generate hardware-appropriate defaults
+        const hardwareDefaults = generateDefaultNetworkSettings(
+          performanceSettings.network
+        );
+
+        // Only update if the hardware defaults are different from current
+        if (
+          JSON.stringify(hardwareDefaults) !== JSON.stringify(networkSettings)
+        ) {
+          setNetworkSettings(hardwareDefaults);
+
+          if (isDebugEnabled) {
+            console.log("Auto-updated to hardware-appropriate defaults:", {
+              performanceLevel: performanceSettings.level,
+              settings: hardwareDefaults,
+            });
+          }
+        }
+      }
+    }
+  }, [isDetectionComplete, performanceSettings, networkSettings]);
+
+  // ========================================
   // Persistence Effect
   // ========================================
 
@@ -246,11 +301,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   /**
    * Update specific network settings
-   * Merges updates with existing settings
+   * Merges updates with existing settings and marks as user-modified
    */
   const updateNetworkSettings = (
     updates: Partial<NetworkBackgroundSettings>
   ) => {
+    hasUserModifiedSettings.current = true;
     setNetworkSettings((prev) => ({ ...prev, ...updates }));
   };
 
@@ -265,7 +321,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setNetworkSettings(currentDefaults);
     setResetGeneration((prev) => prev + 1);
 
-    if (process.env.NODE_ENV === "development") {
+    if (isDebugEnabled) {
       console.log("Reset to hardware-based defaults:", {
         performanceLevel: performanceSettings.level,
         settings: currentDefaults,
@@ -288,7 +344,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setWordCloudSettings(DEFAULT_WORDCLOUD_SETTINGS);
     setResetGeneration((prev) => prev + 1);
 
-    if (process.env.NODE_ENV === "development") {
+    if (isDebugEnabled) {
       console.log("Reset WordCloud to defaults:", DEFAULT_WORDCLOUD_SETTINGS);
     }
   };
