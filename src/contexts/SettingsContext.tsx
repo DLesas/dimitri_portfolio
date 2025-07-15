@@ -10,6 +10,7 @@ import React, {
 import {
   ANIMATION_CONFIG,
   VISUAL_CONFIG,
+  PERFORMANCE_CONFIGS,
 } from "@/components/NetworkBackground/constants";
 import { useHardwarePerformance } from "./HardwarePerformanceContext";
 
@@ -158,9 +159,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       // Initialize with medium performance defaults
       // These are good defaults that work well on most devices
       const mediumDefaults = generateDefaultNetworkSettings({
-        NODE_COUNT: 180,
-        CONNECTION_DISTANCE: 5,
-        MAX_CONNECTIONS: 100,
+        NODE_COUNT: PERFORMANCE_CONFIGS.medium.NODE_COUNT,
+        CONNECTION_DISTANCE: PERFORMANCE_CONFIGS.medium.CONNECTION_DISTANCE,
+        MAX_CONNECTIONS: PERFORMANCE_CONFIGS.medium.MAX_CONNECTIONS,
       });
 
       // Try to load from localStorage on first render only

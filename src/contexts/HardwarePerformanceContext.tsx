@@ -221,7 +221,7 @@ function detectGPU(): { gpu?: string; hasHardwareAcceleration: boolean } {
 }
 
 /**
- * Comprehensive hardware detection
+ * Hardware detection
  */
 function detectHardwareInfo(): HardwareInfo {
   const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";

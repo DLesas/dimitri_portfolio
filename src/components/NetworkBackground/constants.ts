@@ -3,14 +3,14 @@ import { createTrigLookupTables } from "../../utils/3D";
 // Animation constants
 export const ANIMATION_CONFIG = {
   // Node movement - Controls how nodes drift organically through space
-  ORGANIC_MOVEMENT_SPEED: 0.3, // Speed multiplier for natural node movement (higher = faster drift)
-  ORGANIC_MOVEMENT_AMPLITUDE_X: 1.2, // Maximum drift distance on X-axis in world units
-  ORGANIC_MOVEMENT_AMPLITUDE_Y: 0.8, // Maximum drift distance on Y-axis in world units
-  ORGANIC_MOVEMENT_AMPLITUDE_Z: 0.4, // Maximum drift distance on Z-axis in world units
+  ORGANIC_MOVEMENT_SPEED: 1.0, // Speed multiplier for natural node movement (higher = faster drift)
+  ORGANIC_MOVEMENT_AMPLITUDE_X: 3.0, // Maximum drift distance on X-axis in world units
+  ORGANIC_MOVEMENT_AMPLITUDE_Y: 3.0, // Maximum drift distance on Y-axis in world units
+  ORGANIC_MOVEMENT_AMPLITUDE_Z: 5.0, // Maximum drift distance on Z-axis in world units
 
   // Mouse repulsion - How nodes react when mouse is nearby
-  MOUSE_REPULSION_RADIUS: 10.5, // Distance from mouse where nodes start being pushed away
-  MOUSE_REPULSION_STRENGTH: 12, // Force strength of mouse repulsion (higher = stronger push)
+  MOUSE_REPULSION_RADIUS: 30, // Distance from mouse where nodes start being pushed away
+  MOUSE_REPULSION_STRENGTH: 23, // Force strength of mouse repulsion (higher = stronger push)
   FIXED_TIME_STEP: 0.025, // Time step for physics calculations (smaller = more accurate)
 
   // Physics - Controls how nodes move and settle
@@ -18,9 +18,9 @@ export const ANIMATION_CONFIG = {
   RETURN_FORCE: 0.06, // Force pulling nodes back to their original positions
 
   // DOM collision - How nodes avoid overlapping with HTML text elements
-  DOM_COLLISION_PADDING: 0.1, // Extra space around DOM elements for collision detection
-  DOM_COLLISION_THRESHOLD: 1, // Distance from DOM elements where collision starts
-  DOM_REPULSION_FORCE: 0.8, // Force strength pushing nodes away from DOM elements
+  DOM_COLLISION_PADDING: 0, // Extra space around DOM elements for collision detection
+  DOM_COLLISION_THRESHOLD: 0.5, // Distance from DOM elements where collision starts
+  DOM_REPULSION_FORCE: 1.0, // Force strength pushing nodes away from DOM elements
 
   // Connections - Visual behavior of lines between nodes
   CONNECTION_LIFETIME_BASE: 8, // Base time (seconds) a connection stays visible
@@ -82,7 +82,7 @@ export const WORLD_CONFIG = {
 
 // Visual styling - Controls appearance of nodes, connections, and lighting
 export const VISUAL_CONFIG = {
-  NODE_RADIUS: 0.1, // Radius of node spheres in world units
+  NODE_RADIUS: 0.12, // Radius of node spheres in world units
   NODE_SEGMENTS: 8, // Number of segments for sphere geometry (higher = smoother but slower)
   NODE_OPACITY: 0.8, // Transparency of nodes (0 = invisible, 1 = opaque)
   NODE_EMISSIVE_INTENSITY: 0.4, // Strength of node glow effect
@@ -94,21 +94,21 @@ export const VISUAL_CONFIG = {
 // Performance configurations for different device types
 export const PERFORMANCE_CONFIGS = {
   low: {
-    NODE_COUNT: 12, // Minimal nodes for weak devices (phones, old computers)
-    CONNECTION_DISTANCE: 2, // Shorter connection range to reduce calculations
+    NODE_COUNT: 110, // Minimal nodes for weak devices (phones, old computers)
+    CONNECTION_DISTANCE: 8, // Shorter connection range to reduce calculations
     UPDATE_INTERVAL: 4, // Update every 4th frame (15fps) to save CPU
-    MAX_CONNECTIONS: 30, // Limit connections to reduce draw calls
+    MAX_CONNECTIONS: 75, // Limit connections to reduce draw calls
   },
   medium: {
-    NODE_COUNT: 180, // Moderate nodes for average devices (laptops, tablets)
-    CONNECTION_DISTANCE: 5, // Medium connection range
+    NODE_COUNT: 220, // Moderate nodes for average devices (laptops, tablets)
+    CONNECTION_DISTANCE: 10, // Medium connection range
     UPDATE_INTERVAL: 3, // Update every 3rd frame (20fps)
-    MAX_CONNECTIONS: 100, // More connections for richer visuals
+    MAX_CONNECTIONS: 150, // More connections for richer visuals
   },
   high: {
-    NODE_COUNT: 305, // Many nodes for powerful devices (gaming PCs, high-end laptops)
-    CONNECTION_DISTANCE: 6, // Long connection range for complex network
+    NODE_COUNT: 300, // Many nodes for powerful devices (gaming PCs, high-end laptops)
+    CONNECTION_DISTANCE: 13, // Long connection range for complex network
     UPDATE_INTERVAL: 1, // Update every frame (60fps) for smooth animation
-    MAX_CONNECTIONS: 40, // Controlled connections to maintain performance
+    MAX_CONNECTIONS: 200, // Controlled connections to maintain performance
   },
 } as const;
