@@ -240,7 +240,7 @@ export default function AboutPage() {
     <div className="max-w-4xl mx-auto px-6 py-12">
       {/* Hero Section */}
       <motion.section
-        className="mb-16"
+        className="pb-16"
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
@@ -272,7 +272,7 @@ export default function AboutPage() {
       {/* Skills Section */}
       <motion.section
         id="skills"
-        className="mb-16 -mx-6"
+        className="pb-16 -mx-6"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
@@ -330,14 +330,14 @@ export default function AboutPage() {
       {/* Experience Section with Timeline */}
       <motion.section
         id="experience"
-        className="mb-16 -mx-6"
+        className="pb-20 -mx-6 pt-16"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={staggerContainer}
       >
         <motion.h3
-          className="text-2xl font-semibold mb-8 px-6"
+          className="text-2xl font-semibold mt-8 px-6"
           variants={fadeInUp}
         >
           Work Experience
