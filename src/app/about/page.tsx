@@ -246,7 +246,7 @@ export default function AboutPage() {
           variants={fadeInUp}
         >
           Hello, I&apos;m{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Dimitri
           </span>
         </motion.h1>
@@ -257,11 +257,11 @@ export default function AboutPage() {
         >
           I guess you could call me a practical digital architect, building
           intuitive and elegant solutions to solve real world problems and
-          provide value. Excelling in unraveling problems, I craft
-          applications that are visually striking and transform raw
-          data into actionable insights. I like to think this blend of engineering
-          and data science intuition opens new possibilities, enhancing business
-          outcomes while creating meaningful user experiences.
+          provide value. Excelling in unraveling problems, I craft applications
+          that are visually striking and transform raw data into actionable
+          insights. I like to think this blend of engineering and data science
+          intuition opens new possibilities, enhancing business outcomes while
+          creating meaningful user experiences.
         </motion.p>
       </motion.section>
 
