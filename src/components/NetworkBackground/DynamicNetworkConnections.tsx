@@ -250,7 +250,7 @@ export function DynamicNetworkConnections({
       const nodeCount = nodeRefsArray.current.length;
 
       // Optimize for large node counts - use sampling strategy
-      const shouldUseSampling = nodeCount > 150;
+      const shouldUseSampling = false;
       const maxSearchPairs = shouldUseSampling
         ? MAX_CONNECTIONS * 8
         : (nodeCount * (nodeCount - 1)) / 2;
@@ -265,7 +265,7 @@ export function DynamicNetworkConnections({
 
       let searchCount = 0;
       const searchStep = shouldUseSampling
-        ? Math.max(1, Math.floor(nodeCount / 50))
+        ? Math.max(1, Math.floor(nodeCount / 100))
         : 1;
 
       // Find valid connections with optimized search
