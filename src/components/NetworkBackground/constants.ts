@@ -3,7 +3,7 @@ import { createTrigLookupTables } from "../../utils/3D";
 // Animation constants
 export const ANIMATION_CONFIG = {
   // Node movement - Controls how nodes drift organically through space
-  ORGANIC_MOVEMENT_SPEED: 1.0, // Speed multiplier for natural node movement (higher = faster drift)
+  ORGANIC_MOVEMENT_SPEED: 0.8, // Speed multiplier for natural node movement (higher = faster drift)
   ORGANIC_MOVEMENT_AMPLITUDE_X: 3.0, // Maximum drift distance on X-axis in world units
   ORGANIC_MOVEMENT_AMPLITUDE_Y: 3.0, // Maximum drift distance on Y-axis in world units
   ORGANIC_MOVEMENT_AMPLITUDE_Z: 5.0, // Maximum drift distance on Z-axis in world units
