@@ -231,11 +231,6 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
 }
 
 export default function AboutPage() {
-  const [_formData, _setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
   const [hoveredSkill, setHoveredSkill] = useState<SkillRecord | null>(null);
 
   // Fetch skills data using React Query
@@ -264,13 +259,13 @@ export default function AboutPage() {
           className="text-xl text-gray-600 leading-relaxed max-w-3xl"
           variants={fadeInUp}
         >
-          I guess you could call me a digital architect, 🏗️ building bridges
-          between complex data and elegant solutions. Excelling in unraveling
-          intricate problems, I craft applications that not only perform
-          flawlessly but also transform raw data into actionable insights. This
-          blend of engineering precision and data science intuition opens new
-          possibilities, enhancing business outcomes while creating meaningful
-          user experiences.
+          I guess you could call me a practical digital architect, building
+          intuitive and elegant solutions to solve real world problems and
+          provide value. Excelling in unraveling problems, I craft
+          applications that are visually striking and transform raw
+          data into actionable insights. I like to think this blend of engineering
+          and data science intuition opens new possibilities, enhancing business
+          outcomes while creating meaningful user experiences.
         </motion.p>
       </motion.section>
 
