@@ -101,14 +101,14 @@ export const PERFORMANCE_CONFIGS = {
   },
   medium: {
     NODE_COUNT: 220, // Moderate nodes for average devices (laptops, tablets)
-    CONNECTION_DISTANCE: 10, // Medium connection range
+    CONNECTION_DISTANCE: 8, // Medium connection range
     UPDATE_INTERVAL: 3, // Update every 3rd frame (20fps)
     MAX_CONNECTIONS: 150, // More connections for richer visuals
   },
   high: {
     NODE_COUNT: 300, // Many nodes for powerful devices (gaming PCs, high-end laptops)
-    CONNECTION_DISTANCE: 13, // Long connection range for complex network
-    UPDATE_INTERVAL: 1, // Update every frame (60fps) for smooth animation
+    CONNECTION_DISTANCE: 8, // Long connection range for complex network
+    UPDATE_INTERVAL: 2, // Update every frame (60fps) for smooth animation
     MAX_CONNECTIONS: 200, // Controlled connections to maintain performance
   },
 } as const;
