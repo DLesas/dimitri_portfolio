@@ -1,0 +1,47 @@
+import React from "react";
+
+interface LogoProps {
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+const Logo: React.FC<LogoProps> = ({
+  primaryColor = "hsl(var(--heroui-primary-500, 257 67% 50%))",
+  secondaryColor = "hsl(var(--heroui-secondary-500, 138 65% 50%))",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="50 100 300 200"
+    width="80"
+    height="50"
+    aria-label="Lesas Logo"
+    className="transition-opacity hover:opacity-80"
+  >
+    <defs>
+      <linearGradient
+        id="strokeGradient"
+        x1="60"
+        y1="200"
+        x2="260"
+        y2="200"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0%" style={{ stopColor: primaryColor }} />
+        <stop offset="100%" style={{ stopColor: secondaryColor }} />
+      </linearGradient>
+    </defs>
+    <g
+      stroke="url(#strokeGradient)"
+      strokeWidth="5.240"
+      fill="none"
+      transform="scale(1.2) translate(0, -20)"
+    >
+      <path
+        id="bult1"
+        d="M 60.000 200  c 9 0 33 0 30 -40 -10.5 -140 -20 55 -7 59 13 4 30 -15.9 30 -49 0 -4.2 -10 -35 -20 20 -6 33 -1.92 32.96 14.784 26.848 16.704 -6.112 18 -42.6 22 -46 10.8 -13.5 -12 -10 4 3 35.2 28.6 25 50 -5 45 m 27 -8 c 27 -8 30 -66 40 -30 -11 -38.5 -30 -20 -30 10 0 24 20 65 30 -30 -7 66.5 0 60 5 60 5 0 18 -47 22 -50 10.8 -13.5 -12 -10 4 3 35.2 28.6 25 50 -5 45"
+      ></path>
+    </g>
+  </svg>
+);
+
+export default Logo;

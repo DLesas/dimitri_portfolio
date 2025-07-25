@@ -3,13 +3,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
 import { ThemeSwitcher } from "./themeSwitcher";
 import { SettingsMenu } from "./settings/SettingsMenu";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 import { useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
+import Logo from "./Logo";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -33,14 +33,8 @@ export default function Navigation() {
       transition={{ duration: 0.6 }}
     >
       <div className="flex justify-between items-center p-6 max-w-6xl mx-auto">
-        <Link href="/" className="transition-opacity hover:opacity-80">
-          <Image
-            src="/dlLogo.png"
-            alt="DL Logo"
-            width={40}
-            height={40}
-            className="object-contain"
-          />
+        <Link href="/">
+          <Logo />
         </Link>
 
         {/* Desktop Navigation */}
