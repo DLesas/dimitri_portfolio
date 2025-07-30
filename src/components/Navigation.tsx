@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
 import Logo from "./Logo";
-import { FaCog } from "react-icons/fa";
+
 import HelperPopover from "./HelperPopover";
 
 export default function Navigation() {

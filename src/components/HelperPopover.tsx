@@ -4,7 +4,6 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-  Button,
   Checkbox,
 } from "@heroui/react";
 import { motion } from "framer-motion";
@@ -44,16 +43,16 @@ export default function HelperPopover({ duration = 6000, children }: Props) {
     return () => clearTimeout(timeoutId);
   }, [open, duration]);
 
-  const handleClose = () => {
-    if (dontShowAgain) {
-      localStorage.setItem("lesas-helper-opted-out", "true");
-    }
-    setOpen(false);
-  };
+  // const _handleClose = () => {
+  //   if (dontShowAgain) {
+  //     localStorage.setItem("lesas-helper-opted-out", "true");
+  //   }
+  //   setOpen(false);
+  // };
 
-  const handleDismiss = () => {
-    setOpen(false);
-  };
+  // const _handleDismiss = () => {
+  //   setOpen(false);
+  // };
 
   return (
     <Popover
@@ -79,7 +78,7 @@ export default function HelperPopover({ duration = 6000, children }: Props) {
               size="sm"
             >
               <span className="text-xs text-foreground-600">
-                Don't show this again
+                Don&apos;t show this again
               </span>
             </Checkbox>
           </div>
