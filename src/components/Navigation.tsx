@@ -10,6 +10,8 @@ import { useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
 import Logo from "./Logo";
+import { FaCog } from "react-icons/fa";
+import HelperPopover from "./HelperPopover";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -55,6 +57,10 @@ export default function Navigation() {
           <div className="flex items-center gap-2 ml-4">
             <ThemeSwitcher />
             <SettingsMenu />
+            <HelperPopover duration={6000}>
+              <div>
+              </div>
+            </HelperPopover>
           </div>
         </div>
 
