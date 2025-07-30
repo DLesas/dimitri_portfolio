@@ -95,20 +95,20 @@ export const VISUAL_CONFIG = {
 export const PERFORMANCE_CONFIGS = {
   low: {
     NODE_COUNT: 110, // Minimal nodes for weak devices (phones, old computers)
-    CONNECTION_DISTANCE: 8, // Shorter connection range to reduce calculations
-    UPDATE_INTERVAL: 4, // Update every 4th frame (15fps) to save CPU
-    MAX_CONNECTIONS: 75, // Limit connections to reduce draw calls
+    CONNECTION_DISTANCE: 5, // Shorter connection range to reduce calculations
+    UPDATE_INTERVAL: 6, // Update every 6th frame (10fps) to save CPU
+    MAX_CONNECTIONS: 50, // Limit connections to reduce draw calls
   },
   medium: {
-    NODE_COUNT: 220, // Moderate nodes for average devices (laptops, tablets)
-    CONNECTION_DISTANCE: 8, // Medium connection range
-    UPDATE_INTERVAL: 3, // Update every 3rd frame (20fps)
-    MAX_CONNECTIONS: 150, // More connections for richer visuals
+    NODE_COUNT: 150, // Moderate nodes for average devices (laptops, tablets)
+    CONNECTION_DISTANCE: 6, // Medium connection range
+    UPDATE_INTERVAL: 4, // Update every 3rd frame (20fps)
+    MAX_CONNECTIONS: 100, // More connections for richer visuals
   },
   high: {
-    NODE_COUNT: 300, // Many nodes for powerful devices (gaming PCs, high-end laptops)
+    NODE_COUNT: 200, // Many nodes for powerful devices (gaming PCs, high-end laptops)
     CONNECTION_DISTANCE: 8, // Long connection range for complex network
-    UPDATE_INTERVAL: 2, // Update every frame (60fps) for smooth animation
-    MAX_CONNECTIONS: 200, // Controlled connections to maintain performance
+    UPDATE_INTERVAL: 3, // Update every frame (60fps) for smooth animation
+    MAX_CONNECTIONS: 150, // Controlled connections to maintain performance
   },
 } as const;
