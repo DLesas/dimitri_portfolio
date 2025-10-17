@@ -102,7 +102,7 @@ File Metadata (e.g. Type (Transcript, Presentation, News...)</li>
                 </h3>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Unified codebase with shared types enables faster iteration for an early-stage team.</li>
-                  <li>Since the system relies on pre-trained LLM APIs, Python’s ML stack isn’t required, hence this sstem can be simplified to one language.</li>
+                  <li>Since the system relies on pre-trained LLM APIs, Python’s ML stack isn’t required, hence this system can be simplified to one language.</li>
                   <li>Simplifies infrastructure and makes it cheaper, one provider (Vercel) instead of Vercel + Railway.</li>
                   <li>Reduces onboarding complexity, developers only need to know one language.</li>
                 </ul>
