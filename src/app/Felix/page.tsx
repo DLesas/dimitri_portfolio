@@ -60,7 +60,7 @@ export default function FelixCaseStudyPage() {
             <div className="space-y-4 text-default-600 leading-relaxed">
               <p>
                 For this case study I decided to make a prototype (which can be accessed via the navbar on the left of the screen) as I found the problem interesting and fancied the challenge, however be aware this was done in 4
-                evenings as such there are some limitations (discussed below) and the ui might be occasionnaly janky/unfinished.
+                evenings as such there are some limitations (discussed below) and the ui might be occasionnaly janky/unfinished and generally look like it needs some work.
                 The prototype I have made is a document processing system built to demonstrate RAG (Retrieval Augmented Generation)
                 capabilities for analyzing financial documents. The system extracts structured data from PDFs, stores semantic
                 embeddings in PostgreSQL with pgvector, and enables natural language querying through a chat interface.
@@ -439,7 +439,7 @@ export async function processDocument(formData: FormData) {
                       </AccordionItem>
                     </Accordion>
                   </div>
-                  <li>In the extract document structure, we seperate the pdf into semantic sections i.e. sections that make sense to us humans, normally found by new titles. We additionally assign a sector to the company (if one doesnt already exist) based on the document. We provide the ai the previous sectors we have in our database as a hint. you can find the working example of this in the code below</li>
+                  <li>In the extract document structure, we seperate the pdf into semantic sections i.e. sections that make sense to us humans, normally found by new titles. We additionally assign a sector to the company (if one doesnt already exist) based on the document. We provide the ai the previous sectors we have in our database as a hint. You can find the working example of this in the code below</li>
                   <div className="my-4">
                     <Accordion variant="splitted" selectionMode="multiple">
                       <AccordionItem key="structure" title="Extract Document Structure">
