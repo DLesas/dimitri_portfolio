@@ -80,7 +80,7 @@ File Metadata (e.g. Type (Transcript, Presentation, News...)</li>
                 </ul>
               </div>
               <p>
-                Additionally you will find below that the stack I chosen is different from the one suggested in the case study prompt. After evaluating various options (such as a document/graph DB, because the data we are ingesting is semi-structured),
+                Additionally you will find below that the stack I chose is different from the one suggested in the case study prompt. After evaluating various options (such as a document/graph DB, because the data we are ingesting is semi-structured),
                 I decided to build it using a standard SQL database (PostgreSQL) with vector search capabilities (pgvector extension) whilst still allowing unstrutcuted data (via the JSONB postgres datatype). </p>
                 <p>I also concluded that python wasn't needed at least for the time being.</p>
                 <p>You will find more information about my choices below.</p>
@@ -314,7 +314,7 @@ Third-Party Qualitative (TPQL) Data (e.g. ratings changes, Macro environment, Po
                   User uploads a financial document (PDF) via the web interface
                 </h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>The document goes through 3 distinct phases (namely: extract document structure, extract all sections and finally generate sections embeddings). One point to pay attention too is we provide hint's to the ai but there is nothing stopping us from enforcing a set of options in the schema if we know the discrete categories we are looking for.</li>
+                  <li>The document goes through 3 distinct phases (namely: extract document structure, extract all sections and finally generate sections embeddings). One point to pay attention too is we provide hints to the ai but there is nothing stopping us from enforcing a set of options in the schema if we know the discrete categories we are looking for.</li>
                   <div className="my-4">
                     <Accordion variant="splitted" selectionMode="multiple">
                       <AccordionItem key="phases" title="Document Processing Phases">
@@ -784,7 +784,7 @@ export type SectionContent = z.infer<typeof sectionContentSchema>;`}
                       </AccordionItem>
                     </Accordion>
                   </div>
-                  <li>The final action we do is generate sections embeddings, this is what allows us to allow user's to 'chat' with our documents via RAG. To do this we grab the text the ai grabbed from the sections and produce embeddings, as shown below.</li>
+                  <li>The final action we do is generate sections embeddings, this is what allows us to allow users to 'chat' with our documents via RAG. To do this we grab the text the ai grabbed from the sections and produce embeddings, as shown below.</li>
                   <div className="my-4">
                     <Accordion variant="splitted" selectionMode="multiple">
                       <AccordionItem key="embeddings" title="Generate Section Embeddings">
