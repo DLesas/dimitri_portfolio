@@ -48,7 +48,7 @@ export default function FelixCaseStudyPage() {
 
         {/* Page Title */}
         <motion.div variants={fadeInUp} className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-2">FelixOne Case Study</h1>
+          <h1 className="text-5xl font-bold mb-2">FelixResearch Case Study</h1>
           <div className="h-1 w-48 mx-auto bg-gradient-to-r from-secondary to-primary rounded-full"></div>
         </motion.div>
 
@@ -286,7 +286,7 @@ CREATE INDEX IF NOT EXISTS idx_chunks_quantitative_gin
         <motion.div variants={fadeInUp} className="space-y-8">
           <div>
             <div className="py-6">
-              <h2 className="text-2xl font-semibold underline">Limittations</h2>
+              <h2 className="text-2xl font-semibold underline">Limitations</h2>
             </div>
             <div className="space-y-6 text-default-600 leading-relaxed">
               <div>
