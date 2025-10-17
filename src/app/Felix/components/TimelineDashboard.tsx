@@ -191,36 +191,36 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
 
                   {/* Layer-specific details */}
                   {selectedPoint.timeBasedData && (
-                    <div className="bg-primary-50 p-3 rounded-lg">
-                      <h4 className="text-sm font-semibold text-primary-700 mb-2">Time-Based Details</h4>
-                      <div className="space-y-1 text-sm">
+                    <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-200 dark:border-primary-800">
+                      <h4 className="text-sm font-semibold text-primary-700 dark:text-primary-400 mb-2">Time-Based Details</h4>
+                      <div className="space-y-1 text-sm text-primary-900 dark:text-primary-100">
                         <p><span className="font-medium">Event Type:</span> {selectedPoint.timeBasedData.eventType}</p>
                         {selectedPoint.timeBasedData.text && (
-                          <p className="text-xs text-default-600 mt-2 italic">&ldquo;{selectedPoint.timeBasedData.text}&rdquo;</p>
+                          <p className="text-xs text-primary-700 dark:text-primary-300 mt-2 italic">&ldquo;{selectedPoint.timeBasedData.text}&rdquo;</p>
                         )}
                       </div>
                     </div>
                   )}
 
                   {selectedPoint.qualitativeData && (
-                    <div className="bg-success-50 p-3 rounded-lg">
-                      <h4 className="text-sm font-semibold text-success-700 mb-2">Qualitative Details</h4>
-                      <div className="space-y-1 text-sm">
+                    <div className="bg-success-50 dark:bg-success-900/20 p-3 rounded-lg border border-success-200 dark:border-success-800">
+                      <h4 className="text-sm font-semibold text-success-700 dark:text-success-400 mb-2">Qualitative Details</h4>
+                      <div className="space-y-1 text-sm text-success-900 dark:text-success-100">
                         <p><span className="font-medium">Topic:</span> {selectedPoint.qualitativeData.topic}</p>
                         {selectedPoint.qualitativeData.sentiment && (
                           <p><span className="font-medium">Sentiment:</span> {selectedPoint.qualitativeData.sentiment}</p>
                         )}
                         {selectedPoint.qualitativeData.text && (
-                          <p className="text-xs text-default-600 mt-2 italic">&ldquo;{selectedPoint.qualitativeData.text}&rdquo;</p>
+                          <p className="text-xs text-success-700 dark:text-success-300 mt-2 italic">&ldquo;{selectedPoint.qualitativeData.text}&rdquo;</p>
                         )}
                       </div>
                     </div>
                   )}
 
                   {selectedPoint.quantitativeData && (
-                    <div className="bg-warning-50 p-3 rounded-lg">
-                      <h4 className="text-sm font-semibold text-warning-700 mb-2">Quantitative Details</h4>
-                      <div className="space-y-1 text-sm">
+                    <div className="bg-warning-50 dark:bg-warning-900/20 p-3 rounded-lg border border-warning-200 dark:border-warning-800">
+                      <h4 className="text-sm font-semibold text-warning-700 dark:text-warning-400 mb-2">Quantitative Details</h4>
+                      <div className="space-y-1 text-sm text-warning-900 dark:text-warning-100">
                         <p><span className="font-medium">Metric:</span> {selectedPoint.quantitativeData.metricName}</p>
                         <p><span className="font-medium">Value:</span> {selectedPoint.quantitativeData.value} {selectedPoint.quantitativeData.unit}</p>
                         {selectedPoint.quantitativeData.period && (

@@ -171,42 +171,48 @@ export default function UploadDocumentModal({ isOpen, onClose, onSuccess }: Uplo
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
                     className={`border-2 rounded-lg p-4 ${
-                      result.success ? 'border-success bg-success-50' : 'border-danger bg-danger-50'
+                      result.success
+                        ? 'border-success bg-success-50 dark:bg-success-900/20 dark:border-success-800'
+                        : 'border-danger bg-danger-50 dark:bg-danger-900/20 dark:border-danger-800'
                     }`}
                   >
-                    <h3 className="text-lg font-semibold mb-3">
+                    <h3 className={`text-lg font-semibold mb-3 ${
+                      result.success
+                        ? 'text-success-900 dark:text-success-100'
+                        : 'text-danger-900 dark:text-danger-100'
+                    }`}>
                       {result.success ? 'Success!' : 'Error'}
                     </h3>
                     {result.success ? (
                       <div className="space-y-3">
-                        <p className="text-default-700">Document processed successfully!</p>
+                        <p className="text-success-800 dark:text-success-200">Document processed successfully!</p>
                         <div className="grid grid-cols-2 gap-3">
                           {result.company && (
-                            <div className="bg-white p-3 rounded-lg">
+                            <div className="bg-white dark:bg-default-100 p-3 rounded-lg">
                               <p className="text-xs text-default-500">Company</p>
-                              <p className="font-semibold mt-1">{result.company}</p>
+                              <p className="font-semibold mt-1 text-foreground">{result.company}</p>
                             </div>
                           )}
                           {result.documentTitle && (
-                            <div className="bg-white p-3 rounded-lg">
+                            <div className="bg-white dark:bg-default-100 p-3 rounded-lg">
                               <p className="text-xs text-default-500">Document</p>
-                              <p className="font-semibold mt-1 text-sm">{result.documentTitle}</p>
+                              <p className="font-semibold mt-1 text-sm text-foreground">{result.documentTitle}</p>
                             </div>
                           )}
-                          <div className="bg-white p-3 rounded-lg">
+                          <div className="bg-white dark:bg-default-100 p-3 rounded-lg">
                             <p className="text-xs text-default-500">Sections Found</p>
-                            <p className="text-xl font-bold mt-1">{result.sections}</p>
+                            <p className="text-xl font-bold mt-1 text-foreground">{result.sections}</p>
                           </div>
-                          <div className="bg-white p-3 rounded-lg">
+                          <div className="bg-white dark:bg-default-100 p-3 rounded-lg">
                             <p className="text-xs text-default-500">Total Chunks</p>
-                            <p className="text-xl font-bold mt-1">{result.totalChunks}</p>
+                            <p className="text-xl font-bold mt-1 text-foreground">{result.totalChunks}</p>
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <p className="text-danger-700 font-medium">Failed to process document</p>
-                        <p className="text-sm text-default-700 font-mono bg-white p-3 rounded">
+                        <p className="text-danger-700 dark:text-danger-300 font-medium">Failed to process document</p>
+                        <p className="text-sm text-danger-900 dark:text-danger-100 font-mono bg-white dark:bg-default-100 p-3 rounded border border-danger-200 dark:border-danger-800">
                           {result.error}
                         </p>
                       </div>
