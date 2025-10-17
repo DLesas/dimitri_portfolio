@@ -66,7 +66,6 @@ export default function BlogPage() {
             I&apos;m working on something exciting! My blog will feature
             in-depth articles about web development, AI, performance
             optimization, and insights from my journey as a full-stack engineer.
-            Stay tuned for quality content that helps you level up your skills.
           </motion.p>
 
           <motion.div
