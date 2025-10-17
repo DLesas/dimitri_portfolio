@@ -94,7 +94,6 @@ export default function DemoPage() {
                     <li>View extracted data across time</li>
                     <li>Filter by data layers (TB, PAQL, PAQN)</li>
                     <li>Click points for detailed information</li>
-                    <li>Compare across different companies</li>
                   </ul>
                 </div>
                 <div>
@@ -103,7 +102,6 @@ export default function DemoPage() {
                     <li>Ask questions about uploaded documents</li>
                     <li>RAG-powered responses with citations</li>
                     <li>Context-aware answers from embeddings</li>
-                    <li>Switch between companies seamlessly</li>
                   </ul>
                 </div>
                 <div>

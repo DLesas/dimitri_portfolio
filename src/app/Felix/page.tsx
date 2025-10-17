@@ -102,7 +102,7 @@ File Metadata (e.g. Type (Transcript, Presentation, News...)</li>
                 </h3>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Unified codebase with shared types enables faster iteration for an early-stage team.</li>
-                  <li>Since the system relies on pre-trained LLM APIs, Python’s ML stack isn’t required and can be simplified to one language.</li>
+                  <li>Since the system relies on pre-trained LLM APIs, Python’s ML stack isn’t required, hence this sstem can be simplified to one language.</li>
                   <li>Simplifies infrastructure and makes it cheaper, one provider (Vercel) instead of Vercel + Railway.</li>
                   <li>Reduces onboarding complexity, developers only need to know one language.</li>
                 </ul>
@@ -292,9 +292,9 @@ CREATE INDEX IF NOT EXISTS idx_chunks_quantitative_gin
               <div>
                 <ul className="list-disc list-inside space-y-1">
                   <li>This system relies on business' in the same sector reporting on similar metrics (We hint to the A.I. model of the past metrics recorded for the sector to keep data consistent. This is how I address the  Competitor Qualitative (CQL) layer).</li>
-                  <li>My prototype doesnt address the Third-Party Quantitative (TPQN) layer, however this information is readily available via api's as such it would be trivial to add. The database would have a new table that we join to the others layers via the date property and other properties when needed (e.g. the sector property in terms of news)</li>
+                  <li>My prototype doesnt address the Third-Party Quantitative (TPQN) layer, however this information is readily available via api's as such it would be trivial to add. The database would have a new table that we join to the other layers via the date property and other properties when needed (e.g. the sector property in terms of news)</li>
                   <li>Similarly my prototype doesn't address 
-Third-Party Qualitative (TPQL) Data (e.g. ratings changes, Macro environment, Political...) layer but this could be address via an api integration (same as above) or by creating web scraper that runs on a schedule on news websites and gather these metrics.</li>
+Third-Party Qualitative (TPQL) Data (e.g. ratings changes, Macro environment, Political...) layer but this could be addressed via an api integration (same as above) or by creating web scrapers that run on a schedule on news websites and gather these metrics.</li>
                   <li>This relies heavily on the ai models reasoning however you will see that we have a lot of levers to play with to control this (e.g. schema we enforce the model to reply in, changing the model we choose entirely etc...)</li>
                 </ul>
               </div>
@@ -439,7 +439,7 @@ export async function processDocument(formData: FormData) {
                       </AccordionItem>
                     </Accordion>
                   </div>
-                  <li>In the extract document structure, we seperate the pdf into semantic sections i.e. sections that make sense to us humans, normally found by new titles. We additionally assign a sector to the company (if one doesnt already exist) based on the document. we provide the ai the previous sectors we have in our database as a hint. you can find the working of this in the code below</li>
+                  <li>In the extract document structure, we seperate the pdf into semantic sections i.e. sections that make sense to us humans, normally found by new titles. We additionally assign a sector to the company (if one doesnt already exist) based on the document. We provide the ai the previous sectors we have in our database as a hint. you can find the working example of this in the code below</li>
                   <div className="my-4">
                     <Accordion variant="splitted" selectionMode="multiple">
                       <AccordionItem key="structure" title="Extract Document Structure">
