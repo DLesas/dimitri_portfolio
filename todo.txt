@@ -1,4 +1,3 @@
 - default performance settings for network background need to be updated
-- logo needs to be updated
 - in about, the work experience header is too far from the actual work experience
 - look over skills and update them and also get all their icons
