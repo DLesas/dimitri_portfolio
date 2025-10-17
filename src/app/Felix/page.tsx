@@ -1154,7 +1154,7 @@ Now answer the user's question based ONLY on the above context.\`;
       <ul className="list-disc list-inside text-default-600 ml-4">
         <li>Founding Engineer</li>
         <li>Full-Stack Developer</li>
-        <li>QA / Product Tester</li>
+        <li>QA / Product Tester (possibliy part-time)</li>
       </ul>
     </div>
   </section>
