@@ -82,49 +82,6 @@ export default function DemoPage() {
               />
             </div>
           </div>
-
-          {/* Info Card */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">About this Dashboard</h3>
-              <div className="grid md:grid-cols-2 gap-6 text-sm text-default-600">
-                <div>
-                  <h4 className="font-semibold text-default-900 mb-2">Timeline Visualization</h4>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>View extracted data across time</li>
-                    <li>Filter by data layers (TB, PAQL, PAQN)</li>
-                    <li>Click points for detailed information</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-default-900 mb-2">Document Chat</h4>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>Ask questions about uploaded documents</li>
-                    <li>RAG-powered responses with citations</li>
-                    <li>Context-aware answers from embeddings</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-default-900 mb-2">Data Layers</h4>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li><strong>TB:</strong> Time-Based events and timelines</li>
-                    <li><strong>PAQL:</strong> Qualitative business information</li>
-                    <li><strong>PAQN:</strong> Quantitative financial metrics</li>
-                    <li><strong>Document:</strong> Document placement markers</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-default-900 mb-2">Document Processing</h4>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>AI-powered PDF structure extraction</li>
-                    <li>Semantic section identification</li>
-                    <li>Automatic metric extraction</li>
-                    <li>Vector embeddings for search</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </Card>
         </motion.div>
       </div>
 
