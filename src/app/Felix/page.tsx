@@ -1008,6 +1008,157 @@ Now answer the user's question based ONLY on the above context.\`;
             </div>
           </div>
         </motion.div>
+        <motion.div
+  variants={fadeInUp}
+  className="space-y-12 leading-relaxed pt-4"
+>
+  <div>
+    <h2 className="text-2xl font-semibold underline">
+      Project Plan
+    </h2>
+  </div>
+
+  {/* Stage 1 */}
+  <section className="space-y-4">
+    <h3 className="text-xl font-semibold text-default-900">
+      Stage 1: Foundations & MVP
+    </h3>
+    <p className="text-default-700">
+      <span className="font-medium">Goal:</span> Enable upload, processing, and viewing of extracted info for a small subset of formats.
+    </p>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Key Deliverables</h4>
+      <ul className="list-disc list-inside text-default-600 space-y-1 ml-4">
+        <li>File upload and storage working</li>
+        <li>Backend service parses text from uploaded documents</li>
+        <li>Basic extraction pipeline (metadata + time-based + 1–2 info layers)</li>
+        <li>Internal testing only</li>
+      </ul>
+    </div>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Roles Needed</h4>
+      <ul className="list-disc list-inside text-default-600 ml-4">
+        <li>Founding Engineer</li>
+      </ul>
+    </div>
+  </section>
+
+  {/* Stage 2 */}
+  <section className="space-y-4">
+    <h3 className="text-xl font-semibold text-default-900">
+      Stage 2: AI Workflow Expansion
+    </h3>
+    <p className="text-default-700">
+      <span className="font-medium">Goal:</span> Scale information extraction quality and context depth.
+    </p>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Key Deliverables</h4>
+      <ul className="list-disc list-inside text-default-600 space-y-1 ml-4">
+        <li>Add all data “layers”</li>
+        <li>Improve accuracy via prompt chaining or function-calling</li>
+        <li>Expand file format support (e.g. images)</li>
+        <li>Frontend remains somewhat experimental</li>
+      </ul>
+    </div>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Roles Needed</h4>
+      <ul className="list-disc list-inside text-default-600 ml-4">
+        <li>Founding Engineer</li>
+      </ul>
+    </div>
+  </section>
+
+  {/* Stage 3 */}
+  <section className="space-y-4">
+    <h3 className="text-xl font-semibold text-default-900">
+      Stage 3: Contextual Enrichment & Real-Time Data
+    </h3>
+    <p className="text-default-700">
+      <span className="font-medium">Goal:</span> Connect extracted data to live market or news signals.
+    </p>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Key Deliverables</h4>
+      <ul className="list-disc list-inside text-default-600 space-y-1 ml-4">
+        <li>Integrate external APIs (financial data providers)</li>
+        <li>Real-time enrichment: attach external info to extracted timeline entities</li>
+        <li>Introduce background job scheduler or queue system</li>
+        <li>Start implementing roles and authorization in the backend</li>
+        <li>Frontend starts taking shape and has a general theme</li>
+      </ul>
+    </div>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Roles Needed</h4>
+      <ul className="list-disc list-inside text-default-600 ml-4">
+        <li>Founding Engineer</li>
+        <li>Full-Stack Developer</li>
+      </ul>
+    </div>
+  </section>
+
+  {/* Stage 4 */}
+  <section className="space-y-4">
+    <h3 className="text-xl font-semibold text-default-900">
+      Stage 4: UX Polish & Launch Prep
+    </h3>
+    <p className="text-default-700">
+      <span className="font-medium">Goal:</span> Productionize and harden the system.
+    </p>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Key Deliverables</h4>
+      <ul className="list-disc list-inside text-default-600 space-y-1 ml-4">
+        <li>Error handling, retries, user feedback in UI</li>
+        <li>Fully implemented Auth, access control, and multi-project support</li>
+        <li>User testing + initial beta</li>
+        <li>Ui close to finished and is easy to use</li>
+      </ul>
+    </div>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Roles Needed</h4>
+      <ul className="list-disc list-inside text-default-600 ml-4">
+        <li>Founding Engineer</li>
+        <li>Full-Stack Developer</li>
+        <li>QA / Product Tester</li>
+      </ul>
+    </div>
+  </section>
+
+  {/* Stage 5 */}
+  <section className="space-y-4">
+    <h3 className="text-xl font-semibold text-default-900">
+      Stage 5:  Scaling & AI Optimization
+    </h3>
+    <p className="text-default-700">
+      <span className="font-medium">Goal:</span> Optimize performance, monitoring, and AI reliability.
+    </p>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Key Deliverables</h4>
+      <ul className="list-disc list-inside text-default-600 space-y-1 ml-4">
+        <li>Fine-tuned models or caching layer for repeat queries</li>
+        <li>Implement full monitoring, logging, and analytics</li>
+        <li>UI fully finished</li>
+      </ul>
+    </div>
+
+    <div className="space-y-2">
+      <h4 className="text-lg font-medium text-default-800">Roles Needed</h4>
+      <ul className="list-disc list-inside text-default-600 ml-4">
+        <li>Founding Engineer</li>
+        <li>Full-Stack Developer</li>
+        <li>QA / Product Tester</li>
+      </ul>
+    </div>
+  </section>
+</motion.div>
+
       </motion.section>
     </div>
   );
