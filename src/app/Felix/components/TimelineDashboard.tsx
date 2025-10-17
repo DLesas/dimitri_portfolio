@@ -195,7 +195,6 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
                       <h4 className="text-sm font-semibold text-primary-700 mb-2">Time-Based Details</h4>
                       <div className="space-y-1 text-sm">
                         <p><span className="font-medium">Event Type:</span> {selectedPoint.timeBasedData.eventType}</p>
-                        <p><span className="font-medium">Confidence:</span> {selectedPoint.timeBasedData.confidence}</p>
                         {selectedPoint.timeBasedData.text && (
                           <p className="text-xs text-default-600 mt-2 italic">&ldquo;{selectedPoint.timeBasedData.text}&rdquo;</p>
                         )}
@@ -211,7 +210,6 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
                         {selectedPoint.qualitativeData.sentiment && (
                           <p><span className="font-medium">Sentiment:</span> {selectedPoint.qualitativeData.sentiment}</p>
                         )}
-                        <p><span className="font-medium">Confidence:</span> {selectedPoint.qualitativeData.confidence}</p>
                         {selectedPoint.qualitativeData.text && (
                           <p className="text-xs text-default-600 mt-2 italic">&ldquo;{selectedPoint.qualitativeData.text}&rdquo;</p>
                         )}
@@ -227,13 +225,6 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
                         <p><span className="font-medium">Value:</span> {selectedPoint.quantitativeData.value} {selectedPoint.quantitativeData.unit}</p>
                         {selectedPoint.quantitativeData.period && (
                           <p><span className="font-medium">Period:</span> {selectedPoint.quantitativeData.period}</p>
-                        )}
-                        {selectedPoint.quantitativeData.changeFromPrevious && (
-                          <p>
-                            <span className="font-medium">Change:</span>{' '}
-                            {selectedPoint.quantitativeData.changeFromPrevious.direction === 'increase' ? '↑' : '↓'}{' '}
-                            {selectedPoint.quantitativeData.changeFromPrevious.value} {selectedPoint.quantitativeData.changeFromPrevious.unit}
-                          </p>
                         )}
                       </div>
                     </div>
