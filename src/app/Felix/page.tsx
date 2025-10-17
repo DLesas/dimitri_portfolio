@@ -1088,6 +1088,7 @@ Now answer the user's question based ONLY on the above context.\`;
         <li>Real-time enrichment: attach external info to extracted timeline entities</li>
         <li>Introduce background job scheduler or queue system</li>
         <li>Start implementing roles and authorization in the backend</li>
+        <li>Early trusted alpha testers start giving feedback</li>
         <li>Frontend starts taking shape and has a general theme</li>
       </ul>
     </div>
