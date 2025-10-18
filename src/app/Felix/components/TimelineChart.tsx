@@ -5,19 +5,13 @@ import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContaine
 import { Card, Chip } from '@heroui/react';
 import type { TimelineDataPoint, DataLayer } from '../types/timeline';
 import { formatDate } from '../lib/utils/date-parser';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface TimelineChartProps {
   dataPoints: TimelineDataPoint[];
   onPointClick?: (point: TimelineDataPoint) => void;
   className?: string;
 }
-
-const LAYER_COLORS: Record<DataLayer, string> = {
-  TB: '#3b82f6', // blue
-  PAQL: '#10b981', // green
-  PAQN: '#f59e0b', // amber
-  DOCUMENT: '#8b5cf6', // purple
-};
 
 const LAYER_NAMES: Record<DataLayer, string> = {
   TB: 'Time-Based',
@@ -38,6 +32,16 @@ interface ChartDataPoint {
 }
 
 export default function TimelineChart({ dataPoints, onPointClick, className }: TimelineChartProps) {
+  const { colors } = useTheme();
+
+  // Dynamic layer colors based on theme
+  const LAYER_COLORS = useMemo(() => ({
+    TB: colors.primary.shades[500].hex,
+    PAQL: colors.accent.shades[500].hex,
+    PAQN: colors.secondary.shades[600].hex,
+    DOCUMENT: colors.secondary.shades[400].hex,
+  }), [colors]);
+
   // Transform data for Recharts
   const chartData = useMemo(() => {
     // Map layers to Y positions
