@@ -118,7 +118,7 @@ export default function FelixNav() {
         transition={{ delay: 0.2 }}
         className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden"
       >
-        <div className="bg-background/70 backdrop-blur-lg border-t border-default-200 shadow-lg">
+        <div className="bg-background/50 backdrop-blur-md border-t border-default-200 shadow-lg">
           <div className="max-w-screen-sm mx-auto px-2 pb-safe">
             <div className="flex items-center justify-around gap-1 py-2">
               {/* Case Study Button */}
