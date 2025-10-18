@@ -9,7 +9,9 @@ export default function FelixLayout({
   return (
     <FelixAuthGate>
       <FelixNav />
-      {children}
+      <div className="pb-16 lg:pb-0">
+        {children}
+      </div>
     </FelixAuthGate>
   );
 }
