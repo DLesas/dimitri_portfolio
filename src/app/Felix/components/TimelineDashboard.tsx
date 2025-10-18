@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, Chip, Select, SelectItem, Button, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Divider } from '@heroui/react';
 import TimelineChart from './TimelineChart';
 import { fetchTimelineData } from '../actions/fetch-timeline-data';
 import { fetchAvailableCompanies } from '../actions/fetch-companies';
 import type { TimelineData, TimelineDataPoint, DataLayer } from '../types/timeline';
 import { formatDate, formatDateRange } from '../lib/utils/date-parser';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type Company = {
   companyId: string;
@@ -45,6 +46,16 @@ const LAYER_CONFIG: Record<DataLayer, { name: string; color: string; description
 };
 
 export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, className }: TimelineDashboardProps) {
+  const { colors } = useTheme();
+
+  // Dynamic layer colors based on theme - matches TimelineChart
+  const LAYER_COLORS = useMemo(() => ({
+    TB: colors.primary.shades[500].hex,
+    PAQL: colors.accent.shades[500].hex,
+    PAQN: colors.secondary.shades[600].hex,
+    DOCUMENT: colors.secondary.shades[400].hex,
+  }), [colors]);
+
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(defaultCompanyId || '');
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
@@ -301,9 +312,9 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
                   return (
                     <Chip
                       key={layer}
-                      color={isActive ? (config.color as 'primary' | 'success' | 'warning' | 'secondary') : 'default'}
                       variant={isActive ? 'solid' : 'bordered'}
                       className="cursor-pointer"
+                      style={isActive ? { backgroundColor: LAYER_COLORS[layer], color: 'white' } : undefined}
                       onClick={() => toggleLayer(layer)}
                     >
                       {config.name}
