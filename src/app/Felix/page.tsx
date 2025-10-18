@@ -59,7 +59,7 @@ export default function FelixCaseStudyPage() {
             </div>
             <div className="space-y-4 text-default-600 leading-relaxed">
               <p>
-                For this case study I decided to make a prototype (which can be accessed via the navbar on the left of the screen) as I found the problem interesting and fancied the challenge, however be aware this was done in 4
+                For this case study I decided to make a prototype (which can be accessed via the floating navbar) as I found the problem interesting and fancied the challenge, however be aware this was done in 4
                 evenings as such there are some limitations (discussed below) and the ui might be occasionnaly janky/unfinished and generally look like it needs some work.
                 The prototype I have made is a document processing system built to demonstrate RAG (Retrieval Augmented Generation)
                 capabilities for analyzing financial documents. The system extracts structured data from PDFs, stores semantic
