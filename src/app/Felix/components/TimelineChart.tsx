@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Card, Chip, Popover, PopoverTrigger, PopoverContent } from '@heroui/react';
+import { Card, Chip } from '@heroui/react';
 import type { TimelineDataPoint, DataLayer } from '../types/timeline';
 import { formatDate } from '../lib/utils/date-parser';
 
@@ -61,9 +61,9 @@ export default function TimelineChart({ dataPoints, onPointClick, className }: T
   }, [dataPoints]);
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: ChartDataPoint }[] }) => {
     if (active && payload && payload.length > 0) {
-      const data = payload[0].payload as ChartDataPoint;
+      const data = payload[0].payload;
       return (
         <Card className="p-3 shadow-lg max-w-xs">
           <div className="space-y-2">

@@ -82,7 +82,7 @@ File Metadata (e.g. Type (Transcript, Presentation, News...)</li>
               <p>
                 Additionally you will find below that the stack I chose is different from the one suggested in the case study prompt. After evaluating various options (such as a document/graph DB, because the data we are ingesting is semi-structured),
                 I decided to build it using a standard SQL database (PostgreSQL) with vector search capabilities (pgvector extension) whilst still allowing unstructured data (via the JSONB postgres datatype). </p>
-                <p>I also concluded that python wasn't needed at least for the time being.</p>
+                <p>I also concluded that python wasn&apos;t needed at least for the time being.</p>
                 <p>You will find more information about my choices below.</p>
             </div>
           </div>
@@ -291,9 +291,9 @@ CREATE INDEX IF NOT EXISTS idx_chunks_quantitative_gin
             <div className="space-y-6 text-default-600 leading-relaxed">
               <div>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>This system relies on business' in the same sector reporting on similar metrics (We hint to the A.I. model of the past metrics recorded in the sector to keep data consistent. This is how I address the  Competitor Qualitative (CQL) layer).</li>
-                  <li>My prototype doesnt address the Third-Party Quantitative (TPQN) layer, however this information is readily available via api's as such it would be trivial to add. The database would have a new table that we join to the other layers via the date property and other properties when needed (e.g. the sector property in terms of news)</li>
-                  <li>Similarly my prototype doesn't address 
+                  <li>This system relies on business&apos; in the same sector reporting on similar metrics (We hint to the A.I. model of the past metrics recorded in the sector to keep data consistent. This is how I address the  Competitor Qualitative (CQL) layer).</li>
+                  <li>My prototype doesnt address the Third-Party Quantitative (TPQN) layer, however this information is readily available via api&apos;s as such it would be trivial to add. The database would have a new table that we join to the other layers via the date property and other properties when needed (e.g. the sector property in terms of news)</li>
+                  <li>Similarly my prototype doesn&apos;t address 
 Third-Party Qualitative (TPQL) Data (e.g. ratings changes, Macro environment, Political...) layer but this could be addressed via an api integration (same as above) or by creating web scrapers that run on a schedule on news websites and gather these metrics.</li>
                   <li>The whole systems relies heavily on the ai models reasoning however you will see that we have a lot of levers to play with to control this (e.g. schema we enforce the model to reply in, changing the model we choose entirely etc...)</li>
                 </ul>
@@ -784,7 +784,7 @@ export type SectionContent = z.infer<typeof sectionContentSchema>;`}
                       </AccordionItem>
                     </Accordion>
                   </div>
-                  <li>The final action we do is generate sections embeddings, this is what allows us to allow users to 'chat' with our documents via RAG. To do this we grab the text the ai grabbed from the sections and produce embeddings, as shown below.</li>
+                  <li>The final action we do is generate sections embeddings, this is what allows us to allow users to &apos;chat&apos; with our documents via RAG. To do this we grab the text the ai grabbed from the sections and produce embeddings, as shown below.</li>
                   <div className="my-4">
                     <Accordion variant="splitted" selectionMode="multiple">
                       <AccordionItem key="embeddings" title="Generate Section Embeddings">

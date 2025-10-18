@@ -52,8 +52,8 @@ export async function POST(req: Request) {
     } else if (Array.isArray(lastUserMessage.content)) {
       // Extract text from content parts: { type: 'text', text: 'heelllo' }
       queryText = lastUserMessage.content
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
+        .filter((part: { type: string; text?: string }) => part.type === 'text')
+        .map((part: { type: string; text?: string }) => part.text || '')
         .join(' ');
     }
 

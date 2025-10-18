@@ -155,7 +155,7 @@ async function getExistingPatternsForSector(sector: string): Promise<{
     result.forEach(row => {
       // Time-Based (TB) event types
       if (Array.isArray(row.timeBasedInfo)) {
-        row.timeBasedInfo.forEach((info: any) => {
+        row.timeBasedInfo.forEach((info: { eventType?: string }) => {
           if (info.eventType) {
             timeBasedEventTypes.add(info.eventType);
           }
@@ -164,7 +164,7 @@ async function getExistingPatternsForSector(sector: string): Promise<{
 
       // Qualitative (PAQL) topics
       if (Array.isArray(row.qualitativeInfo)) {
-        row.qualitativeInfo.forEach((info: any) => {
+        row.qualitativeInfo.forEach((info: { topic?: string }) => {
           if (info.topic) {
             qualitativeTopics.add(info.topic);
           }
@@ -173,7 +173,7 @@ async function getExistingPatternsForSector(sector: string): Promise<{
 
       // Quantitative (PAQN) metric names
       if (Array.isArray(row.quantitativeData)) {
-        row.quantitativeData.forEach((data: any) => {
+        row.quantitativeData.forEach((data: { metricName?: string }) => {
           if (data.metricName) {
             quantitativeMetricNames.add(data.metricName);
           }

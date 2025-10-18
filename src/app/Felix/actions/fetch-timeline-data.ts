@@ -2,14 +2,13 @@
 
 import { db } from '@/db';
 import { companies, documents, documentChunks } from '@/db/schema';
-import { eq, and, gte, lte, sql, isNotNull } from 'drizzle-orm';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { parseFlexibleDate, getDateRange } from '../lib/utils/date-parser';
 import type {
   FetchTimelineDataOptions,
   FetchTimelineDataResult,
   TimelineDocument,
   TimelineDataPoint,
-  DataLayer
 } from '../types/timeline';
 import { checkAuth } from '../actions';
 

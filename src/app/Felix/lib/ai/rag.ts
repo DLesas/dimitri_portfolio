@@ -160,27 +160,24 @@ export function formatContextForLLM(
       // Time-Based (TB) Information
       if (chunk.timeBasedInfo && chunk.timeBasedInfo.length > 0) {
         extractedInfo.push('Time-Based Information:');
-        chunk.timeBasedInfo.forEach((info: any) => {
-          extractedInfo.push(`- [TB] ${info.description} (${info.eventType}, ${info.expectedDate || 'TBD'}) - Confidence: ${info.confidence}`);
+        chunk.timeBasedInfo.forEach((info: { description?: string; eventType?: string; expectedDate?: string | null }) => {
+          extractedInfo.push(`- [TB] ${info.description || 'N/A'} (${info.eventType || 'N/A'}, ${info.expectedDate || 'TBD'})`);
         });
       }
 
       // Primary Asset Qualitative (PAQL) Information
       if (chunk.qualitativeInfo && chunk.qualitativeInfo.length > 0) {
         extractedInfo.push('Qualitative Information:');
-        chunk.qualitativeInfo.forEach((info: any) => {
-          extractedInfo.push(`- [PAQL] ${info.context} (${info.topic}) - Confidence: ${info.confidence}`);
+        chunk.qualitativeInfo.forEach((info: { context?: string; topic?: string }) => {
+          extractedInfo.push(`- [PAQL] ${info.context || 'N/A'} (${info.topic || 'N/A'})`);
         });
       }
 
       // Primary Asset Quantitative (PAQN) Information
       if (chunk.quantitativeData && chunk.quantitativeData.length > 0) {
         extractedInfo.push('Quantitative Data:');
-        chunk.quantitativeData.forEach((data: any) => {
-          const change = data.changeFromPrevious
-            ? ` (${data.changeFromPrevious.direction} ${data.changeFromPrevious.value} ${data.changeFromPrevious.unit})`
-            : '';
-          extractedInfo.push(`- [PAQN] ${data.metricName}: ${data.value} ${data.unit}${change} - Period: ${data.period || 'N/A'} - Confidence: ${data.confidence}`);
+        chunk.quantitativeData.forEach((data: { metricName?: string; value?: number; unit?: string; period?: string | null; context?: string | null }) => {
+          extractedInfo.push(`- [PAQN] ${data.metricName || 'N/A'}: ${data.value || 'N/A'} ${data.unit || ''} - Period: ${data.period || 'N/A'}${data.context ? ` - ${data.context}` : ''}`);
         });
       }
 

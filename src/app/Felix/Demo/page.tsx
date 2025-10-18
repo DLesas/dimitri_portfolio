@@ -2,16 +2,22 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import TimelineDashboard from '../components/TimelineDashboard';
 import InlineChatPanel from '../components/InlineChatPanel';
 import UploadDocumentModal from '../components/UploadDocumentModal';
+
+interface UploadResult {
+  companyId?: string;
+  documentId?: string;
+  success: boolean;
+}
 
 export default function DemoPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
-  const handleUploadSuccess = (result: any) => {
+  const handleUploadSuccess = (result: UploadResult) => {
     // Refresh timeline when a new document is uploaded
     if (result.companyId) {
       setSelectedCompanyId(result.companyId);

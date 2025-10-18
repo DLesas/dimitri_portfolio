@@ -38,6 +38,7 @@ export default function InlineChatPanel({ defaultCompanyId, className }: InlineC
   // Load companies on mount
   useEffect(() => {
     loadCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update selected company if prop changes
@@ -46,6 +47,7 @@ export default function InlineChatPanel({ defaultCompanyId, className }: InlineC
       setSelectedCompanyId(defaultCompanyId);
       setMessages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCompanyId]);
 
   async function loadCompanies() {
@@ -72,7 +74,8 @@ export default function InlineChatPanel({ defaultCompanyId, className }: InlineC
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleCompanyChange = (keys: any) => {
+  const handleCompanyChange = (keys: 'all' | Set<React.Key>) => {
+    if (keys === 'all') return;
     const selectedKey = Array.from(keys)[0] as string;
     setSelectedCompanyId(selectedKey);
     setMessages([]);

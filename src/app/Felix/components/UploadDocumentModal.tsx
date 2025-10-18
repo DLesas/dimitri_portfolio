@@ -110,7 +110,7 @@ export default function UploadDocumentModal({ isOpen, onClose, onSuccess }: Uplo
       scrollBehavior="inside"
     >
       <ModalContent>
-        {(onCloseModal) => (
+        {() => (
           <>
             <ModalHeader className="flex flex-col gap-1">
               <h2 className="text-2xl font-semibold">Upload Document</h2>

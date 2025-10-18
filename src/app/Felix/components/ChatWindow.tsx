@@ -36,6 +36,7 @@ export default function ChatWindow() {
     if (isOpen && companies.length === 0 && !isLoadingCompanies) {
       loadCompanies();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   async function loadCompanies() {
@@ -62,7 +63,8 @@ export default function ChatWindow() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleCompanyChange = (keys: any) => {
+  const handleCompanyChange = (keys: 'all' | Set<React.Key>) => {
+    if (keys === 'all') return;
     const selectedKey = Array.from(keys)[0] as string;
     setSelectedCompanyId(selectedKey);
     setMessages([]);

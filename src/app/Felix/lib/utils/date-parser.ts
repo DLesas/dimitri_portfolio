@@ -98,7 +98,7 @@ export function parseFlexibleDate(dateStr: string | null | undefined): Date | nu
     if (!isNaN(date.getTime())) {
       return date;
     }
-  } catch (e) {
+  } catch {
     // Ignore parse errors
   }
 

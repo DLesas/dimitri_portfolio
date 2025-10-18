@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardBody, Chip, Select, SelectItem, Button, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Divider } from '@heroui/react';
-import { motion } from 'framer-motion';
+import { Card, CardHeader, Chip, Select, SelectItem, Button, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Divider } from '@heroui/react';
 import TimelineChart from './TimelineChart';
 import { fetchTimelineData } from '../actions/fetch-timeline-data';
 import { fetchAvailableCompanies } from '../actions/fetch-companies';
@@ -58,6 +57,7 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
   // Load companies on mount
   useEffect(() => {
     loadCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update selected company if prop changes
@@ -65,6 +65,7 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
     if (defaultCompanyId && defaultCompanyId !== selectedCompanyId) {
       setSelectedCompanyId(defaultCompanyId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCompanyId]);
 
   // Load timeline data when company or layers change
@@ -72,6 +73,7 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
     if (selectedCompanyId) {
       loadTimelineData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCompanyId, activeLayers]);
 
   async function loadCompanies() {
@@ -110,7 +112,8 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
     }
   }
 
-  const handleCompanyChange = (keys: any) => {
+  const handleCompanyChange = (keys: 'all' | Set<React.Key>) => {
+    if (keys === 'all') return;
     const selectedKey = Array.from(keys)[0] as string;
     setSelectedCompanyId(selectedKey);
     if (onCompanyChange) {
@@ -152,7 +155,7 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
               <ModalHeader className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <Chip
-                    color={layerConfig.color as any}
+                    color={layerConfig.color as 'primary' | 'success' | 'warning' | 'secondary'}
                     size="sm"
                   >
                     {layerConfig.name}
@@ -298,7 +301,7 @@ export default function TimelineDashboard({ defaultCompanyId, onCompanyChange, c
                   return (
                     <Chip
                       key={layer}
-                      color={isActive ? (config.color as any) : 'default'}
+                      color={isActive ? (config.color as 'primary' | 'success' | 'warning' | 'secondary') : 'default'}
                       variant={isActive ? 'solid' : 'bordered'}
                       className="cursor-pointer"
                       onClick={() => toggleLayer(layer)}
