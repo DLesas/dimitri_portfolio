@@ -11,7 +11,7 @@ import {
   Section,
   Text,
   Tailwind,
-} from "@react-email/components";
+} from "react-email";
 
 interface ContactFormData {
   name: string;

@@ -1,20 +1,13 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import react from "eslint-plugin-react";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends(
-    "next/core-web-vitals",
-    "next/typescript",
-    "plugin:react/recommended"
-  ),
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // eslint-config-next already registers the react plugin; only add its recommended rules
+  { rules: react.configs.flat.recommended.rules },
   {
     rules: {
       // React 17+ automatic JSX runtime - no need to import React for JSX
@@ -61,6 +54,14 @@ const eslintConfig = [
       "react/prop-types": "off",
     },
   },
-];
+  globalIgnores([
+    "**/.next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "_archive/**",
+    ".claude/**",
+  ]),
+]);
 
 export default eslintConfig;

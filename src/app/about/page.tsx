@@ -2,14 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Chip,
-  Progress,
-  Skeleton,
-} from "@heroui/react";
+import { Card, Chip, ProgressBar, Skeleton } from "@heroui/react";
 
 import Image from "next/image";
 import WordCloud from "@/components/WordCloud/WordCloud";
@@ -112,13 +105,13 @@ interface SkillInfoPanelProps {
 function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
   return (
     <Card className="min-h-[420px] h-[420px] flex flex-col">
-      <CardHeader className="flex-shrink-0">
+      <Card.Header className="flex-shrink-0">
         <h3 className="text-lg font-semibold">
           {hoveredSkill ? "Skill Details" : "Interactive Skills Cloud"}
         </h3>
-      </CardHeader>
+      </Card.Header>
 
-      <CardBody className="flex-grow overflow-y-hidden">
+      <Card.Content className="flex-grow overflow-y-hidden">
         <AnimatePresence mode="wait">
           {hoveredSkill ? (
             <motion.div
@@ -135,11 +128,18 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
                   <h4 className="text-xl font-semibold">{hoveredSkill.name}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     {hoveredSkill.parent && (
-                      <Chip size="sm" variant="shadow" color="secondary">
+                      <Chip
+                        size="sm"
+                        className="bg-secondary text-secondary-foreground shadow-lg shadow-secondary/40"
+                      >
                         {hoveredSkill.parent}
                       </Chip>
                     )}
-                    <Chip size="sm" variant="flat" color="secondary">
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      className="bg-secondary/20 text-secondary-700"
+                    >
                       {hoveredSkill.type}
                     </Chip>
                   </div>
@@ -172,12 +172,15 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
                     {hoveredSkill.value}%
                   </span>
                 </div>
-                <Progress
+                <ProgressBar
                   value={hoveredSkill.value}
-                  className="h-2"
-                  color="primary"
+                  color="accent"
                   aria-label="Proficiency level"
-                />
+                >
+                  <ProgressBar.Track className="h-2">
+                    <ProgressBar.Fill />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
 
               {/* Tags */}
@@ -186,8 +189,14 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
                   <span className="text-sm font-medium">Applications</span>
                   <div className="flex flex-wrap gap-1 pt-2">
                     {hoveredSkill.tags.map((tag) => (
-                      <Chip key={tag} size="sm" variant="dot" color="primary">
-                        {tag}
+                      <Chip
+                        key={tag}
+                        size="sm"
+                        variant="tertiary"
+                        className="gap-1.5 border-2 border-default-200 bg-transparent"
+                      >
+                        <span className="size-2 rounded-full bg-primary" />
+                        <Chip.Label>{tag}</Chip.Label>
                       </Chip>
                     ))}
                   </div>
@@ -217,7 +226,7 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

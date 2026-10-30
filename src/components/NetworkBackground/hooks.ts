@@ -404,6 +404,60 @@ export function useNodeRefs(nodeCount: number) {
   return nodeRefs;
 }
 
+type StableNode = { position: number[]; index: number };
+
+/**
+ * Grow or shrink a node list to `nodeCount`
+ *
+ * Existing nodes keep their positions; new nodes are placed randomly within the
+ * current world bounds and continue the index sequence.
+ */
+function resizeNodeList(
+  currentNodes: StableNode[],
+  nodeCount: number,
+  worldWidth: number,
+  worldHeight: number,
+  worldDepth: number
+): StableNode[] {
+  const currentLength = currentNodes.length;
+
+  if (nodeCount > currentLength) {
+    // Generate only the new nodes needed using the new bounds-based function
+    const bounds = {
+      minX: -worldWidth / 2,
+      maxX: worldWidth / 2,
+      minY: -worldHeight / 2,
+      maxY: worldHeight / 2,
+      minZ: -worldDepth / 2,
+      maxZ: worldDepth / 2,
+    };
+
+    const newNodes = Array.from(
+      { length: nodeCount - currentLength },
+      (_, i) => {
+        // Generate single position using the same logic as generateNodePositions
+        const position = [
+          Math.random() * (bounds.maxX - bounds.minX) + bounds.minX,
+          Math.random() * (bounds.maxY - bounds.minY) + bounds.minY,
+          Math.random() * (bounds.maxZ - bounds.minZ) + bounds.minZ,
+        ];
+        return {
+          position,
+          index: currentLength + i, // Continue indexing from where we left off
+        };
+      }
+    );
+
+    return [...currentNodes, ...newNodes];
+  } else if (nodeCount < currentLength) {
+    // Remove excess nodes from the end
+    return currentNodes.slice(0, nodeCount);
+  }
+
+  // No change in count, return existing nodes unchanged
+  return currentNodes;
+}
+
 /**
  * Hook for stable node positions that preserves existing nodes when count changes.
  *
@@ -415,6 +469,7 @@ export function useNodeRefs(nodeCount: number) {
  * - Removes excess nodes from the end when count decreases
  *
  * This prevents animation "jumps" and maintains smooth organic movement.
+ * Indices stay sequential because nodes are only appended or trimmed from the end.
  */
 export function useStableNodePositions(
   nodeCount: number,
@@ -422,62 +477,18 @@ export function useStableNodePositions(
   worldHeight: number,
   worldDepth: number = WORLD_CONFIG.DEPTH
 ) {
-  const [nodes, setNodes] = useState<
-    Array<{ position: number[]; index: number }>
-  >([]);
+  const [nodes, setNodes] = useState<StableNode[]>([]);
 
-  useEffect(() => {
-    setNodes((currentNodes) => {
-      const currentLength = currentNodes.length;
+  // A whole, non-negative count, so the length check below can always settle
+  const targetCount = Math.max(0, Math.floor(nodeCount) || 0);
 
-      if (nodeCount > currentLength) {
-        // Generate only the new nodes needed using the new bounds-based function
-        const bounds = {
-          minX: -worldWidth / 2,
-          maxX: worldWidth / 2,
-          minY: -worldHeight / 2,
-          maxY: worldHeight / 2,
-          minZ: -worldDepth / 2,
-          maxZ: worldDepth / 2,
-        };
-
-        const newNodes = Array.from(
-          { length: nodeCount - currentLength },
-          (_, i) => {
-            // Generate single position using the same logic as generateNodePositions
-            const position = [
-              Math.random() * (bounds.maxX - bounds.minX) + bounds.minX,
-              Math.random() * (bounds.maxY - bounds.minY) + bounds.minY,
-              Math.random() * (bounds.maxZ - bounds.minZ) + bounds.minZ,
-            ];
-            return {
-              position,
-              index: currentLength + i, // Continue indexing from where we left off
-            };
-          }
-        );
-
-        return [...currentNodes, ...newNodes];
-      } else if (nodeCount < currentLength) {
-        // Remove excess nodes from the end
-        return currentNodes.slice(0, nodeCount);
-      }
-
-      // No change in count, return existing nodes unchanged
-      return currentNodes;
-    });
-  }, [nodeCount, worldWidth, worldHeight, worldDepth]);
-
-  // Update indices when world dimensions change but preserve positions
-  // This ensures nodes maintain their relative positions during resize
-  useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node, index) => ({
-        ...node,
-        index, // Update indices to be sequential
-      }))
+  // Adjusted during render rather than in an effect, so the network never
+  // renders a stale node count
+  if (nodes.length !== targetCount) {
+    setNodes(
+      resizeNodeList(nodes, targetCount, worldWidth, worldHeight, worldDepth)
     );
-  }, [worldWidth, worldHeight]);
+  }
 
   return nodes;
 }

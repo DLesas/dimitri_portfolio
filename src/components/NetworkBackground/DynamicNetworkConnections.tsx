@@ -26,7 +26,7 @@ interface Connection {
 }
 
 interface DynamicNetworkConnectionsProps {
-  nodeRefsArray: React.MutableRefObject<THREE.Vector3[]>;
+  nodePositionsRef: React.MutableRefObject<THREE.Vector3[]>;
   maxDistance: number;
   shouldAnimate: boolean;
   performanceLevel?: "low" | "medium" | "high";
@@ -109,7 +109,7 @@ class ObjectPool {
 }
 
 export function DynamicNetworkConnections({
-  nodeRefsArray,
+  nodePositionsRef,
   maxDistance,
   shouldAnimate,
   performanceLevel = "medium",
@@ -226,8 +226,8 @@ export function DynamicNetworkConnections({
         const conn = connections[index];
         if (!conn) return;
 
-        const posA = nodeRefsArray.current[conn.start];
-        const posB = nodeRefsArray.current[conn.end];
+        const posA = nodePositionsRef.current[conn.start];
+        const posB = nodePositionsRef.current[conn.end];
 
         if (posA && posB && child instanceof Line2) {
           const positions = [posA.x, posA.y, posA.z, posB.x, posB.y, posB.z];
@@ -247,7 +247,7 @@ export function DynamicNetworkConnections({
       const MAX_CONNECTIONS =
         networkSettings.maxConnections ??
         PERFORMANCE_CONFIGS[performanceLevel].MAX_CONNECTIONS;
-      const nodeCount = nodeRefsArray.current.length;
+      const nodeCount = nodePositionsRef.current.length;
 
       // Optimize for large node counts - use sampling strategy
       const shouldUseSampling = false;
@@ -274,8 +274,8 @@ export function DynamicNetworkConnections({
           if (searchCount >= maxSearchPairs) break outerLoop;
           searchCount++;
 
-          const posA = nodeRefsArray.current[i];
-          const posB = nodeRefsArray.current[j];
+          const posA = nodePositionsRef.current[i];
+          const posB = nodePositionsRef.current[j];
 
           if (posA && posB) {
             const dx = posA.x - posB.x;
@@ -446,8 +446,8 @@ export function DynamicNetworkConnections({
 
     // Create new lines for current connections
     connections.forEach((conn) => {
-      const posA = nodeRefsArray.current[conn.start];
-      const posB = nodeRefsArray.current[conn.end];
+      const posA = nodePositionsRef.current[conn.start];
+      const posB = nodePositionsRef.current[conn.end];
 
       if (!posA || !posB) return;
 
@@ -494,7 +494,7 @@ export function DynamicNetworkConnections({
     });
   }, [
     connections,
-    nodeRefsArray,
+    nodePositionsRef,
     colors.primary.shades,
     maxDistance,
     networkSettings.connectionLineWidth,

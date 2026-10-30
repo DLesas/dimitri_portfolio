@@ -417,7 +417,7 @@ export default function NetworkBackground({
               key={index}
               position={node.position}
               index={index}
-              nodeRefsArray={nodeRefs}
+              nodePositionsRef={nodeRefs}
               mousePos={mousePos}
               domColliders={domColliders}
               shouldAnimate={shouldAnimate}
@@ -426,7 +426,7 @@ export default function NetworkBackground({
 
           {/* Render dynamic connections */}
           <DynamicNetworkConnections
-            nodeRefsArray={nodeRefs}
+            nodePositionsRef={nodeRefs}
             maxDistance={resolvedConnectionDistance}
             shouldAnimate={shouldAnimate}
             performanceLevel={detectedPerformanceLevel}

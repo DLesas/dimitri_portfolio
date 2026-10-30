@@ -14,7 +14,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 interface NetworkNodeProps {
   position: number[];
   index: number;
-  nodeRefsArray: React.RefObject<THREE.Vector3[]>;
+  nodePositionsRef: React.RefObject<THREE.Vector3[]>;
   mousePos: React.RefObject<{ x: number; y: number; isActive: boolean }>;
   domColliders: React.RefObject<
     Array<{
@@ -31,7 +31,7 @@ interface NetworkNodeProps {
 export function NetworkNode({
   position,
   index,
-  nodeRefsArray,
+  nodePositionsRef,
   mousePos,
   domColliders,
   shouldAnimate,
@@ -198,10 +198,10 @@ export function NetworkNode({
       );
 
       // Update the shared ref - ensure slot exists
-      if (!nodeRefsArray.current[index]) {
-        nodeRefsArray.current[index] = new THREE.Vector3();
+      if (!nodePositionsRef.current[index]) {
+        nodePositionsRef.current[index] = new THREE.Vector3();
       }
-      nodeRefsArray.current[index].copy(mesh.current.position);
+      nodePositionsRef.current[index].copy(mesh.current.position);
 
       // Subtle scale pulsing
       const scale =
@@ -249,13 +249,13 @@ export function NetworkNode({
       isAnimatingRef.current = true;
 
       // Update the shared ref - ensure the array slot exists first
-      if (!nodeRefsArray.current[index]) {
-        nodeRefsArray.current[index] = new THREE.Vector3();
+      if (!nodePositionsRef.current[index]) {
+        nodePositionsRef.current[index] = new THREE.Vector3();
       }
-      nodeRefsArray.current[index].copy(mesh.current.position);
+      nodePositionsRef.current[index].copy(mesh.current.position);
     }
   }, [
-    nodeRefsArray,
+    nodePositionsRef,
     index,
     basePosition,
     networkSettings.organicMovementSpeed,

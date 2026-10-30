@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ThemeSwitcher } from "./themeSwitcher";
 import { SettingsMenu } from "./settings/SettingsMenu";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
 import Logo from "./Logo";
@@ -17,6 +17,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const { navigationRef } = useNavigationSpace();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const settingsAnchorRef = useRef<HTMLSpanElement>(null);
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -39,49 +40,48 @@ export default function Navigation() {
           <Logo />
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex gap-8 items-center">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`transition-colors ${
-                pathname === item.href
-                  ? "text-primary font-medium"
-                  : "text-foreground/70 hover:text-foreground"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="flex items-center gap-2 ml-4">
-            <ThemeSwitcher />
-            <SettingsMenu />
-            <HelperPopover duration={6000}>
-              <div>
-              </div>
-            </HelperPopover>
+        <div className="flex items-center gap-8">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-8 items-center">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`transition-colors ${
+                  pathname === item.href
+                    ? "text-primary font-medium"
+                    : "text-foreground/70 hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
-        </div>
 
-        {/* Mobile Menu Button */}
-        <div className="flex md:hidden items-center gap-2">
-          <ThemeSwitcher />
-          <SettingsMenu />
-          <Button
-            isIconOnly
-            variant="light"
-            size="sm"
-            className="text-foreground/70 hover:text-foreground transition-colors"
-            aria-label="Toggle menu"
-            onPress={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <HiX className="w-5 h-5" />
-            ) : (
-              <HiMenu className="w-5 h-5" />
-            )}
-          </Button>
+          {/* Controls - rendered once for every viewport so the helper can point at the visible gear */}
+          <div className="flex items-center gap-2 md:ml-4">
+            <ThemeSwitcher />
+            <span ref={settingsAnchorRef} className="inline-flex">
+              <SettingsMenu />
+            </span>
+            <HelperPopover duration={6000} triggerRef={settingsAnchorRef} />
+
+            {/* Mobile Menu Button */}
+            <Button
+              isIconOnly
+              variant="ghost"
+              size="sm"
+              className="md:hidden text-foreground/70 hover:text-foreground transition-colors"
+              aria-label="Toggle menu"
+              onPress={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <HiX className="w-5 h-5" />
+              ) : (
+                <HiMenu className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export default function Navigation() {
               <div className="flex justify-end p-4">
                 <Button
                   isIconOnly
-                  variant="light"
+                  variant="ghost"
                   size="sm"
                   className="text-foreground/70 hover:text-foreground"
                   onPress={() => setIsMobileMenuOpen(false)}

@@ -50,11 +50,15 @@ function SceneSettings({
   fogNear: number;
   fogFar: number;
 }) {
-  const { scene } = useThree();
+  // Read the scene from the store at call time: three.js objects are meant to be
+  // mutated, but a value returned by a hook is treated as immutable
+  const getThreeState = useThree((state) => state.get);
   const currentFogColor = useRef(new THREE.Color(fogColor));
   const targetFogColor = useRef(new THREE.Color(fogColor));
 
   useEffect(() => {
+    const { scene } = getThreeState();
+
     // Set transparent background
     scene.background = null;
 
@@ -65,10 +69,10 @@ function SceneSettings({
 
     // Update target color when theme changes
     targetFogColor.current.set(fogColor);
-  }, [scene, fogColor, fogNear, fogFar]);
+  }, [getThreeState, fogColor, fogNear, fogFar]);
 
   // Gradual color transition using useFrame
-  useFrame(() => {
+  useFrame(({ scene }) => {
     if (scene.fog && scene.fog instanceof THREE.Fog) {
       // Lerp current color towards target color
       currentFogColor.current.lerp(targetFogColor.current, 0.5); // 5% per frame for smooth transition

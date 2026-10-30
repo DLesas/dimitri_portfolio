@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@heroui/react";
+import { buttonVariants as buttonStyles } from "@heroui/styles";
 import Link from "next/link";
 import NetworkBackground from "@/components/NetworkBackground";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
@@ -101,26 +101,28 @@ export default function HomePage() {
             data-network-collider
           >
             <motion.div variants={buttonVariants} whileHover="hover">
-              <Button
-                as={Link}
+              <Link
                 href="/about"
-                color="primary"
-                size="lg"
-                className="font-medium px-8"
+                className={buttonStyles({
+                  variant: "primary",
+                  size: "lg",
+                  className: "font-medium px-8",
+                })}
               >
                 Learn More About Me
-              </Button>
+              </Link>
             </motion.div>
             <motion.div variants={buttonVariants} whileHover="hover">
-              <Button
-                as={Link}
+              <Link
                 href="/cv"
-                variant="bordered"
-                size="lg"
-                className="font-medium px-8"
+                className={buttonStyles({
+                  variant: "outline",
+                  size: "lg",
+                  className: "font-medium px-8",
+                })}
               >
                 View My CV
-              </Button>
+              </Link>
             </motion.div>
           </motion.div>
         </motion.div>

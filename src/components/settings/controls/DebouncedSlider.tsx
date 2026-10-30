@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Slider } from "@heroui/react";
+import { Label, Slider } from "@heroui/react";
 
 interface DebouncedSliderProps {
   label: string;
@@ -23,11 +23,13 @@ export function DebouncedSlider({
   className = "",
 }: DebouncedSliderProps) {
   const [localValue, setLocalValue] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
 
-  // Update local value when prop value changes
-  useEffect(() => {
+  // Update local value when prop value changes (adjusted during render rather than in an effect)
+  if (value !== prevValue) {
+    setPrevValue(value);
     setLocalValue(value);
-  }, [value]);
+  }
 
   // Debounced update to parent
   useEffect(() => {
@@ -47,20 +49,19 @@ export function DebouncedSlider({
 
   return (
     <Slider
-      label={label}
       value={localValue}
       onChange={handleChange}
       minValue={min}
       maxValue={max}
       step={step}
       className={className}
-      size="sm"
-      color="primary"
-      showTooltip={true}
-      tooltipProps={{
-        placement: "top",
-        content: localValue.toString(),
-      }}
-    />
+    >
+      <Label>{label}</Label>
+      <Slider.Output />
+      <Slider.Track>
+        <Slider.Fill />
+        <Slider.Thumb />
+      </Slider.Track>
+    </Slider>
   );
 }

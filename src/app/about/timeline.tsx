@@ -121,7 +121,7 @@ export const WorkExperienceTimeline = ({
             <Chip
               key={index}
               size="sm"
-              variant="flat"
+              variant="soft"
               className={cn(
                 "bg-primary/35",
                 "text-foreground/70",

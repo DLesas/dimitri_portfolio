@@ -2,19 +2,15 @@
 
 import { useTheme as useThemeContext } from "@/contexts/ThemeContext";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { MdSunny } from "react-icons/md";
 import { MdDarkMode } from "react-icons/md";
 
 export function ThemeSwitcher() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const { theme, setTheme } = useTheme();
   const { updateTheme } = useThemeContext();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) return null;
 
@@ -25,7 +21,7 @@ export function ThemeSwitcher() {
         updateTheme();
       }}
       isIconOnly
-      variant="light"
+      variant="ghost"
       size="sm"
       className="text-foreground/70 hover:text-foreground transition-colors"
       aria-label="Toggle theme"

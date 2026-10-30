@@ -2,7 +2,14 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Button, Input, Textarea } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Label,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 import {
   FaEnvelope,
   FaMapMarkerAlt,
@@ -35,14 +42,13 @@ export default function ContactPage() {
     message: "",
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleInputChange =
+    (field: keyof ContactFormData) => (value: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    };
 
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error" | null;
@@ -174,55 +180,58 @@ export default function ContactPage() {
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
+                  <TextField
                     name="name"
-                    label="Your Name"
-                    placeholder="John Doe"
                     value={formData.name}
-                    onChange={handleInputChange}
-                    variant="bordered"
+                    onChange={handleInputChange("name")}
                     isRequired
-                  />
-                  <Input
+                  >
+                    <Label>Your Name</Label>
+                    <Input placeholder="John Doe" />
+                  </TextField>
+                  <TextField
                     name="email"
                     type="email"
-                    label="Your Email"
-                    placeholder="john@example.com"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    variant="bordered"
+                    onChange={handleInputChange("email")}
                     isRequired
-                  />
+                  >
+                    <Label>Your Email</Label>
+                    <Input placeholder="john@example.com" />
+                  </TextField>
                 </div>
 
-                <Input
+                <TextField
                   name="subject"
-                  label="Subject"
-                  placeholder="What's this about?"
                   value={formData.subject}
-                  onChange={handleInputChange}
-                  variant="bordered"
+                  onChange={handleInputChange("subject")}
                   isRequired
-                />
+                >
+                  <Label>Subject</Label>
+                  <Input placeholder="What's this about?" />
+                </TextField>
 
-                <Textarea
+                <TextField
                   name="message"
-                  label="Message"
-                  placeholder="Tell me about your project or idea..."
                   value={formData.message}
-                  onChange={handleInputChange}
-                  variant="bordered"
-                  minRows={6}
+                  onChange={handleInputChange("message")}
                   isRequired
-                />
+                >
+                  <Label>Message</Label>
+                  <TextArea
+                    placeholder="Tell me about your project or idea..."
+                    rows={6}
+                  />
+                </TextField>
 
                 <Button
                   type="submit"
-                  color="primary"
+                  variant="primary"
                   size="lg"
                   className="w-full font-medium"
-                  isLoading={isSubmitting}
+                  isPending={isSubmitting}
                 >
+                  {isSubmitting && <Spinner size="sm" color="current" />}
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
 

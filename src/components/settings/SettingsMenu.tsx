@@ -1,14 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  Button,
-  Switch,
-  Divider,
-} from "@heroui/react";
+import { Popover, Button, Switch, Separator } from "@heroui/react";
 import {
   FaCog,
   FaDesktop,
@@ -38,15 +31,16 @@ const SUBMENU_CLOSE_DELAY = 250;
 // Types
 // ============================================================================
 
+type SubmenuKey = "network" | "color" | "wordcloud";
+
 interface SubmenuHandlers {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }
 
-interface SubmenuProps {
+interface SubmenuProps extends SubmenuHandlers {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  handlers: SubmenuHandlers;
 }
 
 // ============================================================================
@@ -59,36 +53,33 @@ interface SubmenuProps {
 function NetworkSettingsSubmenu({
   isOpen,
   onOpenChange,
-  handlers,
+  onMouseEnter,
+  onMouseLeave,
 }: SubmenuProps) {
   return (
     <div className="relative">
-      <Popover
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        placement="left-start"
-        offset={5}
-        triggerType="grid"
-      >
-        <PopoverTrigger>
-          <Button
-            variant="light"
-            className="w-full justify-between text-left h-auto p-2"
-            startContent={<FaChevronLeft className="w-3 h-3" />}
-            endContent={<FaDesktop className="w-4 h-4" />}
-            onMouseEnter={handlers.onMouseEnter}
-            onMouseLeave={handlers.onMouseLeave}
-          >
-            <span>Network Background</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="p-0"
-          onMouseEnter={handlers.onMouseEnter}
-          onMouseLeave={handlers.onMouseLeave}
+      <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Button
+          variant="ghost"
+          className="w-full justify-between text-left h-auto p-2"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
         >
-          <NetworkBackgroundSettings />
-        </PopoverContent>
+          <FaChevronLeft className="w-3 h-3" />
+          <span>Network Background</span>
+          <FaDesktop className="w-4 h-4" />
+        </Button>
+        <Popover.Content
+          placement="left top"
+          offset={5}
+          className="p-0"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <Popover.Dialog aria-label="Network background settings">
+            <NetworkBackgroundSettings />
+          </Popover.Dialog>
+        </Popover.Content>
       </Popover>
     </div>
   );
@@ -100,36 +91,33 @@ function NetworkSettingsSubmenu({
 function ColorSettingsSubmenu({
   isOpen,
   onOpenChange,
-  handlers,
+  onMouseEnter,
+  onMouseLeave,
 }: SubmenuProps) {
   return (
     <div className="relative">
-      <Popover
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        placement="left-start"
-        offset={5}
-        triggerType="grid"
-      >
-        <PopoverTrigger>
-          <Button
-            variant="light"
-            className="w-full justify-between text-left h-auto p-2"
-            startContent={<FaChevronLeft className="w-3 h-3" />}
-            endContent={<FaPalette className="w-4 h-4" />}
-            onMouseEnter={handlers.onMouseEnter}
-            onMouseLeave={handlers.onMouseLeave}
-          >
-            <span>Color Settings</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="p-0"
-          onMouseEnter={handlers.onMouseEnter}
-          onMouseLeave={handlers.onMouseLeave}
+      <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Button
+          variant="ghost"
+          className="w-full justify-between text-left h-auto p-2"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
         >
-          <ColorSettingsPanel />
-        </PopoverContent>
+          <FaChevronLeft className="w-3 h-3" />
+          <span>Color Settings</span>
+          <FaPalette className="w-4 h-4" />
+        </Button>
+        <Popover.Content
+          placement="left top"
+          offset={5}
+          className="p-0"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <Popover.Dialog aria-label="Color settings">
+            <ColorSettingsPanel />
+          </Popover.Dialog>
+        </Popover.Content>
       </Popover>
     </div>
   );
@@ -141,36 +129,33 @@ function ColorSettingsSubmenu({
 function WordCloudSettingsSubmenu({
   isOpen,
   onOpenChange,
-  handlers,
+  onMouseEnter,
+  onMouseLeave,
 }: SubmenuProps) {
   return (
     <div className="relative">
-      <Popover
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        placement="left-start"
-        offset={5}
-        triggerType="grid"
-      >
-        <PopoverTrigger>
-          <Button
-            variant="light"
-            className="w-full justify-between text-left h-auto p-2"
-            startContent={<FaChevronLeft className="w-3 h-3" />}
-            endContent={<FaCloud className="w-4 h-4" />}
-            onMouseEnter={handlers.onMouseEnter}
-            onMouseLeave={handlers.onMouseLeave}
-          >
-            <span>Word Cloud</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="p-0"
-          onMouseEnter={handlers.onMouseEnter}
-          onMouseLeave={handlers.onMouseLeave}
+      <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Button
+          variant="ghost"
+          className="w-full justify-between text-left h-auto p-2"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
         >
-          <WordCloudSettingsPanel />
-        </PopoverContent>
+          <FaChevronLeft className="w-3 h-3" />
+          <span>Word Cloud</span>
+          <FaCloud className="w-4 h-4" />
+        </Button>
+        <Popover.Content
+          placement="left top"
+          offset={5}
+          className="p-0"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <Popover.Dialog aria-label="Word cloud settings">
+            <WordCloudSettingsPanel />
+          </Popover.Dialog>
+        </Popover.Content>
       </Popover>
     </div>
   );
@@ -191,8 +176,15 @@ function DebugToggleSection() {
         <Switch
           size="sm"
           isSelected={isDebugEnabled}
-          onValueChange={toggleDebug}
-        />
+          onChange={toggleDebug}
+          aria-label="Debug mode"
+        >
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+          </Switch.Content>
+        </Switch>
       </div>
       <p className="text-xs text-foreground/60 mt-1">
         Show performance stats and hardware info
@@ -307,48 +299,44 @@ export function SettingsMenu() {
    * Map of timeout references for delayed submenu closing
    * Each submenu has its own timeout to allow independent hover behavior
    */
-  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const timeoutRefs = useRef<Map<SubmenuKey, NodeJS.Timeout>>(new Map());
 
-  /**
-   * Create hover handlers for submenu with delayed closing behavior
-   *
-   * @param menuKey - Unique identifier for the submenu
-   * @param setOpen - State setter for the submenu's open state
-   * @returns Object with onMouseEnter and onMouseLeave handlers
-   */
-  const createSubmenuHandlers = (
-    menuKey: string,
-    setOpen: (open: boolean) => void
-  ): SubmenuHandlers => ({
-    onMouseEnter: () => {
-      // Clear any existing timeout for this menu to prevent closure
-      const existingTimeout = timeoutRefs.current.get(menuKey);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-        timeoutRefs.current.delete(menuKey);
-      }
-      setOpen(true);
-    },
-    onMouseLeave: () => {
-      // Set delayed close for this menu
-      const timeout = setTimeout(() => {
-        setOpen(false);
-        timeoutRefs.current.delete(menuKey);
-      }, SUBMENU_CLOSE_DELAY);
-      timeoutRefs.current.set(menuKey, timeout);
-    },
-  });
+  const submenuSetters: Record<SubmenuKey, (open: boolean) => void> = {
+    network: setIsNetworkOpen,
+    color: setIsColorOpen,
+    wordcloud: setIsWordCloudOpen,
+  };
 
   // ========================================
   // Submenu Handlers
   // ========================================
 
-  const networkHandlers = createSubmenuHandlers("network", setIsNetworkOpen);
-  const colorHandlers = createSubmenuHandlers("color", setIsColorOpen);
-  const wordCloudHandlers = createSubmenuHandlers(
-    "wordcloud",
-    setIsWordCloudOpen
-  );
+  /**
+   * Open a submenu on hover, cancelling any pending delayed close
+   *
+   * @param menuKey - The submenu being hovered
+   */
+  const handleSubmenuEnter = (menuKey: SubmenuKey) => {
+    const existingTimeout = timeoutRefs.current.get(menuKey);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      timeoutRefs.current.delete(menuKey);
+    }
+    submenuSetters[menuKey](true);
+  };
+
+  /**
+   * Close a submenu after a delay when the mouse leaves it
+   *
+   * @param menuKey - The submenu being left
+   */
+  const handleSubmenuLeave = (menuKey: SubmenuKey) => {
+    const timeout = setTimeout(() => {
+      submenuSetters[menuKey](false);
+      timeoutRefs.current.delete(menuKey);
+    }, SUBMENU_CLOSE_DELAY);
+    timeoutRefs.current.set(menuKey, timeout);
+  };
 
   // ========================================
   // Main Menu Handlers
@@ -395,60 +383,60 @@ export function SettingsMenu() {
   return (
     <div className="relative">
       {/* Main Settings Popover */}
-      <Popover
-        isOpen={isMainOpen}
-        onOpenChange={handleMainOpenChange}
-        placement="bottom-end"
-        offset={10}
-      >
-        <PopoverTrigger>
-          <Button
-            isIconOnly
-            variant="light"
-            size="sm"
-            className="text-foreground/70 hover:text-foreground transition-colors"
-            aria-label="Settings"
-          >
-            <FaCog size={18} />
-          </Button>
-        </PopoverTrigger>
+      <Popover isOpen={isMainOpen} onOpenChange={handleMainOpenChange}>
+        <Button
+          isIconOnly
+          variant="ghost"
+          size="sm"
+          className="text-foreground/70 hover:text-foreground transition-colors"
+          aria-label="Settings"
+        >
+          <FaCog size={18} />
+        </Button>
 
-        <PopoverContent className="p-2 min-w-[200px]">
-          <div className="space-y-1">
+        <Popover.Content
+          placement="bottom end"
+          offset={10}
+          className="p-2 min-w-[200px]"
+        >
+          <Popover.Dialog aria-label="Site settings" className="space-y-1">
             {/* Network Background Settings Submenu */}
             <NetworkSettingsSubmenu
               isOpen={isNetworkOpen}
               onOpenChange={setIsNetworkOpen}
-              handlers={networkHandlers}
+              onMouseEnter={() => handleSubmenuEnter("network")}
+              onMouseLeave={() => handleSubmenuLeave("network")}
             />
 
             {/* Word Cloud Settings Submenu */}
             <WordCloudSettingsSubmenu
               isOpen={isWordCloudOpen}
               onOpenChange={setIsWordCloudOpen}
-              handlers={wordCloudHandlers}
+              onMouseEnter={() => handleSubmenuEnter("wordcloud")}
+              onMouseLeave={() => handleSubmenuLeave("wordcloud")}
             />
 
             {/* Color Settings Submenu */}
             <ColorSettingsSubmenu
               isOpen={isColorOpen}
               onOpenChange={setIsColorOpen}
-              handlers={colorHandlers}
+              onMouseEnter={() => handleSubmenuEnter("color")}
+              onMouseLeave={() => handleSubmenuLeave("color")}
             />
 
             {/* Debug Toggle Section */}
-            <Divider className="my-2" />
+            <Separator className="my-2" />
             <DebugToggleSection />
 
             {/* Hardware Info Section - Only when debug is enabled */}
             {isDebugEnabled && (
               <>
-                <Divider className="my-2" />
+                <Separator className="my-2" />
                 <HardwareInfoSection />
               </>
             )}
-          </div>
-        </PopoverContent>
+          </Popover.Dialog>
+        </Popover.Content>
       </Popover>
     </div>
   );

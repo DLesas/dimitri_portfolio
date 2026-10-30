@@ -2,8 +2,8 @@
 
 import React, { useEffect } from "react";
 import { ColorPicker, useColor, type IColor } from "react-color-palette";
-import "react-color-palette/css";
-import { Button, Spinner, Card, CardBody } from "@heroui/react";
+import "react-color-palette/dist/css/rcp.css";
+import { Button, Spinner, Card } from "@heroui/react";
 import { FaUndo, FaPalette } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -83,13 +83,12 @@ export function ColorSettingsPanel() {
         </div>
         <Button
           size="sm"
-          variant="flat"
-          color="default"
-          startContent={<FaUndo className="w-3 h-3" />}
+          variant="tertiary"
           onPress={handleReset}
           aria-label="Reset to default theme"
           isDisabled={isGeneratingTheme}
         >
+          <FaUndo className="w-3 h-3" />
           Reset
         </Button>
       </div>
@@ -112,7 +111,7 @@ export function ColorSettingsPanel() {
           {/* Loading State */}
           {isGeneratingTheme && (
             <div className="flex items-center gap-2 text-sm text-foreground/70">
-              <Spinner size="sm" color="primary" />
+              <Spinner size="sm" color="accent" />
               <span>Generating theme...</span>
             </div>
           )}
@@ -120,11 +119,11 @@ export function ColorSettingsPanel() {
           {/* Error State */}
           {themeGenerationError && (
             <Card className="border-danger">
-              <CardBody className="py-3">
+              <Card.Content className="py-3">
                 <div className="text-sm text-danger">
                   Failed to generate theme. Please try again.
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
           )}
 
