@@ -69,7 +69,11 @@ function NetworkSettingsSubmenu({
           <span>Network Background</span>
           <FaDesktop className="w-4 h-4" />
         </Button>
+        {/* Non-modal: a modal popover makes everything outside it inert, including the
+            parent menu, so the hovered item would lose hover and the submenu would
+            close and reopen in a loop */}
         <Popover.Content
+          isNonModal
           placement="left top"
           offset={5}
           className="p-0"
@@ -108,6 +112,7 @@ function ColorSettingsSubmenu({
           <FaPalette className="w-4 h-4" />
         </Button>
         <Popover.Content
+          isNonModal
           placement="left top"
           offset={5}
           className="p-0"
@@ -146,6 +151,7 @@ function WordCloudSettingsSubmenu({
           <FaCloud className="w-4 h-4" />
         </Button>
         <Popover.Content
+          isNonModal
           placement="left top"
           offset={5}
           className="p-0"
