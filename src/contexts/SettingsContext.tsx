@@ -6,7 +6,6 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-  useRef,
 } from "react";
 import {
   ANIMATION_CONFIG,
@@ -128,6 +127,38 @@ function generateDefaultNetworkSettings(
   };
 }
 
+/**
+ * Medium performance defaults, used until hardware detection completes
+ * These are good defaults that work well on most devices
+ */
+const MEDIUM_DEFAULT_NETWORK_SETTINGS = generateDefaultNetworkSettings({
+  NODE_COUNT: PERFORMANCE_CONFIGS.medium.NODE_COUNT,
+  CONNECTION_DISTANCE: PERFORMANCE_CONFIGS.medium.CONNECTION_DISTANCE,
+  MAX_CONNECTIONS: PERFORMANCE_CONFIGS.medium.MAX_CONNECTIONS,
+});
+
+/**
+ * Read previously saved settings from localStorage
+ *
+ * @returns The saved settings object, or null if none/unavailable
+ */
+function readSavedSettings(): {
+  networkSettings?: Partial<NetworkBackgroundSettings>;
+  wordCloudSettings?: Partial<WordCloudSettings>;
+} | null {
+  try {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to load settings from localStorage:", error);
+  }
+  return null;
+}
+
 // ============================================================================
 // Context Creation
 // ============================================================================
@@ -157,69 +188,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // State Management
   // ========================================
 
-  // Track if user has manually modified settings from initial defaults
-  const hasUserModifiedSettings = useRef(false);
-  const initialMediumDefaults = useRef<NetworkBackgroundSettings | null>(null);
+  // Saved settings count as user-modified, so hardware defaults never override them
+  const [hasUserModifiedSettings, setHasUserModifiedSettings] = useState(
+    () => !!readSavedSettings()?.networkSettings
+  );
 
+  // Load from localStorage on first render only, falling back to medium defaults
   const [networkSettings, setNetworkSettings] =
-    useState<NetworkBackgroundSettings>(() => {
-      // Initialize with medium performance defaults
-      // These are good defaults that work well on most devices
-      const mediumDefaults = generateDefaultNetworkSettings({
-        NODE_COUNT: PERFORMANCE_CONFIGS.medium.NODE_COUNT,
-        CONNECTION_DISTANCE: PERFORMANCE_CONFIGS.medium.CONNECTION_DISTANCE,
-        MAX_CONNECTIONS: PERFORMANCE_CONFIGS.medium.MAX_CONNECTIONS,
-      });
-
-      // Store initial defaults for comparison
-      initialMediumDefaults.current = mediumDefaults;
-
-      // Try to load from localStorage on first render only
-      try {
-        if (typeof window !== "undefined") {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.networkSettings) {
-              // User has saved settings, mark as modified
-              hasUserModifiedSettings.current = true;
-              return {
-                ...mediumDefaults,
-                ...parsed.networkSettings,
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.warn("Failed to load settings from localStorage:", error);
-      }
-      return mediumDefaults;
-    });
+    useState<NetworkBackgroundSettings>(() => ({
+      ...MEDIUM_DEFAULT_NETWORK_SETTINGS,
+      ...readSavedSettings()?.networkSettings,
+    }));
 
   const [wordCloudSettings, setWordCloudSettings] = useState<WordCloudSettings>(
-    () => {
-      // Try to load from localStorage on first render only
-      try {
-        if (typeof window !== "undefined") {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.wordCloudSettings) {
-              return {
-                ...DEFAULT_WORDCLOUD_SETTINGS,
-                ...parsed.wordCloudSettings,
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(
-          "Failed to load wordCloud settings from localStorage:",
-          error
-        );
-      }
-      return DEFAULT_WORDCLOUD_SETTINGS;
-    }
+    () => ({
+      ...DEFAULT_WORDCLOUD_SETTINGS,
+      ...readSavedSettings()?.wordCloudSettings,
+    })
   );
 
   /**
@@ -229,25 +214,29 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
    */
   const [resetGeneration, setResetGeneration] = useState(0);
 
+  /** Performance level the hardware defaults were last checked against */
+  const [checkedPerformanceLevel, setCheckedPerformanceLevel] = useState<
+    string | null
+  >(null);
+
   // ========================================
-  // Hardware-Based Auto-Update Effect
+  // Hardware-Based Auto-Update
   // ========================================
 
   /**
    * Automatically update to hardware-appropriate defaults once detection completes
-   * Only updates if user hasn't manually modified settings from initial medium defaults
+   * (and again if the performance level changes). Only updates if the user hasn't
+   * modified settings from the initial medium defaults. Adjusted during render
+   * rather than in an effect, so the canvas never renders the stale defaults.
    */
-  useEffect(() => {
-    if (
-      isDetectionComplete &&
-      !hasUserModifiedSettings.current &&
-      initialMediumDefaults.current
-    ) {
+  if (isDetectionComplete && checkedPerformanceLevel !== performanceSettings.level) {
+    setCheckedPerformanceLevel(performanceSettings.level);
+
+    if (!hasUserModifiedSettings) {
       // Check if current settings are still the initial medium defaults
       const currentSettingsMatch =
-        initialMediumDefaults.current &&
         JSON.stringify(networkSettings) ===
-          JSON.stringify(initialMediumDefaults.current);
+        JSON.stringify(MEDIUM_DEFAULT_NETWORK_SETTINGS);
 
       if (currentSettingsMatch) {
         // Generate hardware-appropriate defaults
@@ -270,12 +259,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [
-    isDetectionComplete,
-    performanceSettings,
-    networkSettings,
-    isDebugEnabled,
-  ]);
+  }
 
   // ========================================
   // Persistence Effect
@@ -311,7 +295,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const updateNetworkSettings = (
     updates: Partial<NetworkBackgroundSettings>
   ) => {
-    hasUserModifiedSettings.current = true;
+    setHasUserModifiedSettings(true);
     setNetworkSettings((prev) => ({ ...prev, ...updates }));
   };
 

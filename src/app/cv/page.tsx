@@ -117,24 +117,23 @@ export default function CVPage() {
       >
         <motion.div variants={buttonVariants} whileHover="hover">
           <Button
-            color="primary"
+            variant="primary"
             size="lg"
-            startContent={<FaDownload />}
-            onClick={downloadCV}
+            onPress={downloadCV}
             className="font-medium shadow-lg backdrop-blur-sm"
           >
+            <FaDownload />
             Download CV
           </Button>
         </motion.div>
         <motion.div variants={buttonVariants} whileHover="hover">
           <Button
-            color="secondary"
-            variant="bordered"
+            variant="outline"
             size="lg"
-            startContent={<FaExpand />}
-            onClick={toggleFullscreen}
-            className="font-medium shadow-lg backdrop-blur-sm"
+            onPress={toggleFullscreen}
+            className="font-medium shadow-lg backdrop-blur-sm border-secondary text-secondary"
           >
+            <FaExpand />
             Fullscreen
           </Button>
         </motion.div>
@@ -168,24 +167,23 @@ export default function CVPage() {
         >
           <motion.div variants={buttonVariants} whileHover="hover">
             <Button
-              color="primary"
+              variant="primary"
               size="lg"
-              startContent={<FaDownload />}
-              onClick={downloadCV}
+              onPress={downloadCV}
               className="font-medium"
             >
+              <FaDownload />
               Download CV
             </Button>
           </motion.div>
           <motion.div variants={buttonVariants} whileHover="hover">
             <Button
-              color="secondary"
-              variant="bordered"
+              variant="outline"
               size="lg"
-              startContent={<FaExpand />}
-              onClick={toggleFullscreen}
-              className="font-medium"
+              onPress={toggleFullscreen}
+              className="font-medium border-secondary text-secondary"
             >
+              <FaExpand />
               Fullscreen
             </Button>
           </motion.div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Slider } from "@heroui/react";
+import { Label, Slider } from "@heroui/react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { NETWORK_SETTINGS_CONFIG } from "../config";
@@ -121,20 +121,19 @@ export function SettingsSlider({
   return (
     <div className={className}>
       <Slider
-        label={config.label}
         value={localValue}
         onChange={handleChange}
         minValue={config.min}
         maxValue={config.max}
         step={config.step}
-        size="sm"
-        color="primary"
-        showTooltip={true}
-        tooltipProps={{
-          placement: "top",
-          content: config.tooltip || localValue.toString(),
-        }}
-      />
+      >
+        <Label title={config.tooltip}>{config.label}</Label>
+        <Slider.Output />
+        <Slider.Track>
+          <Slider.Fill />
+          <Slider.Thumb />
+        </Slider.Track>
+      </Slider>
       {config.note && (
         <div className="text-xs text-foreground/60 mt-1 ml-1">
           {config.note}

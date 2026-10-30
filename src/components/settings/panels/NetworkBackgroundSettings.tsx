@@ -47,12 +47,11 @@ export function NetworkBackgroundSettings() {
         <h3 className="text-lg font-bold">Network Background</h3>
         <Button
           size="sm"
-          variant="flat"
-          color="default"
-          startContent={<FaUndo className="w-3 h-3" />}
+          variant="tertiary"
           onPress={resetNetworkSettings}
           aria-label="Reset all network background settings to defaults"
         >
+          <FaUndo className="w-3 h-3" />
           Reset
         </Button>
       </div>

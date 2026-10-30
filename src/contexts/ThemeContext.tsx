@@ -13,7 +13,7 @@ import { retryWithBackoff, RetryPresets } from "@/utils/retry";
 import {
   generateThemeFromPrimary,
   applyThemeToCSS,
-  type GeneratedTheme as _GeneratedTheme,
+  type GeneratedTheme,
 } from "@/lib/colorApi";
 
 // ============================================================================
@@ -488,6 +488,26 @@ const CUSTOM_THEME_KEY = "dimitri-portfolio-custom-theme";
 const DEFAULT_PRIMARY_COLOR = "#3b82f6";
 
 /**
+ * Read the user's saved custom theme from localStorage
+ *
+ * @returns The saved primary color and generated theme, or null if none/unavailable
+ */
+const readSavedTheme = (): {
+  primaryColor: string;
+  theme: GeneratedTheme;
+} | null => {
+  if (typeof window === "undefined") return null;
+  const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
+  if (!savedTheme) return null;
+  try {
+    return JSON.parse(savedTheme);
+  } catch (error) {
+    console.error("Failed to load saved theme:", error);
+    return null;
+  }
+};
+
+/**
  * Theme context provider component
  *
  * Provides HeroUI theme colors in multiple formats with server-safe hydration.
@@ -511,11 +531,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasExtractionFailed, setHasExtractionFailed] = useState(false);
-  const [isExtractionRequested, setIsExtractionRequested] = useState(false);
+  const extractionRequestedRef = useRef(false);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Theme generation state
-  const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY_COLOR);
+  // Theme generation state (the saved color is only rendered client-side, inside the color picker)
+  const [primaryColor, setPrimaryColorState] = useState(
+    () => readSavedTheme()?.primaryColor ?? DEFAULT_PRIMARY_COLOR
+  );
   const [isGeneratingTheme, setIsGeneratingTheme] = useState(false);
   const [themeGenerationError, setThemeGenerationError] =
     useState<Error | null>(null);
@@ -614,22 +636,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, 0); // 200ms to ensure CSS custom properties have fully propagated
   }, [runExtraction]);
 
-  // Load saved theme on mount
+  // Apply the saved theme on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
-      if (savedTheme) {
-        try {
-          const { primaryColor: savedColor, theme } = JSON.parse(savedTheme);
-          setPrimaryColorState(savedColor);
-          // Apply the saved theme (now applies both light and dark modes)
-          applyThemeToCSS(theme);
-          // Update theme extraction after applying CSS variables
-          setTimeout(() => updateTheme(), 100);
-        } catch (error) {
-          console.error("Failed to load saved theme:", error);
-        }
-      }
+    const savedTheme = readSavedTheme();
+    if (savedTheme) {
+      // Apply the saved theme (now applies both light and dark modes)
+      applyThemeToCSS(savedTheme.theme);
+      // Update theme extraction after applying CSS variables
+      setTimeout(() => updateTheme(), 100);
     }
   }, [updateTheme]);
 
@@ -761,9 +775,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
    * This ensures theme colors are available without blocking initial render
    */
   React.useEffect(() => {
-    // Only run if extraction hasn't been completed yet
-    if (!isInitialized && !isExtractionRequested) {
-      setIsExtractionRequested(true);
+    // Only request the initial extraction once (effects can run twice in Strict Mode)
+    if (!extractionRequestedRef.current) {
+      extractionRequestedRef.current = true;
       runExtraction(false);
     }
 
@@ -778,7 +792,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         generationTimeoutRef.current = null;
       }
     };
-  }, [isInitialized, isExtractionRequested, runExtraction]);
+  }, [runExtraction]);
 
   const contextValue: ThemeContextType = {
     colors,

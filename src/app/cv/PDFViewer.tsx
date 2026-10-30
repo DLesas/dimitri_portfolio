@@ -72,10 +72,10 @@ export default function PDFViewer({
               >
                 <p className="text-red-500 mb-4">Failed to load CV</p>
                 <Button
-                  color="primary"
-                  onClick={downloadCV}
-                  startContent={<FaDownload />}
+                  variant="primary"
+                  onPress={downloadCV}
                 >
+                  <FaDownload />
                   Download CV Instead
                 </Button>
               </motion.div>
@@ -100,8 +100,8 @@ export default function PDFViewer({
             >
               <Button
                 size="sm"
-                variant="flat"
-                onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
+                variant="tertiary"
+                onPress={() => setPageNumber(Math.max(1, pageNumber - 1))}
                 isDisabled={pageNumber <= 1}
               >
                 Previous
@@ -111,8 +111,8 @@ export default function PDFViewer({
               </p>
               <Button
                 size="sm"
-                variant="flat"
-                onClick={() =>
+                variant="tertiary"
+                onPress={() =>
                   setPageNumber(Math.min(numPages, pageNumber + 1))
                 }
                 isDisabled={pageNumber >= numPages}
@@ -131,16 +131,16 @@ export default function PDFViewer({
           >
             <Button
               size="sm"
-              variant="bordered"
-              onClick={() => setPageScale(Math.max(0.5, pageScale - 0.1))}
+              variant="outline"
+              onPress={() => setPageScale(Math.max(0.5, pageScale - 0.1))}
             >
               Zoom Out
             </Button>
             <span className="text-sm">{Math.round(pageScale * 100)}%</span>
             <Button
               size="sm"
-              variant="bordered"
-              onClick={() => setPageScale(Math.min(2, pageScale + 0.1))}
+              variant="outline"
+              onPress={() => setPageScale(Math.min(2, pageScale + 0.1))}
             >
               Zoom In
             </Button>
@@ -158,11 +158,10 @@ export default function PDFViewer({
         >
           <Button
             className="fixed top-4 right-4 z-50"
-            color="danger"
-            variant="flat"
-            onClick={onToggleFullscreen}
-            startContent={<FaCompress />}
+            variant="danger-soft"
+            onPress={onToggleFullscreen}
           >
+            <FaCompress />
             Exit Fullscreen
           </Button>
         </motion.div>

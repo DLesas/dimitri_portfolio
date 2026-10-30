@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Button, Slider } from "@heroui/react";
+import { Button, Label, Slider } from "@heroui/react";
 import { FaUndo, FaCloud } from "react-icons/fa";
 import { useSettings } from "@/contexts/SettingsContext";
 import { SettingsSection } from "../SettingsSection";
@@ -66,20 +66,19 @@ function WordCloudSettingsSlider({
   return (
     <div className={className}>
       <Slider
-        label={config.label}
         value={localValue}
         onChange={handleChange}
         minValue={config.min}
         maxValue={config.max}
         step={config.step}
-        size="sm"
-        color="primary"
-        showTooltip={true}
-        tooltipProps={{
-          placement: "top",
-          content: config.tooltip || localValue.toString(),
-        }}
-      />
+      >
+        <Label title={config.tooltip}>{config.label}</Label>
+        <Slider.Output />
+        <Slider.Track>
+          <Slider.Fill />
+          <Slider.Thumb />
+        </Slider.Track>
+      </Slider>
       {config.note && (
         <div className="text-xs text-foreground/60 mt-1 ml-1">
           {config.note}
@@ -112,12 +111,11 @@ export function WordCloudSettingsPanel() {
         </div>
         <Button
           size="sm"
-          variant="flat"
-          color="default"
-          startContent={<FaUndo className="w-3 h-3" />}
+          variant="tertiary"
           onPress={resetWordCloudSettings}
           aria-label="Reset all word cloud settings to defaults"
         >
+          <FaUndo className="w-3 h-3" />
           Reset
         </Button>
       </div>

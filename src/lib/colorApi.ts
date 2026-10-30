@@ -612,26 +612,22 @@ export function applyThemeToCSS(theme: GeneratedTheme): void {
   // ------------------------------
   // Light mode ( :root )
   // ------------------------------
+  // Only the --heroui-* palette is written: HeroUI v3 owns the unprefixed
+  // --accent token (as a full colour), and globals.css derives it from these.
   const lightVars = convertThemeToHeroUIFormat(theme.light);
 
   Object.entries(lightVars.primary).forEach(([shade, hsl]) => {
     root.style.setProperty(`--heroui-primary-${shade}`, hsl);
-    root.style.setProperty(`--primary-${shade}`, hsl);
   });
   Object.entries(lightVars.secondary).forEach(([shade, hsl]) => {
     root.style.setProperty(`--heroui-secondary-${shade}`, hsl);
-    root.style.setProperty(`--secondary-${shade}`, hsl);
   });
   Object.entries(lightVars.accent).forEach(([shade, hsl]) => {
     root.style.setProperty(`--heroui-accent-${shade}`, hsl);
-    root.style.setProperty(`--accent-${shade}`, hsl);
   });
   root.style.setProperty("--heroui-primary", lightVars.primary[500]);
   root.style.setProperty("--heroui-secondary", lightVars.secondary[500]);
   root.style.setProperty("--heroui-accent", lightVars.accent[500]);
-  root.style.setProperty("--primary", lightVars.primary[500]);
-  root.style.setProperty("--secondary", lightVars.secondary[500]);
-  root.style.setProperty("--accent", lightVars.accent[500]);
 
   // ------------------------------
   // Dark mode ( .dark class )
@@ -641,15 +637,15 @@ export function applyThemeToCSS(theme: GeneratedTheme): void {
   // Build CSS string for dark variables
   let css = `.dark{`;
   Object.entries(darkVars.primary).forEach(([shade, hsl]) => {
-    css += `--heroui-primary-${shade}:${hsl};--primary-${shade}:${hsl};`;
+    css += `--heroui-primary-${shade}:${hsl};`;
   });
   Object.entries(darkVars.secondary).forEach(([shade, hsl]) => {
-    css += `--heroui-secondary-${shade}:${hsl};--secondary-${shade}:${hsl};`;
+    css += `--heroui-secondary-${shade}:${hsl};`;
   });
   Object.entries(darkVars.accent).forEach(([shade, hsl]) => {
-    css += `--heroui-accent-${shade}:${hsl};--accent-${shade}:${hsl};`;
+    css += `--heroui-accent-${shade}:${hsl};`;
   });
-  css += `--heroui-primary:${darkVars.primary[500]};--heroui-secondary:${darkVars.secondary[500]};--heroui-accent:${darkVars.accent[500]};--primary:${darkVars.primary[500]};--secondary:${darkVars.secondary[500]};--accent:${darkVars.accent[500]};}`;
+  css += `--heroui-primary:${darkVars.primary[500]};--heroui-secondary:${darkVars.secondary[500]};--heroui-accent:${darkVars.accent[500]};}`;
 
   // Inject or replace style tag
   let styleTag = document.getElementById(
