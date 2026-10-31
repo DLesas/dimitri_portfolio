@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import {
   ANIMATION_CONFIG,
+  EFFECTS_CONFIG,
   VISUAL_CONFIG,
   PERFORMANCE_CONFIGS,
 } from "@/components/NetworkBackground/constants";
@@ -43,6 +44,10 @@ export interface NetworkBackgroundSettings {
   domCollisionPadding: number;
   domCollisionStrength: number;
   domCollisionThreshold: number;
+
+  // Effects (0 = the classic look)
+  glowIntensity: number;
+  pulseDensity: number;
 }
 
 /**
@@ -124,6 +129,10 @@ function generateDefaultNetworkSettings(
     domCollisionPadding: ANIMATION_CONFIG.DOM_COLLISION_PADDING,
     domCollisionStrength: ANIMATION_CONFIG.DOM_REPULSION_FORCE,
     domCollisionThreshold: ANIMATION_CONFIG.DOM_COLLISION_THRESHOLD,
+
+    // Effects configuration
+    glowIntensity: EFFECTS_CONFIG.GLOW_INTENSITY,
+    pulseDensity: EFFECTS_CONFIG.PULSE_DENSITY,
   };
 }
 

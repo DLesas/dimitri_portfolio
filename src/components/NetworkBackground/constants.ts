@@ -1,4 +1,4 @@
-import { createTrigLookupTables } from "../../utils/3D";
+// Plain data only: this module is imported by app-wide contexts, so it must not pull in three.js.
 
 // Animation constants
 export const ANIMATION_CONFIG = {
@@ -40,37 +40,19 @@ export const ANIMATION_CONFIG = {
   SCALE_PULSE_SPEED: 0.5, // Speed of node pulsing animation
 } as const;
 
+// Visual effects layered on top of the classic look (0 = classic)
+export const EFFECTS_CONFIG = {
+  GLOW_INTENSITY: 0.7, // Soft halo around nodes, line glow and colour gradient along lines
+  PULSE_DENSITY: 0.35, // Share of connections carrying a travelling "data packet"
+  PULSE_SPEED: 140, // Packet speed in screen pixels per second
+  INTRO_SECONDS: 1.2, // Fade-in when the canvas first appears
+} as const;
+
 // Mouse tracking performance constants
 export const MOUSE_CONFIG = {
   TIMEOUT: 5000, // Auto-disable mouse tracking after 5 seconds of no movement (saves CPU)
   THROTTLE_INTERVAL: 16, // Minimum milliseconds between mouse updates (~60fps throttling)
   MOVEMENT_THRESHOLD: 2, // Minimum pixel movement required to trigger position update
-} as const;
-
-// Precomputed trigonometric lookup tables for performance optimization
-export const TRIG_CONFIG = {
-  TABLE_SIZE: 3600, // Number of precomputed values: 0.1 degree precision (3600 = 360 degrees * 10)
-  TWO_PI: 2 * Math.PI, // Full circle in radians (cached for performance)
-} as const;
-
-/**
- * PERFORMANCE OPTIMIZATION: Precomputed trigonometric lookup tables
- *
- * Why precompute instead of Math.sin/cos?
- * - Math.sin/cos are expensive operations (~10-20 CPU cycles each)
- * - With 100+ nodes animating at 60fps, that's 12,000+ trig calls per second
- * - Lookup tables reduce this to simple array access (~1 CPU cycle)
- * - Memory trade-off: 28KB of lookup tables vs massive CPU savings
- *
- * Precision: 0.1 degree accuracy (3600 samples over 360 degrees)
- * This is more than sufficient for smooth organic node movement.
- */
-
-const { trigTables } = createTrigLookupTables(TRIG_CONFIG.TABLE_SIZE);
-
-export const PRECOMPUTED_TABLES = {
-  SIN: trigTables.sin,
-  COS: trigTables.cos,
 } as const;
 
 // World coordinate system - Defines the 3D space boundaries
