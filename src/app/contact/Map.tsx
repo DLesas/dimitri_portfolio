@@ -73,53 +73,53 @@ export default function Map() {
     });
   };
 
-  // Dark theme map tiles (using CartoDB Dark Matter - free)
-  const darkTileUrl =
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-  const darkAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
-
-  // Light theme map tiles
-  const lightTileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  const lightAttribution =
+  // OpenStreetMap tiles for both themes: free and keyless. In dark mode the
+  // .map-dark filter in globals.css turns them into a dark basemap (CARTO's dark
+  // tiles now require an API key)
+  const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution =
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+  // The theme class lives on a wrapper: react-leaflet applies MapContainer's
+  // className only when the map is created, so it would not follow theme changes
   return (
-    <MapContainer
-      center={londonPosition}
-      zoom={6}
-      scrollWheelZoom={true}
+    <div
+      className={isDark ? "map-dark" : undefined}
       style={{ height: "100%", width: "100%" }}
-      className="rounded-lg"
     >
-      <TileLayer
-        attribution={isDark ? darkAttribution : lightAttribution}
-        url={isDark ? darkTileUrl : lightTileUrl}
-      />
+      <MapContainer
+        center={londonPosition}
+        zoom={6}
+        scrollWheelZoom={true}
+        style={{ height: "100%", width: "100%" }}
+        className="rounded-lg"
+      >
+        <TileLayer attribution={attribution} url={tileUrl} />
 
-      {/* London marker */}
-      <Marker position={londonPosition} icon={createCustomIcon()}>
-        <Popup>
-          <div className="text-center">
-            <h3 className="font-semibold mb-1">Dimitri Lesas</h3>
-            <p className="text-sm">London, UK</p>
-            <p className="text-xs text-gray-600 mt-2">
-              Available for remote and on-site opportunities
-            </p>
-          </div>
-        </Popup>
-      </Marker>
+        {/* London marker */}
+        <Marker position={londonPosition} icon={createCustomIcon()}>
+          <Popup>
+            <div className="text-center">
+              <h3 className="font-semibold mb-1">Dimitri Lesas</h3>
+              <p className="text-sm">London, UK</p>
+              <p className="text-xs text-gray-600 mt-2">
+                Available for remote and on-site opportunities
+              </p>
+            </div>
+          </Popup>
+        </Marker>
 
-      {/* Romsey marker */}
-      <Marker position={romseyPosition} icon={createCustomIcon()}>
-        <Popup>
-          <div className="text-center">
-            <h3 className="font-semibold mb-1">Home Base</h3>
-            <p className="text-sm">Romsey, UK</p>
-            <p className="text-xs text-gray-600 mt-2">Hampshire countryside</p>
-          </div>
-        </Popup>
-      </Marker>
-    </MapContainer>
+        {/* Romsey marker */}
+        <Marker position={romseyPosition} icon={createCustomIcon()}>
+          <Popup>
+            <div className="text-center">
+              <h3 className="font-semibold mb-1">Home Base</h3>
+              <p className="text-sm">Romsey, UK</p>
+              <p className="text-xs text-gray-600 mt-2">Hampshire countryside</p>
+            </div>
+          </Popup>
+        </Marker>
+      </MapContainer>
+    </div>
   );
 }

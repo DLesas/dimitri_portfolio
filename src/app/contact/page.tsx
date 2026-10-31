@@ -135,7 +135,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <FaEnvelope className="text-primary" />
                 <a
-                  href="mailto:dimitri.lesas@email.com"
+                  href="mailto:dlesas@hotmail.com"
                   className="hover:text-primary transition-colors text-sm"
                 >
                   dlesas@hotmail.com

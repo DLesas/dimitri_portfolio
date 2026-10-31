@@ -61,7 +61,7 @@ This email was sent from your portfolio contact form.
       const command = new SendEmailCommand({
         Source: process.env.SES_FROM_EMAIL || "noreply@example.com",
         Destination: {
-          ToAddresses: [process.env.CONTACT_EMAIL || "dimitri.lesas@email.com"],
+          ToAddresses: [process.env.CONTACT_EMAIL || "dlesas@hotmail.com"],
         },
         Message: {
           Subject: {
