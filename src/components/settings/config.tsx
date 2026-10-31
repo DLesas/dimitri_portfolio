@@ -3,6 +3,7 @@ import { BsMouseFill } from "react-icons/bs";
 import { FaShareNodes } from "react-icons/fa6";
 import { TbCircleDashed } from "react-icons/tb";
 import { MdWeb } from "react-icons/md";
+import { HiSparkles } from "react-icons/hi";
 import {
   NetworkSettingsConfig,
   WordCloudSettingsConfig,
@@ -136,6 +137,26 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     tooltip: "Distance from DOM elements where repulsion starts",
     note: "Larger values create a gentler, more gradual repulsion",
   },
+
+  // ========================================
+  // Effects
+  // ========================================
+
+  glowIntensity: {
+    label: "Glow",
+    min: 0,
+    max: 1,
+    step: 0.05,
+    tooltip: "Halo around nodes, glow and colour gradient on lines (0 = classic look)",
+  },
+
+  pulseDensity: {
+    label: "Data Pulses",
+    min: 0,
+    max: 1,
+    step: 0.05,
+    tooltip: "Share of connections carrying a travelling pulse (0 = none)",
+  },
 };
 
 // ============================================================================
@@ -219,5 +240,10 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       "domCollisionStrength",
       "domCollisionThreshold",
     ],
+  },
+  {
+    title: "Effects",
+    icon: <HiSparkles className="w-4 h-4 text-primary/70" />,
+    settings: ["glowIntensity", "pulseDensity"],
   },
 ];

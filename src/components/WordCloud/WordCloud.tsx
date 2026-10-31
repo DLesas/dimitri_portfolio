@@ -1,91 +1,11 @@
-import * as THREE from "three";
-import {
-  useState,
-  useMemo,
-  Suspense,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import { Perf } from "r3f-perf";
-import Word from "./Word";
+"use client";
+
+import { useCallback, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { type SkillRecord } from "@/hooks/queries/useSkillsData";
-import RotatingGroup from "./RotatingGroup";
-import { fibonacciSphere } from "@/utils/3D";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useSettings } from "@/contexts/SettingsContext";
-import { useDebug } from "@/contexts/DebugContext";
 
-// Separate component for debug performance monitoring to avoid re-renders
-function DebugPerf() {
-  const { isDebugEnabled } = useDebug();
-
-  return (
-    <Perf
-      position="bottom-right"
-      antialias={false}
-      showGraph={isDebugEnabled}
-      deepAnalyze={false}
-      minimal={!isDebugEnabled}
-      matrixUpdate={false}
-      overClock={false}
-      style={{
-        opacity: isDebugEnabled ? 1 : 0,
-        pointerEvents: isDebugEnabled ? "auto" : "none",
-        visibility: isDebugEnabled ? "visible" : "hidden",
-      }}
-    />
-  );
-}
-
-// Component to handle dynamic scene updates (fog, etc.)
-function SceneSettings({
-  fogColor,
-  fogNear,
-  fogFar,
-}: {
-  fogColor: string;
-  fogNear: number;
-  fogFar: number;
-}) {
-  // Read the scene from the store at call time: three.js objects are meant to be
-  // mutated, but a value returned by a hook is treated as immutable
-  const getThreeState = useThree((state) => state.get);
-  const currentFogColor = useRef(new THREE.Color(fogColor));
-  const targetFogColor = useRef(new THREE.Color(fogColor));
-
-  useEffect(() => {
-    const { scene } = getThreeState();
-
-    // Set transparent background
-    scene.background = null;
-
-    // Initialize fog if it doesn't exist
-    if (!scene.fog || !(scene.fog instanceof THREE.Fog)) {
-      scene.fog = new THREE.Fog(currentFogColor.current, fogNear, fogFar);
-    }
-
-    // Update target color when theme changes
-    targetFogColor.current.set(fogColor);
-  }, [getThreeState, fogColor, fogNear, fogFar]);
-
-  // Gradual color transition using useFrame
-  useFrame(({ scene }) => {
-    if (scene.fog && scene.fog instanceof THREE.Fog) {
-      // Lerp current color towards target color
-      currentFogColor.current.lerp(targetFogColor.current, 0.5); // 5% per frame for smooth transition
-
-      // Update fog color and properties
-      scene.fog.color.copy(currentFogColor.current);
-      scene.fog.near = fogNear;
-      scene.fog.far = fogFar;
-    }
-  });
-
-  return null; // This component doesn't render anything visual
-}
+// three.js and the scene load in their own chunk, after the page has painted
+const WordCloudCanvas = dynamic(() => import("./WordCloudCanvas"), { ssr: false });
 
 interface WordCloudProps {
   skills: SkillRecord[];
@@ -98,20 +18,6 @@ export default function WordCloud({
   style = { width: "100%", height: "100vh" },
   onHoverChange,
 }: WordCloudProps) {
-  // Get rotation speeds from settings
-  const { wordCloudSettings } = useSettings();
-
-  // Fixed configuration values
-  const radius = 22;
-  const cameraPosition: [number, number, number] = [0, 0, 42];
-  const fogNear = 0;
-  const fogFar = 100;
-  const ambientLightIntensity = 0.8;
-  const enableDamping = true;
-  const dampingFactor = 0.07;
-  const rotationLerpFactor = 0.08;
-  const [isHovering, setIsHovering] = useState(false);
-
   // Hover state management with debouncing, necessary otherwise the hover state
   // can be set to null when switching between words quickly (timing issue)
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -151,64 +57,11 @@ export default function WordCloud({
     };
   }, []);
 
-  // Get theme colors
-  const { colors } = useTheme();
-
-  // Use theme fog color
-  const resolvedFogColor = colors.background.base.hex;
-
-  const positions = useMemo(
-    () =>
-      fibonacciSphere(skills.length, {
-        radius,
-        format: "vector3",
-      }) as THREE.Vector3[],
-    [skills.length, radius]
-  );
-
   return (
-    <Canvas
-      dpr={[1, 2]}
-      camera={{ position: cameraPosition, fov: 75, zoom: 1 }}
-      style={style}
-      gl={{ alpha: true }}
-      onPointerEnter={() => setIsHovering(true)}
-      onPointerLeave={() => setIsHovering(false)}
-    >
-      {/* Dynamic scene settings that update when theme changes */}
-      <SceneSettings
-        fogColor={resolvedFogColor}
-        fogNear={fogNear}
-        fogFar={fogFar}
-      />
-
-      <ambientLight intensity={ambientLightIntensity} />
-      <Suspense fallback={null}>
-        <RotatingGroup
-          isHovering={isHovering}
-          rotationSpeedY={wordCloudSettings.rotationSpeedY}
-          rotationSpeedX={wordCloudSettings.rotationSpeedX}
-          lerpFactor={rotationLerpFactor}
-        >
-          {skills.map((skill, idx) => (
-            <Word
-              key={`${skill.name}-${idx}`}
-              skill={skill}
-              position={positions[idx] ?? new THREE.Vector3()}
-              index={idx}
-              onHover={handleHoverChange}
-            />
-          ))}
-        </RotatingGroup>
-      </Suspense>
-      <OrbitControls
-        enableDamping={enableDamping}
-        dampingFactor={dampingFactor}
-        enableZoom={false}
-      />
-
-      {/* Performance Monitor - Only visible in debug mode */}
-      <DebugPerf />
-    </Canvas>
+    <div style={{ position: "relative", ...style }}>
+      <WordCloudCanvas skills={skills} onHover={handleHoverChange} />
+    </div>
   );
 }
+
+export type { SkillRecord };
