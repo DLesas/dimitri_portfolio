@@ -320,3 +320,11 @@
   --color-danger-900: hsl(var(--heroui-danger-900));
   --color-divider: hsl(var(--heroui-divider) / 0.15);
 }
+
+/* Contact map in dark mode: OpenStreetMap tiles inverted into a dark basemap */
+.map-dark .leaflet-container {
+  background: #0b0c10;
+}
+.map-dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) grayscale(0.55) brightness(0.85) contrast(0.9);
+}
