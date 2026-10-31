@@ -108,9 +108,21 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
       engineRef.current?.pointerLeave();
       invalidate();
     };
-    const onDown = (e: PointerEvent) => engineRef.current?.pointerDown(e.clientX, e.clientY);
-    const onUp = () => {
-      const link = engineRef.current?.pointerUp();
+    const onDown = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      engineRef.current?.pointerDown(e.clientX - r.left, e.clientY - r.top, e.clientX, e.clientY);
+      invalidate();
+    };
+    const onUp = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const { size } = getThreeState();
+      const link = engineRef.current?.pointerUp(
+        e.clientX - r.left,
+        e.clientY - r.top,
+        camera as THREE.PerspectiveCamera,
+        size.width,
+        size.height
+      );
       if (link) window.open(link, "_blank", "noopener,noreferrer");
     };
     const onChange = () => invalidate();

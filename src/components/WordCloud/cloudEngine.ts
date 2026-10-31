@@ -194,16 +194,60 @@ export function createCloudEngine(skills: SkillRecord[]) {
   function pointerLeave() {
     pointer.inside = false;
   }
-  function pointerDown(clientX: number, clientY: number) {
+  function pointerDown(x: number, y: number, clientX: number, clientY: number) {
+    pointer.x = x;
+    pointer.y = y;
+    pointer.inside = true;
     pointer.downX = clientX;
     pointer.downY = clientY;
     pointer.dragging = false;
   }
-  /** Returns the link to open when this was a click on a word */
-  function pointerUp(): string | null {
-    const link = !pointer.dragging && hovered >= 0 ? (words[hovered].skill.link ?? null) : null;
+  /** Returns the link to open when this was a click or tap on a word */
+  function pointerUp(
+    x: number,
+    y: number,
+    camera: THREE.PerspectiveCamera,
+    width: number,
+    height: number
+  ): string | null {
+    const wasDrag = pointer.dragging;
     pointer.dragging = false;
-    return link;
+    if (wasDrag) return null;
+    // A tap on a touch screen arrives without a preceding move, so resolve the word here
+    // rather than relying on the hover state
+    const i = pick(camera, width, height, x, y);
+    return i >= 0 ? (words[i].skill.link ?? null) : null;
+  }
+
+  /**
+   * The word under a screen point: of the words whose on-screen box contains it, the
+   * one nearest the camera. Uses the group's current matrix.
+   */
+  function pick(camera: THREE.PerspectiveCamera, width: number, height: number, x: number, y: number) {
+    camera.getWorldDirection(camDir);
+    const pxPerUnit = height / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    let hit = -1;
+    let hitDepth = Infinity;
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const bounds = w.text.textRenderInfo?.blockBounds;
+      if (!bounds) continue;
+      v.copy(w.text.position).applyMatrix4(group.matrixWorld);
+      // Distance along the view axis: what decides both on-screen size and what's in front
+      const depth = camDir.dot(d.copy(v).sub(camera.position));
+      if (depth <= 0) continue;
+      const scale = (pxPerUnit / depth) * w.lift;
+      v.project(camera);
+      const sx = (v.x + 1) * 0.5 * width;
+      const sy = (1 - v.y) * 0.5 * height;
+      const hw = ((bounds[2] - bounds[0]) / 2) * scale + 4;
+      const hh = ((bounds[3] - bounds[1]) / 2) * scale + 4;
+      if (Math.abs(x - sx) < hw && Math.abs(y - sy) < hh && depth < hitDepth) {
+        hit = i;
+        hitDepth = depth;
+      }
+    }
+    return hit;
   }
 
   /**
@@ -238,30 +282,16 @@ export function createCloudEngine(skills: SkillRecord[]) {
     // Billboarding: each word's local rotation cancels the group's, then matches the camera
     billboard.copy(group.quaternion).invert().multiply(camera.quaternion);
     camera.getWorldDirection(camDir);
-    const pxPerUnit = height / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2));
 
-    // Hover: the front-most word whose on-screen box contains the pointer
-    let hit = -1;
-    let hitFront = -Infinity;
+    // How directly each word faces the camera, for the front/back opacity fade
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
       v.copy(w.text.position).applyMatrix4(group.matrixWorld);
-      const dist = v.distanceTo(camera.position);
       w.front = camDir.dot(d.copy(v).sub(camera.position).normalize());
-      const bounds = w.text.textRenderInfo?.blockBounds;
-      if (pointer.inside && !pointer.dragging && bounds) {
-        const scale = (pxPerUnit / dist) * w.lift;
-        v.project(camera);
-        const sx = (v.x + 1) * 0.5 * width;
-        const sy = (1 - v.y) * 0.5 * height;
-        const hw = ((bounds[2] - bounds[0]) / 2) * scale + 4;
-        const hh = ((bounds[3] - bounds[1]) / 2) * scale + 4;
-        if (Math.abs(pointer.x - sx) < hw && Math.abs(pointer.y - sy) < hh && w.front > hitFront) {
-          hit = i;
-          hitFront = w.front;
-        }
-      }
     }
+
+    // Hover: the front-most word under the pointer
+    const hit = pointer.inside && !pointer.dragging ? pick(camera, width, height, pointer.x, pointer.y) : -1;
     let hoverChange: SkillRecord | null | undefined;
     if (hit !== hovered) {
       hovered = hit;
@@ -305,7 +335,14 @@ export function createCloudEngine(skills: SkillRecord[]) {
       w.text.outlineOpacity = w.glow * w.opacity;
       if (w.glow > 0.002) glowing = true;
 
+      // Still fading towards a new hover or theme colour
+      const colorGap =
+        Math.abs(targetColor.r - w.color.r) +
+        Math.abs(targetColor.g - w.color.g) +
+        Math.abs(targetColor.b - w.color.b);
+
       if (
+        colorGap > 0.003 ||
         Math.abs(targetOpacity - w.opacity) > 0.002 ||
         Math.abs(glowTarget - w.glow) > 0.002 ||
         Math.abs(liftTarget - w.lift) > 0.002 ||
