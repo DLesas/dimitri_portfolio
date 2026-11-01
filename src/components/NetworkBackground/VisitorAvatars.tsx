@@ -95,7 +95,7 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
   const place = placeName(visitor);
 
   return (
-    <li className="group relative">
+    <li className="group relative -ml-1.5 first:ml-0 hover:z-10 focus-within:z-10">
       <button
         type="button"
         aria-label={isSelf ? `${visitor.name} (you)` : visitor.name}
@@ -103,8 +103,9 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setOpen(false)}
-        className="flex size-8 items-center justify-center rounded-full border-[1.5px] backdrop-blur-[2px] transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60"
-        // An outline in their colour, like their cursor
+        className="flex size-8 items-center justify-center rounded-full border-[1.5px] bg-background transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60"
+        // An outline in their colour, like their cursor; the page-coloured fill keeps
+        // overlapping rings from showing through each other
         style={{ borderColor: translucent(visitor.color, 0.75), color: translucent(visitor.color, 0.9) }}
       >
         <Icon aria-hidden className="size-[18px]" />
@@ -146,14 +147,14 @@ export default function VisitorAvatars({ presence }: { presence: Presence }) {
     <ul
       data-network-overlay
       aria-label="People on this page"
-      className="fixed bottom-4 left-4 z-40 flex items-center gap-1.5 opacity-50 transition-opacity duration-200 hover:opacity-100 focus-within:opacity-100 enter [--enter-y:8px]"
+      className="fixed bottom-4 left-4 z-40 flex items-center opacity-50 transition-opacity duration-200 hover:opacity-100 focus-within:opacity-100 enter [--enter-y:8px]"
     >
       <Avatar visitor={self} isSelf />
       {shown.map((visitor) => (
         <Avatar key={visitor.id} visitor={visitor} isSelf={false} />
       ))}
       {hidden > 0 && (
-        <li className="flex size-8 items-center justify-center rounded-full border-[1.5px] border-foreground/30 text-[11px] font-semibold text-foreground/70">
+        <li className="-ml-1.5 flex size-8 items-center justify-center rounded-full border-[1.5px] border-foreground/30 bg-background text-[11px] font-semibold text-foreground/70">
           +{hidden}
         </li>
       )}
