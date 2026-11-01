@@ -12,21 +12,17 @@
 
 name: Infrastructure
 
+# infra/access/ is deployed by hand, so changes there alone don't run this
 on:
   pull_request:
-    paths: ["infra/**", ".github/workflows/infra.yml"]
+    paths: ["infra/**", "!infra/access/**", ".github/workflows/infra.yml"]
   push:
     branches: [main]
-    paths: ["infra/**", ".github/workflows/infra.yml"]
+    paths: ["infra/**", "!infra/access/**", ".github/workflows/infra.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
-
-# One run at a time, queued rather than cancelled, so deploys never overlap
-concurrency:
-  group: infra
-  cancel-in-progress: false
 
 env:
   AWS_REGION: eu-west-2
@@ -39,13 +35,14 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: infra-preview
+    # A newer push to the same pull request replaces its preview
+    concurrency:
+      group: infra-preview-${{ github.ref }}
+      cancel-in-progress: true
     permissions:
       contents: read
       id-token: write
       pull-requests: write
-    env:
-      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
-      VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,7 +56,11 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_PREVIEW_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      # Secrets only on the steps that use them, not on npm ci's install scripts
       - uses: pulumi/actions@v6
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
         with:
           command: preview
           stack-name: prod
@@ -72,12 +73,15 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: infra
+    # One deploy at a time, never cancelled midway. Of several waiting, only the newest
+    # runs, which is the one with the latest main. Previews don't share this group, so
+    # they can't displace a waiting deploy.
+    concurrency:
+      group: infra-deploy
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
-    env:
-      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
-      VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,6 +96,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - uses: pulumi/actions@v6
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
         with:
           command: up
           stack-name: prod
@@ -102,6 +109,9 @@ jobs:
       # anything is followed by a fresh production build from main
       - name: Rebuild the site if anything changed
         working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
         run: |
           changes=$(pulumi stack history --stack prod --json --page-size 1 \
             | jq '[.[0].resourceChanges // {} | to_entries[] | select(.key != "same") | .value] | add // 0')

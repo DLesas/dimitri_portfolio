@@ -1,5 +1,5 @@
 /**
- * Live cursors: other visitors on the home page, over AppSync Events (infra/index.ts).
+ * Live cursors: other visitors on the home page, over AppSync Events (infra/realtime.ts).
  *
  * Each tab joins one channel on a WebSocket. It announces itself every few seconds, and
  * while anyone else is there it sends its cursor position (network world units, so a
