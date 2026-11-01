@@ -3,6 +3,7 @@ config:
   aws:region: eu-west-2
   vercel:team: dlesas-projects
   lesas-infra:vercelProject: dimitri-portfolio
+  lesas-infra:githubRepo: DLesas/dimitri_portfolio
   lesas-infra:monthlyBudgetUsd: "3"
   lesas-infra:realtimeMonthlyCapUsd: "2"
   lesas-infra:alertEmail: dlesas@hotmail.com

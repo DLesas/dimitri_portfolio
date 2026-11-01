@@ -8,10 +8,8 @@
  */
 import * as pulumi from "@pulumi/pulumi";
 import * as cloudflare from "@pulumi/cloudflare";
-import { config } from "./config";
+import { cloudflareZoneId as zoneId } from "./config";
 import { dkimTokens } from "./email";
-
-const zoneId = config.require("cloudflareZoneId");
 
 type RecordArgs = Omit<cloudflare.DnsRecordArgs, "zoneId" | "ttl">;
 

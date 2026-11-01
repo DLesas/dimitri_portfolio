@@ -2,7 +2,8 @@
  * Identity and access for lesas.dev's infrastructure. Deployed by hand (`npm run deploy`
  * in this folder), never by CI: these resources decide what everything else may do.
  *
- * - The S3 bucket holding Pulumi's state, for this stack and the main one (../)
+ * - The S3 bucket holding Pulumi's state, for this stack and the main one (../), and when
+ *   its old object versions expire
  * - The roles the main stack's resources run as: the cutoff Lambda and the contact form
  * - Sign-in trust (OIDC) for Vercel and GitHub Actions, and the roles GitHub Actions
  *   assumes to preview and deploy the main stack. The deploy role can't change IAM, so
@@ -10,6 +11,9 @@
  */
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+// Names shared with the main stack. It imports nothing from @pulumi, so this stack still
+// loads only its own copy (from this folder's node_modules).
+import { BUDGETS, CONTACT_LIMITS_TABLE, CUTOFF, EMAIL_DOMAIN, FROM_ADDRESS, INBOX, PROJECT } from "../names";
 
 const config = new pulumi.Config();
 const githubRepo = config.require("githubRepo");
@@ -18,21 +22,59 @@ const vercelProject = config.require("vercelProject");
 const stateBucketName = config.require("stateBucket");
 
 const account = aws.getCallerIdentityOutput().accountId;
-const region = aws.getRegionOutput().name;
+const region = aws.getRegionOutput().region;
 
 const policy = (statements: pulumi.Input<object>[]) =>
   pulumi.jsonStringify({ Version: "2012-10-17", Statement: statements });
 const arn = (service: string, resource: string, inRegion = true) =>
   pulumi.interpolate`arn:aws:${service}:${inRegion ? region : ""}:${account}:${resource}`;
+/** Trust for a role assumed with an OIDC token from `issuer`, for `audience`, naming `subject` */
+const webIdentityTrust = (
+  provider: aws.iam.OpenIdConnectProvider,
+  issuer: string,
+  audience: string,
+  subject: string
+) =>
+  policy([
+    {
+      Effect: "Allow",
+      Principal: { Federated: provider.arn },
+      Action: "sts:AssumeRoleWithWebIdentity",
+      Condition: { StringEquals: { [`${issuer}:aud`]: audience, [`${issuer}:sub`]: subject } },
+    },
+  ]);
+
+/** The contact form's SES identities (../email.ts): the domain it sends from, and the inbox */
+const sesIdentities = [EMAIL_DOMAIN, INBOX].map((identity) => arn("ses", `identity/${identity}`));
 
 // ---- Pulumi state ----
 
 // Created by hand before Pulumi existed here (a stack can't create its own state store)
 const stateBucket = new aws.s3.Bucket("pulumi-state", { bucket: stateBucketName }, { protect: true });
-new aws.s3.BucketVersioning(
+const stateVersioning = new aws.s3.BucketVersioning(
   "pulumi-state",
   { bucket: stateBucket.id, versioningConfiguration: { status: "Enabled", mfaDelete: "Disabled" } },
   { protect: true }
+);
+// Versioning keeps every overwritten or deleted object: each update overwrites a stack's
+// state file and creates and deletes a lock, so old versions pile up. They're only there
+// to undo a bad write, so each is deleted 90 days after it was replaced. The rule acts on
+// noncurrent versions only: current objects (the state, its history and backups) are
+// never touched.
+new aws.s3.BucketLifecycleConfiguration(
+  "pulumi-state",
+  {
+    bucket: stateBucket.id,
+    rules: [
+      {
+        id: "expire-noncurrent-versions",
+        status: "Enabled",
+        filter: {}, // every object
+        noncurrentVersionExpiration: { noncurrentDays: 90 },
+      },
+    ],
+  },
+  { dependsOn: [stateVersioning] }
 );
 new aws.s3.BucketPublicAccessBlock(
   "pulumi-state",
@@ -65,7 +107,7 @@ new aws.iam.RolePolicyAttachment(
 );
 // API key actions are authorised against arn:…:/v1/apis/<id>/apikeys[/<key>]. Any API in
 // the region: the Lambda only touches the one its API_ID names.
-const apiKeys = pulumi.interpolate`arn:aws:appsync:${region}:${account}:/v1/apis/*/apikeys`;
+const apiKeys = arn("appsync", "/v1/apis/*/apikeys");
 new aws.iam.RolePolicy(
   "realtime-cutoff-keys",
   {
@@ -80,20 +122,21 @@ new aws.iam.RolePolicy(
       // Metric reads can't be narrowed to one metric
       { Effect: "Allow", Action: "cloudwatch:GetMetricData", Resource: "*" },
       // Past the cap, it raises the alarm on its own topic
-      { Effect: "Allow", Action: "sns:Publish", Resource: arn("sns", "lesas-realtime-cutoff") },
+      { Effect: "Allow", Action: "sns:Publish", Resource: arn("sns", CUTOFF) },
     ]),
   },
   { protect: true }
 );
 
 // The contact form (../email.ts): production Vercel functions swap their OIDC token for
-// this role, which can only send as contact@lesas.dev, only to the inbox, and count each
-// visitor's messages for the daily limit. Previews can be built from any branch, so they
-// don't get it (their contact form can't send).
+// this role, which can only send as FROM_ADDRESS, only to INBOX (../names.ts), and count
+// each visitor's messages for the daily limit. Previews can be built from any branch, so
+// they don't get it (their contact form can't send).
 const vercelIssuer = `oidc.vercel.com/${vercelTeam}`;
+const vercelAudience = `https://vercel.com/${vercelTeam}`;
 const vercelOidc = new aws.iam.OpenIdConnectProvider(
   "vercel",
-  { url: `https://${vercelIssuer}`, clientIdLists: [`https://vercel.com/${vercelTeam}`] },
+  { url: `https://${vercelIssuer}`, clientIdLists: [vercelAudience] },
   { protect: true }
 );
 const contactRole = new aws.iam.Role(
@@ -101,24 +144,16 @@ const contactRole = new aws.iam.Role(
   {
     name: "lesas-contact-form",
     description: "Assumed by the site's Vercel functions (OIDC) to send contact form emails",
-    assumeRolePolicy: policy([
-      {
-        Effect: "Allow",
-        Principal: { Federated: vercelOidc.arn },
-        Action: "sts:AssumeRoleWithWebIdentity",
-        Condition: {
-          StringEquals: {
-            [`${vercelIssuer}:aud`]: `https://vercel.com/${vercelTeam}`,
-            // This project's production deployments only
-            [`${vercelIssuer}:sub`]: `owner:${vercelTeam}:project:${vercelProject}:environment:production`,
-          },
-        },
-      },
-    ]),
+    // This project's production deployments only
+    assumeRolePolicy: webIdentityTrust(
+      vercelOidc,
+      vercelIssuer,
+      vercelAudience,
+      `owner:${vercelTeam}:project:${vercelProject}:environment:production`
+    ),
   },
   { protect: true }
 );
-const sesIdentity = (name: string) => pulumi.interpolate`arn:aws:ses:${region}:${account}:identity/${name}`;
 new aws.iam.RolePolicy(
   "contact-form-send",
   {
@@ -128,14 +163,18 @@ new aws.iam.RolePolicy(
       {
         Effect: "Allow",
         Action: ["ses:SendEmail", "ses:SendRawEmail"],
-        Resource: [sesIdentity("lesas.dev"), sesIdentity("dlesas@hotmail.com")],
+        Resource: sesIdentities,
         Condition: {
-          StringEquals: { "ses:FromAddress": "contact@lesas.dev" },
-          "ForAllValues:StringEquals": { "ses:Recipients": ["dlesas@hotmail.com"] },
+          StringEquals: { "ses:FromAddress": FROM_ADDRESS },
+          "ForAllValues:StringEquals": { "ses:Recipients": [INBOX] },
         },
       },
       // Counting each visitor's messages for the daily limit
-      { Effect: "Allow", Action: "dynamodb:UpdateItem", Resource: arn("dynamodb", "table/lesas-contact-limits") },
+      {
+        Effect: "Allow",
+        Action: "dynamodb:UpdateItem",
+        Resource: arn("dynamodb", `table/${CONTACT_LIMITS_TABLE}`),
+      },
     ]),
   },
   { protect: true }
@@ -148,28 +187,21 @@ const githubOidc = new aws.iam.OpenIdConnectProvider("github", {
   url: `https://${githubIssuer}`,
   clientIdLists: ["sts.amazonaws.com"],
 });
-const githubTrust = (subject: string) =>
-  policy([
-    {
-      Effect: "Allow",
-      Principal: { Federated: githubOidc.arn },
-      Action: "sts:AssumeRoleWithWebIdentity",
-      Condition: {
-        StringEquals: {
-          [`${githubIssuer}:aud`]: "sts.amazonaws.com",
-          [`${githubIssuer}:sub`]: subject,
-        },
-      },
-    },
-  ]);
+const githubTrust = (environment: string) =>
+  webIdentityTrust(
+    githubOidc,
+    githubIssuer,
+    "sts.amazonaws.com",
+    `repo:${githubRepo}:environment:${environment}`
+  );
 
 // The main stack's state, and the lock `pulumi up` takes on it, live under these prefixes
 // (this stack's are not among them)
 const mainState = [
-  ".pulumi/stacks/lesas-infra/*",
-  ".pulumi/history/lesas-infra/*",
-  ".pulumi/backups/lesas-infra/*",
-  ".pulumi/locks/organization/lesas-infra/*",
+  `.pulumi/stacks/${PROJECT}/*`,
+  `.pulumi/history/${PROJECT}/*`,
+  `.pulumi/backups/${PROJECT}/*`,
+  `.pulumi/locks/organization/${PROJECT}/*`,
 ].map((prefix) => pulumi.interpolate`${stateBucket.arn}/${prefix}`);
 const readState = {
   Effect: "Allow",
@@ -185,7 +217,7 @@ const readState = {
 const previewRole = new aws.iam.Role("ci-preview", {
   name: "lesas-infra-preview",
   description: "GitHub Actions on pull requests: previews the main Pulumi stack",
-  assumeRolePolicy: githubTrust(`repo:${githubRepo}:environment:infra-preview`),
+  assumeRolePolicy: githubTrust("infra-preview"),
 });
 new aws.iam.RolePolicy("ci-preview", {
   role: previewRole.id,
@@ -224,7 +256,7 @@ new aws.iam.RolePolicy("ci-preview", {
 const deployRole = new aws.iam.Role("ci-deploy", {
   name: "lesas-infra-deploy",
   description: "GitHub Actions on main: deploys the main Pulumi stack",
-  assumeRolePolicy: githubTrust(`repo:${githubRepo}:environment:infra`),
+  assumeRolePolicy: githubTrust("infra"),
 });
 new aws.iam.RolePolicy("ci-deploy", {
   role: deployRole.id,
@@ -255,13 +287,9 @@ new aws.iam.RolePolicy("ci-deploy", {
     {
       Effect: "Allow",
       Action: "budgets:*",
-      Resource: ["budget/monthly-cost", "budget/lesas-realtime"].map((budget) => arn("budgets", budget, false)),
+      Resource: [BUDGETS.monthly, BUDGETS.realtime].map((budget) => arn("budgets", `budget/${budget}`, false)),
     },
-    {
-      Effect: "Allow",
-      Action: "ses:*",
-      Resource: [sesIdentity("lesas.dev"), sesIdentity("dlesas@hotmail.com")],
-    },
+    { Effect: "Allow", Action: "ses:*", Resource: sesIdentities },
     {
       Effect: "Allow",
       Action: "iam:PassRole",

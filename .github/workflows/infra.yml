@@ -114,7 +114,7 @@ jobs:
           cloud-url: ${{ env.PULUMI_BACKEND_URL }}
 
       # Vercel reads environment variables when a build starts, so a deploy that changed
-      # anything is followed by a fresh production build from main
+      # anything is followed by a fresh production build from main (infra/rebuild-site.sh)
       - name: Rebuild the site if anything changed
         working-directory: infra
         env:
@@ -125,8 +125,5 @@ jobs:
             | jq '[.[0].resourceChanges // {} | to_entries[] | select(.key != "same") | .value] | add // 0')
           echo "Resources changed: $changes"
           if [ "$changes" -gt 0 ]; then
-            curl -fsS -X POST "https://api.vercel.com/v13/deployments?slug=dlesas-projects" \
-              -H "Authorization: Bearer $VERCEL_API_TOKEN" -H "Content-Type: application/json" \
-              -d '{"name":"dimitri-portfolio","project":"dimitri-portfolio","target":"production","gitSource":{"type":"github","org":"DLesas","repo":"dimitri_portfolio","ref":"main"}}' \
-              | jq '{id, url, readyState}'
+            ./rebuild-site.sh
           fi

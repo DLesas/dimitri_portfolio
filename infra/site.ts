@@ -4,7 +4,7 @@
  */
 import * as pulumi from "@pulumi/pulumi";
 import * as vercel from "@pulumiverse/vercel";
-import { vercelProject } from "./config";
+import { githubRepo, vercelProject } from "./config";
 import { realtimeEnv } from "./realtime";
 import { contactEnv } from "./email";
 
@@ -14,7 +14,7 @@ export const site = new vercel.Project(
     name: vercelProject,
     framework: "nextjs",
     nodeVersion: "22.x",
-    gitRepository: { type: "github", repo: "DLesas/dimitri_portfolio", productionBranch: "main" },
+    gitRepository: { type: "github", repo: githubRepo, productionBranch: "main" },
     gitForkProtection: true,
     autoAssignCustomDomains: true,
     automaticallyExposeSystemEnvironmentVariables: true,
