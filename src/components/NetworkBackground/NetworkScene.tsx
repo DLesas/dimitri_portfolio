@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { VISUAL_CONFIG } from "./constants";
+import { PX_PER_UNIT } from "./world";
 import {
   createNetworkEngine,
   type DOMCollider,
+  type FrameContext,
   type MousePosition,
-  type NetworkEngine,
   type NetworkInputs,
   type NetworkPalette,
   type PerformanceLevel,
 } from "./networkEngine";
 import { drawCursorMarks, type LiveCursors, type RemoteCursor } from "./liveCursors";
+import { useSceneEngine } from "@/components/three/useSceneEngine";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 
 const NO_REMOTES: RemoteCursor[] = [];
@@ -51,42 +52,40 @@ export default function NetworkScene({
   // mutated, but a value returned by a hook is treated as immutable
   const getThreeState = useThree((state) => state.get);
   const invalidate = useThree((state) => state.invalidate);
-  const engineRef = useRef<NetworkEngine | null>(null);
   const inputsRef = useRef<NetworkInputs>({ settings, connectionDistance, performanceLevel, still });
+  // Filled in every frame rather than allocated every frame
+  const frameContextRef = useRef<FrameContext>({
+    width: 0,
+    height: 0,
+    dpr: 1,
+    mouse: { x: 0, y: 0, isActive: false },
+    remotes: NO_REMOTES,
+    colliders: [],
+  });
 
-  // Latest props for the frame loop, without re-subscribing
+  // Latest props for the effects below and the frame loop, without re-subscribing
   useEffect(() => {
     inputsRef.current = { settings, connectionDistance, performanceLevel, still };
   });
 
-  useEffect(() => {
-    const engine = createNetworkEngine();
-    engineRef.current = engine;
-    const { scene } = getThreeState();
-    scene.add(engine.root);
-    return () => {
-      scene.remove(engine.root);
-      engine.dispose();
-      engineRef.current = null;
-    };
-  }, [getThreeState]);
+  const engineRef = useSceneEngine(createNetworkEngine);
 
   // Node count changes keep existing nodes; new ones spawn over the current view
   useEffect(() => {
     const { size } = getThreeState();
     engineRef.current?.setNodeCount(
       nodeCount,
-      size.width / VISUAL_CONFIG.CAMERA_ZOOM,
-      size.height / VISUAL_CONFIG.CAMERA_ZOOM,
+      size.width / PX_PER_UNIT,
+      size.height / PX_PER_UNIT,
       inputsRef.current
     );
     invalidate();
-  }, [nodeCount, getThreeState, invalidate]);
+  }, [nodeCount, getThreeState, invalidate, engineRef]);
 
   useEffect(() => {
     engineRef.current?.setPalette(palette);
     invalidate();
-  }, [palette, invalidate]);
+  }, [palette, invalidate, engineRef]);
 
   // Reduced motion: settle once the text colliders have been measured, then hold still
   useEffect(() => {
@@ -96,18 +95,18 @@ export default function NetworkScene({
       invalidate();
     }, 600);
     return () => window.clearTimeout(id);
-  }, [still, nodeCount, connectionDistance, settings, domColliders, invalidate]);
+  }, [still, nodeCount, connectionDistance, settings, domColliders, invalidate, engineRef]);
 
   useFrame((state, delta) => {
     const remotes = liveCursors.current?.update(delta, mousePos.current) ?? NO_REMOTES;
-    engineRef.current?.frame(delta, inputsRef.current, {
-      width: state.size.width,
-      height: state.size.height,
-      dpr: state.gl.getPixelRatio(),
-      mouse: mousePos.current,
-      remotes,
-      colliders: domColliders.current,
-    });
+    const ctx = frameContextRef.current;
+    ctx.width = state.size.width;
+    ctx.height = state.size.height;
+    ctx.dpr = state.gl.getPixelRatio();
+    ctx.mouse = mousePos.current;
+    ctx.remotes = remotes;
+    ctx.colliders = domColliders.current;
+    engineRef.current?.frame(delta, inputsRef.current, ctx);
     if (cursorLayer.current) {
       drawCursorMarks(cursorLayer.current, remotes, state.size.width, state.size.height);
     }

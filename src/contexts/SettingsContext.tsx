@@ -13,6 +13,7 @@ import {
   VISUAL_CONFIG,
   PERFORMANCE_CONFIGS,
 } from "@/components/NetworkBackground/constants";
+import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useHardwarePerformance } from "./HardwarePerformanceContext";
 import { useDebug } from "./DebugContext";
 
@@ -83,11 +84,6 @@ interface SettingsContextType {
 // ============================================================================
 // Constants & Defaults
 // ============================================================================
-
-/**
- * localStorage key for persisting settings
- */
-const STORAGE_KEY = "dimitri-portfolio-settings";
 
 /**
  * Debounce delay for localStorage saves (milliseconds)
@@ -162,33 +158,25 @@ const SUPERSEDED_NETWORK_DEFAULTS: Partial<
   pulseSpeed: [60],
 };
 
+interface SavedSettings {
+  networkSettings?: Partial<NetworkBackgroundSettings>;
+  wordCloudSettings?: Partial<WordCloudSettings>;
+}
+
 /**
  * Read previously saved settings from localStorage
  *
  * @returns The saved settings object, or null if none/unavailable
  */
-function readSavedSettings(): {
-  networkSettings?: Partial<NetworkBackgroundSettings>;
-  wordCloudSettings?: Partial<WordCloudSettings>;
-} | null {
-  try {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const network = parsed?.networkSettings;
-        if (network) {
-          for (const [key, oldDefaults] of Object.entries(SUPERSEDED_NETWORK_DEFAULTS)) {
-            if (oldDefaults?.includes(network[key])) delete network[key];
-          }
-        }
-        return parsed;
-      }
+function readSavedSettings(): SavedSettings | null {
+  const saved = readJSON<SavedSettings>(STORAGE_KEYS.settings);
+  const network = saved?.networkSettings as Record<string, unknown> | undefined;
+  if (network) {
+    for (const [key, oldDefaults] of Object.entries(SUPERSEDED_NETWORK_DEFAULTS)) {
+      if (oldDefaults?.includes(network[key] as number)) delete network[key];
     }
-  } catch (error) {
-    console.warn("Failed to load settings from localStorage:", error);
   }
-  return null;
+  return saved;
 }
 
 // ============================================================================
@@ -220,22 +208,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // State Management
   // ========================================
 
+  // Read from localStorage once, on first render
+  const [saved] = useState(readSavedSettings);
+
   // Saved settings count as user-modified, so hardware defaults never override them
   const [hasUserModifiedSettings, setHasUserModifiedSettings] = useState(
-    () => !!readSavedSettings()?.networkSettings
+    () => !!saved?.networkSettings
   );
 
-  // Load from localStorage on first render only, falling back to medium defaults
+  // Saved settings, falling back to medium defaults
   const [networkSettings, setNetworkSettings] =
     useState<NetworkBackgroundSettings>(() => ({
       ...MEDIUM_DEFAULT_NETWORK_SETTINGS,
-      ...readSavedSettings()?.networkSettings,
+      ...saved?.networkSettings,
     }));
 
   const [wordCloudSettings, setWordCloudSettings] = useState<WordCloudSettings>(
     () => ({
       ...DEFAULT_WORDCLOUD_SETTINGS,
-      ...readSavedSettings()?.wordCloudSettings,
+      ...saved?.wordCloudSettings,
     })
   );
 
@@ -303,14 +294,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
    */
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      try {
-        if (typeof window !== "undefined") {
-          const settingsToSave = { networkSettings, wordCloudSettings };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
-        }
-      } catch (error) {
-        console.warn("Failed to save settings to localStorage:", error);
-      }
+      writeJSON(STORAGE_KEYS.settings, { networkSettings, wordCloudSettings });
     }, STORAGE_SAVE_DELAY);
 
     return () => clearTimeout(timeoutId);

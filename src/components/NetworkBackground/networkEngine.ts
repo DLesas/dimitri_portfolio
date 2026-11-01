@@ -26,8 +26,11 @@ import {
   REMOTE_CURSOR_FRAGMENT,
   REMOTE_CURSOR_VERTEX,
 } from "./shaders";
+import { PX_PER_UNIT } from "./world";
 import type { RemoteCursor } from "./liveCursors";
+import { blendingFor } from "@/components/three/blending";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
+import type { ThemeColors } from "@/contexts/ThemeContext";
 
 export type PerformanceLevel = "low" | "medium" | "high";
 
@@ -48,6 +51,23 @@ export interface NetworkPalette {
   lineB: string;
   packet: string;
   additive: boolean;
+}
+
+/** The network's colours for the theme; glows are additive on a dark background */
+export function networkPalette(colors: ThemeColors, dark: boolean): NetworkPalette {
+  const primary = colors.primary.shades;
+  const secondary = colors.secondary.shades;
+  const core = new THREE.Color(primary[500].hex).lerp(new THREE.Color(secondary[500].hex), 0.5);
+  if (!dark) core.copy(new THREE.Color(primary[600].hex));
+  return {
+    core: `#${core.getHexString()}`,
+    rim: `#${core.clone().multiplyScalar(dark ? 0.55 : 0.7).getHexString()}`,
+    halo: dark ? primary[400].hex : primary[500].hex,
+    lineA: dark ? primary[500].hex : primary[600].hex,
+    lineB: dark ? secondary[500].hex : secondary[600].hex,
+    packet: dark ? primary[100].hex : primary[500].hex,
+    additive: dark,
+  };
 }
 
 export interface NetworkInputs {
@@ -83,10 +103,7 @@ const MAX_REMOTE_CURSORS = 16;
 /** A packet starts just before its line and fades out just past the end (CSS pixels) */
 const PACKET_ENTRY_EXIT_PX = 40;
 
-const smoothstep = (p: number) => {
-  const t = p < 0 ? 0 : p > 1 ? 1 : p;
-  return t * t * (3 - 2 * t);
-};
+const { smoothstep } = THREE.MathUtils;
 
 function connectionBuffers() {
   return {
@@ -117,7 +134,7 @@ export function createNetworkEngine() {
   const nodeMaterial = shaderMaterial(NODE_VERTEX, NODE_FRAGMENT, {
     uTime: { value: 0 },
     uPixelRatio: { value: 1 },
-    uZoom: { value: VISUAL_CONFIG.CAMERA_ZOOM },
+    uZoom: { value: PX_PER_UNIT },
     uRadius: { value: VISUAL_CONFIG.NODE_RADIUS },
     uPulseAmp: { value: A.SCALE_PULSE_AMPLITUDE },
     uPulseSpeed: { value: A.SCALE_PULSE_SPEED },
@@ -305,7 +322,7 @@ export function createNetworkEngine() {
     l.uPacketHaze.value = palette.additive ? 0.35 : 0.08;
     cursorMaterial.uniforms.uColor.value.set(palette.halo);
     additive = palette.additive;
-    const blending = palette.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
+    const blending = blendingFor(palette.additive);
     for (const m of [nodeMaterial, linkMaterial, cursorMaterial, remoteMaterial]) {
       m.blending = blending;
       m.needsUpdate = true;
@@ -383,7 +400,6 @@ export function createNetworkEngine() {
     const st = inputs.settings;
     const pos = position!.array as Float32Array;
     const R = st.mouseRepulsionRadius;
-    const pad = st.domCollisionPadding;
     const threshold = st.domCollisionThreshold;
     const FTS = A.FIXED_TIME_STEP;
     /** Velocity change per unit of offset (dx, dy) from a cursor */
@@ -415,11 +431,11 @@ export function createNetworkEngine() {
         vy += dy * k;
       }
 
-      // DOM element collision avoidance
+      // DOM element collision avoidance (the colliders already include their padding)
       for (let k = 0; k < colliders.length; k++) {
         const c = colliders[k];
-        const ex = Math.max(c.x - c.width / 2 - pad - x, 0, x - (c.x + c.width / 2 + pad));
-        const ey = Math.max(c.y - c.height / 2 - pad - y, 0, y - (c.y + c.height / 2 + pad));
+        const ex = Math.max(c.x - c.width / 2 - x, 0, x - (c.x + c.width / 2));
+        const ey = Math.max(c.y - c.height / 2 - y, 0, y - (c.y + c.height / 2));
         const toEdge = Math.sqrt(ex * ex + ey * ey);
         if (toEdge < threshold) {
           const cx = x - c.x, cy = y - c.y;
@@ -471,9 +487,9 @@ export function createNetworkEngine() {
       // Fade in, hold, fade out; closer connections are more opaque and thicker
       const age = time - conn.birth[k];
       let fade = 1;
-      if (age < A.CONNECTION_FADE_IN_TIME) fade = smoothstep(age / A.CONNECTION_FADE_IN_TIME);
+      if (age < A.CONNECTION_FADE_IN_TIME) fade = smoothstep(age / A.CONNECTION_FADE_IN_TIME, 0, 1);
       else if (age > conn.life[k] - A.CONNECTION_FADE_OUT_TIME)
-        fade = smoothstep((conn.life[k] - age) / A.CONNECTION_FADE_OUT_TIME);
+        fade = smoothstep((conn.life[k] - age) / A.CONNECTION_FADE_OUT_TIME, 0, 1);
       const nd = Math.min(conn.dist[k] / maxDistance, 1);
       const distanceOpacity = Math.max(A.CONNECTION_MIN_OPACITY, 1 - nd * A.CONNECTION_DISTANCE_FADE);
       alpha[k] = Math.max(0, fade * distanceOpacity * A.CONNECTION_OPACITY_MULTIPLIER);
@@ -522,7 +538,7 @@ export function createNetworkEngine() {
     const glow = (st.glowIntensity ?? EFFECTS_CONFIG.GLOW_INTENSITY) * (additive ? 1 : 0.55);
     const heatTarget = ctx.mouse.isActive && !inputs.still ? 1 : 0;
     mouseHeat += (heatTarget - mouseHeat) * Math.min(1, delta * 4);
-    const fadeIn = smoothstep(intro);
+    const fadeIn = smoothstep(intro, 0, 1);
 
     const u = nodeMaterial.uniforms;
     u.uTime.value = time;
@@ -545,7 +561,7 @@ export function createNetworkEngine() {
     // Longest possible connection on screen (the connection distance swings by up to 1),
     // plus room for a packet to enter and leave the line. Stable while nodes drift.
     l.uTravelPx.value =
-      ((inputs.connectionDistance + 1) * VISUAL_CONFIG.CAMERA_ZOOM + PACKET_ENTRY_EXIT_PX) * ctx.dpr;
+      ((inputs.connectionDistance + 1) * PX_PER_UNIT + PACKET_ENTRY_EXIT_PX) * ctx.dpr;
     l.uIntro.value = fadeIn;
     l.uMouse.value.copy(u.uMouse.value);
     l.uMouseActive.value = mouseHeat;

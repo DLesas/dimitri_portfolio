@@ -8,6 +8,8 @@
  */
 import * as THREE from "three";
 import { BatchedText, Text } from "troika-three-text";
+import { blendingFor } from "@/components/three/blending";
+import type { ThemeColors } from "@/contexts/ThemeContext";
 import type { SkillRecord } from "@/types/skills";
 
 const RADIUS = 22;
@@ -26,6 +28,26 @@ export interface CloudPalette {
   fog: string;
   shell: string;
   additive: boolean;
+}
+
+/** The cloud's colours for the theme; the shell is additive on a dark background */
+export function cloudPalette(colors: ThemeColors, dark: boolean): CloudPalette {
+  const p = colors.primary.shades;
+  // Map skill types to theme colors
+  const byType: Record<string, string> = {
+    "Programming Language": p[500].hex,
+    Library: p[600].hex,
+    Software: p[500].hex,
+    Database: p[700].hex,
+    "Cloud Platform": p[600].hex,
+  };
+  return {
+    byType: (type: string) => byType[type] ?? p[500].hex,
+    hover: colors.accent.shades[500].hex,
+    fog: colors.background.base.hex,
+    shell: dark ? p[400].hex : p[600].hex,
+    additive: dark,
+  };
 }
 
 export interface CloudInputs {
@@ -104,9 +126,9 @@ const SHELL_FRAGMENT = /* glsl */ `
 
 export function createCloudEngine(skills: SkillRecord[]) {
   // ---- one rotating group: a batched text for all words, a dotted shell behind them ----
-  const group = new THREE.Group();
+  const root = new THREE.Group();
   const batch = new BatchedText();
-  group.add(batch);
+  root.add(batch);
 
   const positions = fibonacciSphere(skills.length, RADIUS);
   const words = skills.map((skill, i) => {
@@ -150,7 +172,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
   });
   const shell = new THREE.Points(shellGeometry, shellMaterial);
   shell.renderOrder = -1;
-  group.add(shell);
+  root.add(shell);
 
   // ---- interaction and animation state ----
   const pointer = { x: 0, y: 0, inside: false, downX: 0, downY: 0, dragging: false };
@@ -185,7 +207,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
 
   function setPalette(palette: CloudPalette) {
     shellMaterial.uniforms.uColor.value.set(palette.shell);
-    shellMaterial.blending = palette.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
+    shellMaterial.blending = blendingFor(palette.additive);
     shellMaterial.needsUpdate = true;
   }
 
@@ -234,7 +256,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
 
   /**
    * The word under a screen point: of the words whose on-screen box contains it, the
-   * one nearest the camera. Uses the group's current matrix.
+   * one nearest the camera. Uses the root's current matrix.
    */
   function pick(camera: THREE.PerspectiveCamera, width: number, height: number, x: number, y: number) {
     camera.getWorldDirection(camDir);
@@ -245,7 +267,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
       const w = words[i];
       const bounds = w.text.textRenderInfo?.blockBounds;
       if (!bounds) continue;
-      v.copy(w.text.position).applyMatrix4(group.matrixWorld);
+      v.copy(w.text.position).applyMatrix4(root.matrixWorld);
       // Distance along the view axis: what decides both on-screen size and what's in front
       const depth = camDir.dot(d.copy(v).sub(camera.position));
       if (depth <= 0) continue;
@@ -284,22 +306,22 @@ export function createCloudEngine(skills: SkillRecord[]) {
     const stop = pointer.inside || still;
     speedY += ((stop ? 0 : inputs.rotationSpeedY) - speedY) * k;
     speedX += ((stop ? 0 : inputs.rotationSpeedX) - speedX) * k;
-    group.rotation.y += speedY * dt * 60;
-    group.rotation.x += speedX * dt * 60;
+    root.rotation.y += speedY * dt * 60;
+    root.rotation.x += speedX * dt * 60;
     if (Math.abs(speedX) + Math.abs(speedY) > 1e-5) busy = true;
-    group.updateMatrixWorld();
+    root.updateMatrixWorld();
 
     time += still ? 0 : dt;
     appear = still ? 10 : appear + dt;
 
-    // Billboarding: each word's local rotation cancels the group's, then matches the camera
-    billboard.copy(group.quaternion).invert().multiply(camera.quaternion);
+    // Billboarding: each word's local rotation cancels the root's, then matches the camera
+    billboard.copy(root.quaternion).invert().multiply(camera.quaternion);
     camera.getWorldDirection(camDir);
 
     // How directly each word faces the camera, for the front/back opacity fade
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
-      v.copy(w.text.position).applyMatrix4(group.matrixWorld);
+      v.copy(w.text.position).applyMatrix4(root.matrixWorld);
       w.front = camDir.dot(d.copy(v).sub(camera.position).normalize());
     }
 
@@ -383,7 +405,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
   }
 
   return {
-    group,
+    root,
     setFontSize,
     setPalette,
     fit,

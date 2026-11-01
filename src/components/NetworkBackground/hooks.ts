@@ -1,6 +1,6 @@
-import { useRef, useEffect, useState, useCallback } from "react";
-import { convertMouseToWorldCoordinates, convertDOMToWorldCoordinates } from "./world";
-import { MOUSE_CONFIG, VISUAL_CONFIG } from "./constants";
+import { useRef, useEffect, useCallback } from "react";
+import { PX_PER_UNIT, convertMouseToWorldCoordinates, convertDOMToWorldCoordinates } from "./world";
+import { MOUSE_CONFIG } from "./constants";
 import type { DOMCollider, MousePosition } from "./networkEngine";
 
 // Smart hook for mouse tracking with auto-disable and throttling
@@ -107,7 +107,11 @@ export function useMouseTracking(containerRef: React.RefObject<HTMLDivElement | 
   return mousePos;
 }
 
-// Hook for DOM collision detection
+/**
+ * DOM collision boxes, in world units: every [data-network-collider] element, grown by
+ * `collisionPadding` on each side. The padding is applied here only: the physics and the
+ * debug overlay use these boxes as they are.
+ */
 export function useDOMColliders(
   containerRef: React.RefObject<HTMLDivElement | null>,
   collisionPadding: number = 0
@@ -140,10 +144,8 @@ export function useDOMColliders(
       // Convert pixel dimensions to world units using consistent ratio
       // This ensures DOM elements maintain their size regardless of container size
       // Include padding in the world dimensions
-      const elementWorldWidth =
-        rect.width / VISUAL_CONFIG.CAMERA_ZOOM + collisionPadding * 2;
-      const elementWorldHeight =
-        rect.height / VISUAL_CONFIG.CAMERA_ZOOM + collisionPadding * 2;
+      const elementWorldWidth = rect.width / PX_PER_UNIT + collisionPadding * 2;
+      const elementWorldHeight = rect.height / PX_PER_UNIT + collisionPadding * 2;
 
       return {
         x: worldCoords.x,
@@ -187,50 +189,4 @@ export function useDOMColliders(
   }, [containerRef, collisionPadding, updateDOMColliders]);
 
   return domColliders;
-}
-
-// Hook for viewport visibility detection
-export function useViewportVisibility(
-  containerRef: React.RefObject<HTMLDivElement | null>
-) {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isTabActive, setIsTabActive] = useState(true);
-
-  useEffect(() => {
-    // Intersection Observer for viewport visibility
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.1, // Trigger when 10% of the component is visible
-        rootMargin: "50px", // Start animating 50px before it comes into view
-      }
-    );
-
-    // Page visibility API for tab switching
-    const handleVisibilityChange = () => {
-      setIsTabActive(!document.hidden);
-    };
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [containerRef]);
-
-  // Return combined visibility state
-  const shouldAnimate = isVisible && isTabActive;
-
-  return {
-    isVisible,
-    isTabActive,
-    shouldAnimate,
-  };
 }

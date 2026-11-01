@@ -1,14 +1,13 @@
 "use client";
 import { RefObject, useEffect, useState, useSyncExternalStore } from "react";
 import { Popover, Checkbox, popoverVariants } from "@heroui/react";
-
-const OPT_OUT_KEY = "lesas-helper-opted-out";
+import { STORAGE_KEYS, readJSON, remove, writeJSON } from "@/lib/storage";
 
 // Read once per page load, so ticking "Don't show this again" applies to the next
 // visit rather than closing the helper that is already showing
 let optedOutAtLoad: boolean | undefined;
 const readOptedOut = () =>
-  (optedOutAtLoad ??= localStorage.getItem(OPT_OUT_KEY) === "true");
+  (optedOutAtLoad ??= readJSON(STORAGE_KEYS.helperOptedOut) === true);
 const subscribe = () => () => {};
 
 // Standalone popover (no trigger of its own), so HeroUI's slot classes are applied directly
@@ -71,9 +70,9 @@ export default function HelperPopover({ duration = 6000, triggerRef }: Props) {
             onChange={(selected) => {
               setDontShowAgain(selected);
               if (selected) {
-                localStorage.setItem(OPT_OUT_KEY, "true");
+                writeJSON(STORAGE_KEYS.helperOptedOut, true);
               } else {
-                localStorage.removeItem(OPT_OUT_KEY);
+                remove(STORAGE_KEYS.helperOptedOut);
               }
             }}
           >

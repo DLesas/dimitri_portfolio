@@ -14,87 +14,42 @@ import {
   applyThemeToCSS,
   type GeneratedTheme,
 } from "@/lib/colorApi";
+import { SHADES, hslToHex, parseHsl, type Shade } from "@/lib/theme/color";
+import { STORAGE_KEYS, readJSON, remove, writeJSON } from "@/lib/storage";
+import { whenIdle } from "@/lib/idle";
 
 // ============================================================================
 // Types & Interfaces
 // ============================================================================
 
 /**
- * Color formats for a single color value
- * Provides the same color in multiple formats for different use cases
+ * A single color value
  */
 interface ColorFormats {
-  /** Hex format for Three.js/Canvas (e.g., "#3b82f6") */
+  /** Lowercase hex, for Three.js/Canvas (e.g., "#3b82f6") */
   hex: string;
-  /** HSL format for CSS (e.g., "hsl(220 14.3% 95.9%)") */
-  hsl: string;
-  /** RGBA format with opacity (e.g., "rgba(59, 130, 246, 0.5)") */
-  rgba: string;
-  /** HSLA format for CSS with alpha (e.g., "hsl(220 14.3% 95.9% / 0.5)") */
-  hsla: string;
 }
 
 /**
  * HeroUI color shade scale (lightness variants)
  * From lightest (50) to darkest (950)
  */
-interface ColorShades {
-  50: ColorFormats; // Very light
-  100: ColorFormats; // Light
-  200: ColorFormats; // Light
-  300: ColorFormats; // Light-medium
-  400: ColorFormats; // Medium
-  500: ColorFormats; // Base/default
-  600: ColorFormats; // Medium-dark
-  700: ColorFormats; // Dark
-  800: ColorFormats; // Darker
-  900: ColorFormats; // Very dark
-  950: ColorFormats; // Darkest
-}
+type ColorShades = Record<Shade, ColorFormats>;
 
 /**
- * Opacity variants of a single color
- * From 10% to 90% opacity
- */
-interface OpacityVariants {
-  10: ColorFormats; // 10% opacity
-  20: ColorFormats; // 20% opacity
-  30: ColorFormats; // 30% opacity
-  40: ColorFormats; // 40% opacity
-  50: ColorFormats; // 50% opacity
-  60: ColorFormats; // 60% opacity
-  70: ColorFormats; // 70% opacity
-  80: ColorFormats; // 80% opacity
-  90: ColorFormats; // 90% opacity
-}
-
-/**
- * Complete color system with shades and opacity variants
+ * Color system with shades
  * Used for primary, secondary, and accent colors
  */
 interface ColorSystem {
   /** HeroUI color shades (lightness variants 50-950) */
   shades: ColorShades;
-  /** Opacity variants (10-90%) of the base shade (500) */
-  opacity: OpacityVariants;
 }
 
 /**
- * Simple color system with base color and opacity variants
- * Used for foreground color (no shade variants in HeroUI)
+ * Single color system (base color only)
+ * Used for background and foreground (no shade variants in HeroUI)
  */
-interface SimpleColorSystem {
-  /** Single base color */
-  base: ColorFormats;
-  /** Opacity variants (10-90%) of the base color */
-  opacity: OpacityVariants;
-}
-
-/**
- * Background color system (base color only)
- * Background doesn't have opacity variants in HeroUI
- */
-interface BackgroundColorSystem {
+interface SingleColorSystem {
   /** Single base color */
   base: ColorFormats;
 }
@@ -102,19 +57,19 @@ interface BackgroundColorSystem {
 /**
  * Complete theme color palette
  */
-interface ThemeColors {
+export interface ThemeColors {
   primary: ColorSystem;
   secondary: ColorSystem;
   accent: ColorSystem;
-  background: BackgroundColorSystem;
-  foreground: SimpleColorSystem;
+  background: SingleColorSystem;
+  foreground: SingleColorSystem;
 }
 
 /**
  * Theme context interface
  */
 interface ThemeContextType {
-  /** Current theme colors in multiple formats */
+  /** Current theme colors */
   colors: ThemeColors;
   /** Manually trigger theme color extraction */
   updateTheme: () => void;
@@ -199,107 +154,23 @@ const CSS_VARIABLES = {
   foreground: "--heroui-foreground",
 } as const;
 
-/**
- * Color shade keys for iteration
- */
-const SHADE_KEYS = [
-  50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950,
-] as const;
-
-/**
- * Opacity levels for iteration
- */
-const OPACITY_LEVELS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
-
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
 /**
- * Converts HSL color string to hex format
- * Handles HeroUI's HSL format: "220 14.3% 95.9%"
+ * Creates the color value for a HeroUI HSL string ("220 14.3% 95.9%")
  *
- * @param hslString - HSL color string in HeroUI format
- * @returns Hex color string (e.g., "#3b82f6")
+ * @param hslValue - HSL color string in HeroUI format
+ * @returns The color as hex (in lower case), or blue if the string doesn't parse
  */
-const hslToHex = (hslString: string): string => {
-  // Parse HSL string to extract H, S, L values
-  const match = hslString.match(
-    /(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%/
-  );
-
-  if (!match) {
-    console.warn(`Failed to parse HSL string: ${hslString}`);
-    return "#3b82f6"; // Fallback to blue
+const createColorFormats = (hslValue: string): ColorFormats => {
+  const hsl = parseHsl(hslValue);
+  if (!hsl) {
+    console.warn(`Failed to parse HSL string: ${hslValue}`);
+    return { hex: "#3b82f6" }; // Fallback to blue
   }
-
-  const h = parseFloat(match[1]);
-  const s = parseFloat(match[2]) / 100;
-  const l = parseFloat(match[3]) / 100;
-
-  // Convert HSL to RGB using standard algorithm
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-
-  let r: number, g: number, b: number;
-
-  // Determine RGB values based on hue
-  if (h >= 0 && h < 60) {
-    [r, g, b] = [c, x, 0];
-  } else if (h >= 60 && h < 120) {
-    [r, g, b] = [x, c, 0];
-  } else if (h >= 120 && h < 180) {
-    [r, g, b] = [0, c, x];
-  } else if (h >= 180 && h < 240) {
-    [r, g, b] = [0, x, c];
-  } else if (h >= 240 && h < 300) {
-    [r, g, b] = [x, 0, c];
-  } else {
-    [r, g, b] = [c, 0, x];
-  }
-
-  // Convert to 0-255 range and format as hex
-  const red = Math.round((r + m) * 255);
-  const green = Math.round((g + m) * 255);
-  const blue = Math.round((b + m) * 255);
-
-  const toHex = (n: number) => n.toString(16).padStart(2, "0");
-  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
-};
-
-/**
- * Converts HSL to RGBA format
- *
- * @param hslString - HSL color string
- * @param opacity - Opacity value (0-1)
- * @returns RGBA color string
- */
-const hslToRgba = (hslString: string, opacity: number = 1): string => {
-  const hex = hslToHex(hslString);
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-};
-
-/**
- * Creates all color formats from an HSL value
- *
- * @param hslValue - HSL color string
- * @param opacity - Opacity value (0-1)
- * @returns Object with all color formats
- */
-const createColorFormats = (
-  hslValue: string,
-  opacity: number = 1
-): ColorFormats => {
-  const hex = hslToHex(hslValue);
-  const hsl = `hsl(${hslValue})`;
-  const hsla = `hsl(${hslValue} / ${opacity})`;
-  const rgba = hslToRgba(hslValue, opacity);
-
-  return { hex, hsl, rgba, hsla };
+  return { hex: hslToHex(hsl.h, hsl.s, hsl.l) };
 };
 
 /**
@@ -327,22 +198,6 @@ const getCSSVariable = (cssVar: string): string | null => {
 // ============================================================================
 
 /**
- * Creates opacity variants for a given color
- *
- * @param hslValue - Base HSL color string
- * @returns Object with opacity variants (10-90%)
- */
-const createOpacityVariants = (hslValue: string): OpacityVariants => {
-  const variants = {} as OpacityVariants;
-
-  OPACITY_LEVELS.forEach((level) => {
-    variants[level] = createColorFormats(hslValue, level / 100);
-  });
-
-  return variants;
-};
-
-/**
  * Creates color shades from HeroUI CSS variables or fallbacks
  *
  * @param colorName - Color name (primary, secondary, accent)
@@ -356,7 +211,7 @@ const createColorShades = (
   const fallbackShades = FALLBACK_COLORS[colorName];
   const shades = {} as ColorShades;
 
-  SHADE_KEYS.forEach((shade) => {
+  SHADES.forEach((shade) => {
     let hslValue = fallbackShades[shade] as string;
 
     // Try to get real CSS variable value if not forcing fallback
@@ -395,66 +250,38 @@ const createSingleColor = (
 };
 
 /**
- * Creates complete color system with shades and opacity variants
+ * Creates color system with shades
  * Used for primary, secondary, and accent colors
  *
  * @param colorName - Color name
  * @param forceFallback - Force use of fallback colors
- * @returns Complete color system
+ * @returns Color system
  */
 const createColorSystem = (
   colorName: "primary" | "secondary" | "accent",
   forceFallback: boolean = false
 ): ColorSystem => {
-  const shades = createColorShades(colorName, forceFallback);
-
-  // Use the 500 shade as base for opacity variants
-  const baseShade = shades[500];
-  const baseHsl = baseShade.hsl.replace("hsl(", "").replace(")", "");
-  const opacity = createOpacityVariants(baseHsl);
-
-  return { shades, opacity };
+  return { shades: createColorShades(colorName, forceFallback) };
 };
 
 /**
- * Creates simple color system with base color and opacity variants
- * Used for foreground color
+ * Creates single color system (base only)
+ * Used for background and foreground
  *
+ * @param colorName - Color name
  * @param forceFallback - Force use of fallback colors
- * @returns Simple color system
+ * @returns Single color system
  */
-const createSimpleColorSystem = (
+const createSingleColorSystem = (
+  colorName: "background" | "foreground",
   forceFallback: boolean = false
-): SimpleColorSystem => {
+): SingleColorSystem => {
   const baseHsl = createSingleColor(
-    "foreground",
-    FALLBACK_COLORS.foreground,
+    colorName,
+    FALLBACK_COLORS[colorName],
     forceFallback
   );
-  const base = createColorFormats(baseHsl);
-  const opacity = createOpacityVariants(baseHsl);
-
-  return { base, opacity };
-};
-
-/**
- * Creates background color system (base only)
- * Background doesn't have opacity variants in HeroUI
- *
- * @param forceFallback - Force use of fallback colors
- * @returns Background color system
- */
-const createBackgroundColorSystem = (
-  forceFallback: boolean = false
-): BackgroundColorSystem => {
-  const baseHsl = createSingleColor(
-    "background",
-    FALLBACK_COLORS.background,
-    forceFallback
-  );
-  const base = createColorFormats(baseHsl);
-
-  return { base };
+  return { base: createColorFormats(baseHsl) };
 };
 
 /**
@@ -469,8 +296,8 @@ const extractThemeColors = (forceFallback: boolean = false): ThemeColors => {
     primary: createColorSystem("primary", forceFallback),
     secondary: createColorSystem("secondary", forceFallback),
     accent: createColorSystem("accent", forceFallback),
-    background: createBackgroundColorSystem(forceFallback),
-    foreground: createSimpleColorSystem(forceFallback),
+    background: createSingleColorSystem("background", forceFallback),
+    foreground: createSingleColorSystem("foreground", forceFallback),
   };
 };
 
@@ -480,8 +307,6 @@ const extractThemeColors = (forceFallback: boolean = false): ThemeColors => {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Storage key for custom theme
-const CUSTOM_THEME_KEY = "dimitri-portfolio-custom-theme";
 const DEFAULT_PRIMARY_COLOR = "#3b82f6";
 
 /**
@@ -489,32 +314,21 @@ const DEFAULT_PRIMARY_COLOR = "#3b82f6";
  *
  * @returns The saved primary color and generated theme, or null if none/unavailable
  */
-const readSavedTheme = (): {
-  primaryColor: string;
-  theme: GeneratedTheme;
-} | null => {
-  if (typeof window === "undefined") return null;
-  const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
-  if (!savedTheme) return null;
-  try {
-    return JSON.parse(savedTheme);
-  } catch (error) {
-    console.error("Failed to load saved theme:", error);
-    return null;
-  }
-};
+const readSavedTheme = () =>
+  readJSON<{ primaryColor: string; theme: GeneratedTheme }>(
+    STORAGE_KEYS.customTheme
+  );
 
 /**
  * Theme context provider component
  *
- * Provides HeroUI theme colors in multiple formats with server-safe hydration.
- * Colors are extracted from CSS custom properties and converted to hex, hsl, rgba, hsla.
+ * Provides HeroUI theme colors as hex with server-safe hydration.
+ * Colors are extracted from CSS custom properties and converted to hex.
  *
  * Features:
  * - Server-safe: Uses fallback colors during SSR to prevent hydration mismatches
  * - Manual updates: Call updateTheme() when theme changes
- * - Multiple formats: Each color available in hex, hsl, rgba, hsla
- * - Complete color systems: Shades (50-950) and opacity variants (10-90%)
+ * - Complete color systems: Shades (50-950) for primary, secondary and accent
  * - Custom theme generation from primary color
  *
  * @param children - React children
@@ -563,15 +377,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // For manual updates - run immediately
       extractThemeColorsIdle();
     } else {
-      // For automatic extraction - use idle callback
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        window.requestIdleCallback(() => extractThemeColorsIdle(), {
-          timeout: 5000, // Allow more time for theme extraction
-        });
-      } else {
-        // Fallback for older browsers - use setTimeout with small delay
-        setTimeout(() => extractThemeColorsIdle(), 50);
-      }
+      // For automatic extraction - once idle (allowing more time for theme extraction)
+      whenIdle(extractThemeColorsIdle, { timeout: 5000, fallbackMs: 50 });
     }
   }, []);
 
@@ -629,14 +436,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           });
 
           // Save to localStorage
-          localStorage.setItem(
-            CUSTOM_THEME_KEY,
-            JSON.stringify({
-              primaryColor: color,
-              theme,
-              generatedAt: Date.now(),
-            })
-          );
+          writeJSON(STORAGE_KEYS.customTheme, {
+            primaryColor: color,
+            theme,
+            generatedAt: Date.now(),
+          });
 
           // Apply theme to CSS variables (now applies both light and dark modes)
           applyThemeToCSS(theme);
@@ -658,7 +462,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
    * Reset theme to default
    */
   const resetTheme = useCallback(() => {
-    localStorage.removeItem(CUSTOM_THEME_KEY);
+    remove(STORAGE_KEYS.customTheme);
 
     // Clear any existing timeout
     if (generationTimeoutRef.current) {
@@ -697,12 +501,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Update theme when mode changes (light/dark)
   useEffect(() => {
     const handleThemeChange = () => {
-      const savedTheme = localStorage.getItem(CUSTOM_THEME_KEY);
+      const savedTheme = readSavedTheme();
       if (savedTheme) {
         try {
-          const { theme } = JSON.parse(savedTheme);
           // Apply theme (now applies both light and dark modes automatically)
-          applyThemeToCSS(theme);
+          applyThemeToCSS(savedTheme.theme);
           setTimeout(() => updateTheme(), 100);
         } catch (error) {
           console.error("Failed to apply theme for mode change:", error);
@@ -782,10 +585,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
  * // Use color shades
  * const nodeColor = colors.primary.shades[600].hex;
  * const lightBg = colors.primary.shades[50].hex;
- *
- * // Use opacity variants
- * const transparentPrimary = colors.primary.opacity[30].hex;
- * const semiTransparentText = colors.foreground.opacity[70].rgba;
  *
  * // Use background/foreground
  * const bgColor = colors.background.base.hex;
