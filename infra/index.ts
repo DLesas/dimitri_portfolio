@@ -3,6 +3,7 @@
  *
  * - An AppSync Events API carrying the home page's live cursors
  * - The Vercel environment variables the site connects with
+ * - An automatic cutoff for that API if its traffic looks like abuse
  * - A monthly cost alert for the AWS account
  *
  * Commands (from this folder) are the npm scripts in package.json. They read the Vercel
@@ -73,7 +74,105 @@ for (const [key, value] of Object.entries(siteEnv)) {
   });
 }
 
-// ---- Cost guard ----
+// ---- Cost guard: automatic cutoff ----
+
+// The API key is public, so the channel can be flooded. AppSync reports traffic every
+// minute; if it passes any of these limits (far above real use: a handful of visitors
+// sends a few thousand messages a minute), a Lambda deletes the API's keys, which stops
+// all traffic within a few minutes, and an email says so. `npm run restore` brings a
+// new key back, after which the site needs a redeploy.
+const CUTOFF_LIMITS = {
+  InboundMessages: 30_000, // messages published per minute
+  OutboundMessages: 200_000, // messages delivered per minute (published × subscribers)
+  ActiveConnections: 300, // open connections
+};
+const alertEmail = config.require("alertEmail");
+
+const cutoffRole = new aws.iam.Role("realtime-cutoff", {
+  assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" }),
+});
+new aws.iam.RolePolicyAttachment("realtime-cutoff-logs", {
+  role: cutoffRole.name,
+  policyArn: aws.iam.ManagedPolicy.AWSLambdaBasicExecutionRole,
+});
+new aws.iam.RolePolicy("realtime-cutoff-keys", {
+  role: cutoffRole.id,
+  // API key actions are authorised against arn:…:/v1/apis/<id>/apikeys[/<key>], not the
+  // API's own ARN (arn:…:apis/<id>)
+  policy: api.apiArn.apply((arn) => {
+    const keys = `${arn.replace(":apis/", ":/v1/apis/")}/apikeys`;
+    return JSON.stringify({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Effect: "Allow",
+          Action: ["appsync:ListApiKeys", "appsync:DeleteApiKey"],
+          Resource: [keys, `${keys}/*`],
+        },
+      ],
+    });
+  }),
+});
+
+const cutoffLogs = new aws.cloudwatch.LogGroup("realtime-cutoff", {
+  name: "/aws/lambda/lesas-realtime-cutoff",
+  retentionInDays: 30,
+});
+const cutoff = new aws.lambda.Function(
+  "realtime-cutoff",
+  {
+    name: "lesas-realtime-cutoff",
+    description: "Deletes the live cursors' API keys when their traffic looks like abuse",
+    runtime: aws.lambda.Runtime.NodeJS22dX,
+    handler: "cutoff.handler",
+    code: new pulumi.asset.AssetArchive({
+      "cutoff.mjs": new pulumi.asset.FileAsset(path.join(__dirname, "handlers", "cutoff.mjs")),
+    }),
+    role: cutoffRole.arn,
+    memorySize: 128,
+    timeout: 15,
+    environment: { variables: { API_ID: api.apiId } },
+  },
+  { dependsOn: [cutoffLogs] }
+);
+
+const cutoffTopic = new aws.sns.Topic("realtime-cutoff", { name: "lesas-realtime-cutoff" });
+new aws.lambda.Permission("realtime-cutoff-from-sns", {
+  action: "lambda:InvokeFunction",
+  function: cutoff.name,
+  principal: "sns.amazonaws.com",
+  sourceArn: cutoffTopic.arn,
+});
+new aws.sns.TopicSubscription("realtime-cutoff-lambda", {
+  topic: cutoffTopic.arn,
+  protocol: "lambda",
+  endpoint: cutoff.arn,
+});
+// AWS emails a confirmation link first; the alerts only arrive once it's clicked
+new aws.sns.TopicSubscription("realtime-cutoff-email", {
+  topic: cutoffTopic.arn,
+  protocol: "email",
+  endpoint: alertEmail,
+});
+
+for (const [metric, limit] of Object.entries(CUTOFF_LIMITS)) {
+  new aws.cloudwatch.MetricAlarm(`realtime-${metric}`, {
+    name: `lesas-realtime-${metric}`,
+    alarmDescription: `Live cursors: ${metric} passed ${limit} in a minute, so the API keys were deleted`,
+    namespace: "AWS/AppSync",
+    metricName: metric,
+    dimensions: { EventAPIId: api.apiId },
+    statistic: metric === "ActiveConnections" ? "Maximum" : "Sum",
+    period: 60,
+    evaluationPeriods: 1,
+    threshold: limit,
+    comparisonOperator: "GreaterThanThreshold",
+    treatMissingData: "notBreaching",
+    alarmActions: [cutoffTopic.arn],
+  });
+}
+
+// ---- Cost guard: monthly budget ----
 
 // Account-wide: emails when this month's actual or forecast spend passes the limit
 new aws.budgets.Budget("monthly-cost", {
@@ -87,7 +186,7 @@ new aws.budgets.Budget("monthly-cost", {
     comparisonOperator: "GREATER_THAN",
     threshold: 100,
     thresholdType: "PERCENTAGE",
-    subscriberEmailAddresses: [config.require("alertEmail")],
+    subscriberEmailAddresses: [alertEmail],
   })),
 });
 
