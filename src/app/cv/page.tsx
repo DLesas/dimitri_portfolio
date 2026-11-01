@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Button } from "@heroui/react";
 import { FaDownload, FaExpand } from "react-icons/fa";
-import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 
 // Dynamically import PDF components to avoid SSR issues
@@ -15,62 +14,19 @@ const PDFViewer = dynamic(() => import("./PDFViewer"), {
       <div className="w-full max-w-[600px] space-y-4">
         <div className="w-full h-[800px] bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
         <div className="flex justify-center">
-          <motion.p
-            className="text-foreground/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <p className="text-foreground/60 enter enter-delay-200">
             Loading PDF document...
-          </motion.p>
+          </p>
         </div>
       </div>
     </div>
   ),
 });
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
-};
-
-const staggerContainer = {
-  initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  initial: { opacity: 0, y: 30 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
-
-const buttonVariants = {
-  initial: { opacity: 0, scale: 0.9 },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.3,
-    },
-  },
-  hover: {
-    scale: 1.05,
-    transition: { duration: 0.2 },
-  },
-};
+// Hover lift for the action buttons
+const buttonHover = "transition-transform duration-200 hover:scale-105";
+// Mobile buttons scale in one after the other, after the header
+const buttonEntrance = `enter enter-duration-300 [--enter-scale:0.9] ${buttonHover}`;
 
 export default function CVPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -91,31 +47,21 @@ export default function CVPage() {
 
   if (isFullscreen) {
     return (
-      <motion.div
-        className="fixed inset-0 z-50 bg-background overflow-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+      <div className="fixed inset-0 z-50 bg-background overflow-auto enter">
         <PDFViewer
           pdfFile={pdfFile}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
         />
-      </motion.div>
+      </div>
     );
   }
 
   return (
     <>
       {/* Floating Action Buttons - Desktop Only */}
-      <motion.div
-        className="hidden lg:flex fixed right-8 top-1/2 transform -translate-y-1/2 z-30 flex-col gap-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        <motion.div variants={buttonVariants} whileHover="hover">
+      <div className="hidden lg:flex fixed right-8 top-1/2 transform -translate-y-1/2 z-30 flex-col gap-4 enter enter-delay-200 enter-duration-500">
+        <div className={buttonHover}>
           <Button
             variant="primary"
             size="lg"
@@ -125,8 +71,8 @@ export default function CVPage() {
             <FaDownload />
             Download CV
           </Button>
-        </motion.div>
-        <motion.div variants={buttonVariants} whileHover="hover">
+        </div>
+        <div className={buttonHover}>
           <Button
             variant="outline"
             size="lg"
@@ -136,36 +82,23 @@ export default function CVPage() {
             <FaExpand />
             Fullscreen
           </Button>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
-      <motion.div
-        className="min-h-full max-w-6xl mx-auto py-12 px-6 lg:px-8"
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        variants={pageVariants}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="min-h-full max-w-6xl mx-auto py-12 px-6 lg:px-8 enter enter-duration-500 [--enter-y:20px]">
         {/* Header Section */}
-        <motion.div className="text-center mb-8" variants={staggerContainer}>
-          <motion.h1
-            className="text-4xl font-bold mb-4"
-            variants={itemVariants}
-          >
+        <div className="text-center mb-8 enter">
+          <h1 className="text-4xl font-bold mb-4 enter enter-delay-100 enter-duration-500 [--enter-y:30px]">
             My CV
-          </motion.h1>
-          <motion.p className="text-foreground/60 mb-6" variants={itemVariants}>
+          </h1>
+          <p className="text-foreground/60 mb-6 enter enter-delay-200 enter-duration-500 [--enter-y:30px]">
             Download my CV or view it directly below
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
 
         {/* Mobile Action Buttons - Above PDF */}
-        <motion.div
-          className="lg:hidden mb-6 flex gap-4 justify-center flex-wrap"
-          variants={staggerContainer}
-        >
-          <motion.div variants={buttonVariants} whileHover="hover">
+        <div className="lg:hidden mb-6 flex gap-4 justify-center flex-wrap enter">
+          <div className={`${buttonEntrance} enter-delay-100`}>
             <Button
               variant="primary"
               size="lg"
@@ -175,8 +108,8 @@ export default function CVPage() {
               <FaDownload />
               Download CV
             </Button>
-          </motion.div>
-          <motion.div variants={buttonVariants} whileHover="hover">
+          </div>
+          <div className={`${buttonEntrance} enter-delay-200`}>
             <Button
               variant="outline"
               size="lg"
@@ -186,8 +119,8 @@ export default function CVPage() {
               <FaExpand />
               Fullscreen
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
         {/* PDF Viewer - Centered */}
         <PDFViewer
@@ -195,7 +128,7 @@ export default function CVPage() {
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
         />
-      </motion.div>
+      </div>
     </>
   );
 }

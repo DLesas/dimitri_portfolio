@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeSwitcher } from "./themeSwitcher";
@@ -28,12 +27,9 @@ export default function Navigation() {
   ];
 
   return (
-    <motion.nav
+    <nav
       ref={navigationRef}
-      className="relative z-50"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      className="relative z-50 enter enter-duration-600 [--enter-y:-20px]"
     >
       <div className="flex justify-between items-center p-6 max-w-6xl mx-auto">
         <Link href="/">
@@ -85,68 +81,59 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
+      {/* Mobile Menu Overlay: kept mounted so it can slide out, and hidden (so out of
+          the tab order and accessibility tree) once closed */}
+      <div
+        className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-[opacity,visibility] duration-300 ${
+          isMobileMenuOpen ? "opacity-100" : "invisible opacity-0"
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
-            {/* Menu Panel */}
-            <motion.div
-              initial={{ opacity: 0, x: 300 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 300 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-64 bg-background/95 backdrop-blur-md border-l border-foreground/10 z-50 shadow-2xl"
+      {/* Menu Panel */}
+      <div
+        className={`fixed top-0 right-0 h-full w-64 bg-background/95 backdrop-blur-md border-l border-foreground/10 z-50 shadow-2xl transition-[translate,opacity,visibility] duration-[425ms] ease-(--ease-spring-soft) ${
+          isMobileMenuOpen ? "opacity-100" : "invisible translate-x-[300px] opacity-0"
+        }`}
+      >
+        {/* Close button */}
+        <div className="flex justify-end p-4">
+          <Button
+            isIconOnly
+            variant="ghost"
+            size="sm"
+            className="text-foreground/70 hover:text-foreground"
+            onPress={() => setIsMobileMenuOpen(false)}
+          >
+            <HiX className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Navigation Items, staggered in as the panel opens */}
+        <div className="px-6 py-4 space-y-6">
+          {navItems.map((item, index) => (
+            <div
+              key={item.href}
+              className={`transition-[translate,opacity] duration-300 ${
+                isMobileMenuOpen ? "opacity-100" : "translate-x-5 opacity-0"
+              }`}
+              style={{ transitionDelay: isMobileMenuOpen ? `${index * 100}ms` : "0ms" }}
             >
-              {/* Close button */}
-              <div className="flex justify-end p-4">
-                <Button
-                  isIconOnly
-                  variant="ghost"
-                  size="sm"
-                  className="text-foreground/70 hover:text-foreground"
-                  onPress={() => setIsMobileMenuOpen(false)}
-                >
-                  <HiX className="w-5 h-5" />
-                </Button>
-              </div>
-
-              {/* Navigation Items */}
-              <div className="px-6 py-4 space-y-6">
-                {navItems.map((item, index) => (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Link
-                      href={item.href}
-                      className={`block text-right text-lg transition-colors ${
-                        pathname === item.href
-                          ? "text-primary font-medium"
-                          : "text-foreground/70 hover:text-foreground"
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+              <Link
+                href={item.href}
+                className={`block text-right text-lg transition-colors ${
+                  pathname === item.href
+                    ? "text-primary font-medium"
+                    : "text-foreground/70 hover:text-foreground"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </nav>
   );
 }

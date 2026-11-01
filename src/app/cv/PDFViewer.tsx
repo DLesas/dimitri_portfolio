@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "@heroui/react";
 import { FaDownload, FaCompress } from "react-icons/fa";
-import { motion } from "framer-motion";
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -17,17 +16,6 @@ interface PDFViewerProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
 }
-
-const pdfVariants = {
-  initial: { opacity: 0, scale: 0.95 },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
 
 export default function PDFViewer({
   pdfFile,
@@ -52,24 +40,14 @@ export default function PDFViewer({
   };
 
   return (
-    <motion.div
-      className="relative"
-      variants={pdfVariants}
-      initial="initial"
-      animate="animate"
-    >
+    <div className="relative enter enter-duration-500 [--enter-scale:0.95]">
       <div className="p-4 md:p-8">
         <div className="flex flex-col items-center">
           <Document
             file={pdfFile}
             onLoadSuccess={onDocumentLoadSuccess}
             error={
-              <motion.div
-                className="flex flex-col items-center justify-center h-[600px]"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
+              <div className="flex flex-col items-center justify-center h-[600px] enter enter-duration-500 [--enter-scale:0.9]">
                 <p className="text-red-500 mb-4">Failed to load CV</p>
                 <Button
                   variant="primary"
@@ -78,7 +56,7 @@ export default function PDFViewer({
                   <FaDownload />
                   Download CV Instead
                 </Button>
-              </motion.div>
+              </div>
             }
           >
             <Page
@@ -92,12 +70,7 @@ export default function PDFViewer({
 
           {/* Page Navigation */}
           {numPages && numPages > 1 && (
-            <motion.div
-              className="mt-6 flex items-center gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-            >
+            <div className="mt-6 flex items-center gap-4 enter enter-delay-200 [--enter-y:20px]">
               <Button
                 size="sm"
                 variant="tertiary"
@@ -119,16 +92,11 @@ export default function PDFViewer({
               >
                 Next
               </Button>
-            </motion.div>
+            </div>
           )}
 
           {/* Scale Controls */}
-          <motion.div
-            className="mt-4 flex items-center gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.3 }}
-          >
+          <div className="mt-4 flex items-center gap-4 enter enter-delay-300 [--enter-y:20px]">
             <Button
               size="sm"
               variant="outline"
@@ -144,18 +112,13 @@ export default function PDFViewer({
             >
               Zoom In
             </Button>
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* Close Fullscreen Button */}
       {isFullscreen && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.3 }}
-        >
+        <div className="enter [--enter-scale:0.9]">
           <Button
             className="fixed top-4 right-4 z-50"
             variant="danger-soft"
@@ -164,8 +127,8 @@ export default function PDFViewer({
             <FaCompress />
             Exit Fullscreen
           </Button>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

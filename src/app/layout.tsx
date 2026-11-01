@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./provider";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Dimitri Lesas - Full Stack Engineer & Data Scientist",
@@ -38,9 +27,8 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
+      {/* Text uses the system font stack (HeroUI's --font-sans) */}
+      <body className="antialiased min-h-screen flex flex-col">
         <Providers>
             <ConsoleEasterEgg />
             <Navigation />

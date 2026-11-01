@@ -1,5 +1,4 @@
 "use client";
-import { useScroll, useTransform, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Chip, cn } from "@heroui/react";
 import { FaMapMarkerAlt } from "react-icons/fa";
@@ -20,6 +19,7 @@ interface TimelineEntry {
 export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
   const ref = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
 
   useEffect(() => {
@@ -29,13 +29,37 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
     }
   }, [ref]);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start 10%", "end 50%"],
-  });
+  // The coloured line grows with scrolling: 0 when the timeline's top is 10% down the
+  // viewport, full length (at 90% progress) when its bottom reaches the middle
+  useEffect(() => {
+    const container = containerRef.current;
+    const line = lineRef.current;
+    if (!container || !line) return;
 
-  const heightTransform = useTransform(scrollYProgress, [0, 0.9], [0, height]);
-  const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const { top, height: containerHeight } = container.getBoundingClientRect();
+      const viewport = window.innerHeight;
+      const range = containerHeight - 0.4 * viewport;
+      const progress =
+        range > 0 ? Math.min(1, Math.max(0, (0.1 * viewport - top) / range)) : 0;
+      line.style.transform = `scaleY(${Math.min(1, progress / 0.9)})`;
+      line.style.opacity = String(Math.min(1, progress / 0.1));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
 
   return (
     <div className="w-full font-sans md:px-10" ref={containerRef}>
@@ -68,12 +92,10 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
           }}
           className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-neutral-200 dark:via-neutral-700 to-transparent to-[99%]  [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] "
         >
-          <motion.div
-            style={{
-              height: heightTransform,
-              opacity: opacityTransform,
-            }}
-            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-secondary via-primary to-transparent from-[0%] via-[10%] rounded-full"
+          <div
+            ref={lineRef}
+            style={{ transform: "scaleY(0)", opacity: 0 }}
+            className="absolute inset-x-0 top-0 h-full origin-top w-[2px] bg-gradient-to-t from-secondary via-primary to-transparent from-[0%] via-[10%] rounded-full"
           />
         </div>
       </div>

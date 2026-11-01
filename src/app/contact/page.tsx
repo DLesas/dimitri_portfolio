@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Input,
@@ -22,19 +21,32 @@ import {
   type ContactFormData,
 } from "@/hooks/mutations/useContactFormMutation";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
+import { useInViewOnce } from "@/hooks/useInViewOnce";
+import { afterEntrances } from "@/lib/afterEntrances";
+
+const MapPlaceholder = () => (
+  <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+    <p className="text-gray-500">Loading map...</p>
+  </div>
+);
 
 // Dynamically import the map component to avoid SSR issues
 const Map = dynamic(() => import("./Map"), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-      <p className="text-gray-500">Loading map...</p>
-    </div>
-  ),
+  loading: MapPlaceholder,
 });
+
+// The columns fade and rise in one after the other (see `enter` in globals.css)
+const entrance = "enter enter-spring [--enter-y:20px]";
 
 export default function ContactPage() {
   const { getAvailableHeight } = useNavigationSpace();
+  // Leaflet and the map tiles load after the page's entrance has played, once the
+  // map is close to the screen (it sits below the form on phones)
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapNearby = useInViewOnce(mapRef, "200px");
+  const [entered, setEntered] = useState(false);
+  useEffect(() => afterEntrances(() => setEntered(true)), []);
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -85,52 +97,28 @@ export default function ContactPage() {
     submitForm(formData);
   };
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  };
-
   return (
-    <motion.div
-      className="px-6 flex items-center justify-center"
+    <div
+      className="px-6 flex items-center justify-center enter enter-duration-500 [--enter-y:20px]"
       style={{ minHeight: getAvailableHeight() }}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
-      transition={{ duration: 0.5 }}
     >
       <div className="max-w-5xl mx-auto w-full">
         {/* Two Column Layout */}
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Contact Form */}
-          <motion.div
-            className="flex flex-col gap-1 lg:max-w-[40%]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.div
-              className="pb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
+          <div className={`flex flex-col gap-1 lg:max-w-[40%] ${entrance} enter-delay-200`}>
+            <div className={`pb-4 ${entrance} enter-delay-300`}>
               <h1 className="text-2xl font-bold mb-4">Get In Touch</h1>
               <p className="text-foreground/70 text-sm">
                 Have a project in mind, want to discuss opportunities or simply want to have a chat?
                 I&apos;d love to hear from you. Drop me a message and I&apos;ll
                 get back to you as soon as possible.
               </p>
-            </motion.div>
+            </div>
 
             {/* Contact Links */}
-            <motion.div
-              className="flex flex-wrap justify-between gap-4 mb-6 text-foreground/70 text-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+            <div
+              className={`flex flex-wrap justify-between gap-4 mb-6 text-foreground/70 text-sm ${entrance} enter-delay-400`}
             >
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <FaEnvelope className="text-primary" />
@@ -170,14 +158,9 @@ export default function ContactPage() {
                   GitHub
                 </a>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              className="pt-0"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
+            <div className={`pt-0 ${entrance} enter-delay-500`}>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <TextField
@@ -250,24 +233,19 @@ export default function ContactPage() {
                   </div>
                 )}
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
           {/* Map */}
-          <motion.div
-            className="p-2 overflow-hidden h-full flex-1"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
+          <div className={`p-2 overflow-hidden h-full flex-1 ${entrance} enter-delay-600`}>
             <div className="p-0">
-              <div className="h-[600px] relative">
-                <Map />
+              <div ref={mapRef} className="h-[600px] relative">
+                {mapNearby && entered ? <Map /> : <MapPlaceholder />}
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, Chip, ProgressBar, Skeleton } from "@heroui/react";
 
 import Image from "next/image";
@@ -11,26 +10,39 @@ import type { SkillRecord } from "@/hooks/queries/useSkillsData";
 import { WorkExperienceTimeline } from "./timeline";
 import type { WorkExperience } from "./timeline";
 import { FaArrowPointer } from "react-icons/fa6";
+import Reveal from "@/components/Reveal";
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6 },
-  },
-};
+// Each section fades in, then its parts rise in 100ms apart (see `enter` in globals.css)
+const fadeInUp = "enter enter-duration-600 [--enter-y:30px]";
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-};
+// How long the panel's content takes to leave before the next one enters
+const SKILL_EXIT_MS = 200;
+const PLACEHOLDER_EXIT_MS = 300;
+
+/**
+ * Keeps showing the panel's current skill (or the placeholder, for null) while it
+ * plays its exit animation, then swaps in the latest one, so the two never overlap
+ */
+function useExitBeforeEnter(next: SkillRecord | null) {
+  const [shown, setShown] = useState(next);
+  const latest = useRef(next);
+  const leaving = next !== shown;
+
+  useEffect(() => {
+    latest.current = next;
+  });
+
+  useEffect(() => {
+    if (!leaving) return;
+    const timeoutId = setTimeout(
+      () => setShown(latest.current),
+      shown ? SKILL_EXIT_MS : PLACEHOLDER_EXIT_MS
+    );
+    return () => clearTimeout(timeoutId);
+  }, [leaving, shown]);
+
+  return { shown, leaving };
+}
 
 // Work Experience Timeline Component
 function WorkExperienceTimelineSection() {
@@ -103,6 +115,8 @@ interface SkillInfoPanelProps {
 }
 
 function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
+  const { shown, leaving } = useExitBeforeEnter(hoveredSkill);
+
   return (
     <Card className="min-h-[420px] h-[420px] flex flex-col">
       <Card.Header className="flex-shrink-0">
@@ -112,120 +126,115 @@ function SkillInfoPanel({ hoveredSkill }: SkillInfoPanelProps) {
       </Card.Header>
 
       <Card.Content className="flex-grow overflow-y-hidden">
-        <AnimatePresence mode="wait">
-          {hoveredSkill ? (
-            <motion.div
-              key={hoveredSkill.name}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-4"
-            >
-              {/* Skill Name and Type */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-grow">
-                  <h4 className="text-xl font-semibold">{hoveredSkill.name}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    {hoveredSkill.parent && (
-                      <Chip
-                        size="sm"
-                        className="bg-secondary text-secondary-foreground shadow-lg shadow-secondary/40"
-                      >
-                        {hoveredSkill.parent}
-                      </Chip>
-                    )}
+        {shown ? (
+          <div
+            key={shown.name}
+            className={`space-y-4 enter-duration-200 ${
+              leaving ? "exit [--enter-x:10px]" : "enter [--enter-x:-10px]"
+            }`}
+          >
+            {/* Skill Name and Type */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-grow">
+                <h4 className="text-xl font-semibold">{shown.name}</h4>
+                <div className="flex items-center gap-2 mt-1">
+                  {shown.parent && (
                     <Chip
                       size="sm"
-                      variant="soft"
-                      className="bg-secondary/20 text-secondary-700"
+                      className="bg-secondary text-secondary-foreground shadow-lg shadow-secondary/40"
                     >
-                      {hoveredSkill.type}
+                      {shown.parent}
                     </Chip>
-                  </div>
+                  )}
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    className="bg-secondary/20 text-secondary-700"
+                  >
+                    {shown.type}
+                  </Chip>
                 </div>
-                {hoveredSkill.icon && hoveredSkill.icon !== "" && (
-                  <div className="w-12 h-12 flex-shrink-0">
-                    <Image
-                      src={hoveredSkill.icon}
-                      alt={hoveredSkill.name}
-                      className="w-full h-full object-contain"
-                      width={48}
-                      height={48}
-                    />
-                  </div>
-                )}
               </div>
-
-              {/* Brief Description */}
-              <div>
-                <p className="text-sm text-default-600 leading-relaxed">
-                  {hoveredSkill.brief}
-                </p>
-              </div>
-
-              {/* Experience Level */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Proficiency</span>
-                  <span className="text-sm text-default-500">
-                    {hoveredSkill.value}%
-                  </span>
-                </div>
-                <ProgressBar
-                  value={hoveredSkill.value}
-                  color="accent"
-                  aria-label="Proficiency level"
-                >
-                  <ProgressBar.Track className="h-2">
-                    <ProgressBar.Fill />
-                  </ProgressBar.Track>
-                </ProgressBar>
-              </div>
-
-              {/* Tags */}
-              {hoveredSkill.tags && hoveredSkill.tags.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Applications</span>
-                  <div className="flex flex-wrap gap-1 pt-2">
-                    {hoveredSkill.tags.map((tag) => (
-                      <Chip
-                        key={tag}
-                        size="sm"
-                        variant="tertiary"
-                        className="gap-1.5 border-2 border-default-200 bg-transparent"
-                      >
-                        <span className="size-2 rounded-full bg-primary" />
-                        <Chip.Label>{tag}</Chip.Label>
-                      </Chip>
-                    ))}
-                  </div>
+              {shown.icon && shown.icon !== "" && (
+                <div className="w-12 h-12 flex-shrink-0">
+                  <Image
+                    src={shown.icon}
+                    alt={shown.name}
+                    className="w-full h-full object-contain"
+                    width={48}
+                    height={48}
+                  />
                 </div>
               )}
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full flex flex-col justify-center items-center text-center px-4"
-            >
-              <div className="w-16 h-16 mb-4 rounded-full bg-default-100 flex items-center justify-center">
-                <span className="text-2xl">
-                  {" "}
-                  <FaArrowPointer className="pl-1 text-secondary-300" />{" "}
+            </div>
+
+            {/* Brief Description */}
+            <div>
+              <p className="text-sm text-default-600 leading-relaxed">
+                {shown.brief}
+              </p>
+            </div>
+
+            {/* Experience Level */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Proficiency</span>
+                <span className="text-sm text-default-500">
+                  {shown.value}%
                 </span>
               </div>
-              <p className="text-default-600 mb-2">
-                Hover over any skill to explore
-              </p>
-              <p className="text-sm text-default-400">
-                View my proficiency levels, related technologies, and areas of
-                application
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <ProgressBar
+                value={shown.value}
+                color="accent"
+                aria-label="Proficiency level"
+              >
+                <ProgressBar.Track className="h-2">
+                  <ProgressBar.Fill />
+                </ProgressBar.Track>
+              </ProgressBar>
+            </div>
+
+            {/* Tags */}
+            {shown.tags && shown.tags.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Applications</span>
+                <div className="flex flex-wrap gap-1 pt-2">
+                  {shown.tags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      size="sm"
+                      variant="tertiary"
+                      className="gap-1.5 border-2 border-default-200 bg-transparent"
+                    >
+                      <span className="size-2 rounded-full bg-primary" />
+                      <Chip.Label>{tag}</Chip.Label>
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`h-full flex flex-col justify-center items-center text-center px-4 ${
+              leaving ? "exit" : "enter"
+            }`}
+          >
+            <div className="w-16 h-16 mb-4 rounded-full bg-default-100 flex items-center justify-center">
+              <span className="text-2xl">
+                {" "}
+                <FaArrowPointer className="pl-1 text-secondary-300" />{" "}
+              </span>
+            </div>
+            <p className="text-default-600 mb-2">
+              Hover over any skill to explore
+            </p>
+            <p className="text-sm text-default-400">
+              View my proficiency levels, related technologies, and areas of
+              application
+            </p>
+          </div>
+        )}
       </Card.Content>
     </Card>
   );
@@ -240,26 +249,15 @@ export default function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
       {/* Hero Section */}
-      <motion.section
-        className="pb-16"
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
-      >
-        <motion.h1
-          className="text-5xl font-bold mb-6 leading-tight"
-          variants={fadeInUp}
-        >
+      <section className="pb-16 enter">
+        <h1 className={`text-5xl font-bold mb-6 leading-tight ${fadeInUp} enter-delay-200`}>
           Hello, I&apos;m{" "}
           <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Dimitri
           </span>
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="text-xl text-gray-600 leading-relaxed max-w-3xl"
-          variants={fadeInUp}
-        >
+        <p className={`text-xl text-gray-600 leading-relaxed max-w-3xl ${fadeInUp} enter-delay-300`}>
           I guess you could call me a practical digital architect, building
           intuitive and elegant solutions to solve real world problems and
           provide value. Excelling in unraveling problems, I craft applications
@@ -267,29 +265,18 @@ export default function AboutPage() {
           insights. I like to think this blend of engineering and data science
           intuition opens new possibilities, enhancing business outcomes while
           creating meaningful user experiences.
-        </motion.p>
-      </motion.section>
+        </p>
+      </section>
 
       {/* Skills Section */}
-      <motion.section
-        id="skills"
-        className="pb-16 -mx-6"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-      >
-        <motion.h3
-          className="text-2xl font-semibold mb-8 px-6"
-          variants={fadeInUp}
-        >
+      <Reveal id="skills" className="pb-16 -mx-6 enter">
+        <h3 className={`text-2xl font-semibold mb-8 px-6 ${fadeInUp} enter-delay-200`}>
           My Tech Stack
-        </motion.h3>
+        </h3>
 
         {/* Skills Word Cloud with Info Panel */}
-        <motion.div
-          className="flex flex-col lg:flex-row gap-2 min-h-[600px] items-center"
-          variants={fadeInUp}
+        <div
+          className={`flex flex-col lg:flex-row gap-2 min-h-[600px] items-center ${fadeInUp} enter-delay-300`}
         >
           {/* Word Cloud */}
           <div className="lg:w-2/3 h-[600px] w-full relative">
@@ -325,28 +312,18 @@ export default function AboutPage() {
           <div className="lg:w-1/3 px-6 w-full">
             <SkillInfoPanel hoveredSkill={hoveredSkill} />
           </div>
-        </motion.div>
-      </motion.section>
+        </div>
+      </Reveal>
 
       {/* Experience Section with Timeline */}
-      <motion.section
-        id="experience"
-        className="pb-20 -mx-6 pt-16"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-      >
-        <motion.h3
-          className="text-2xl font-semibold mt-8 px-6"
-          variants={fadeInUp}
-        >
+      <Reveal id="experience" className="pb-20 -mx-6 pt-16 enter">
+        <h3 className={`text-2xl font-semibold mt-8 px-6 ${fadeInUp} enter-delay-200`}>
           Work Experience
-        </motion.h3>
-        <motion.div variants={fadeInUp}>
+        </h3>
+        <div className={`${fadeInUp} enter-delay-300`}>
           <WorkExperienceTimelineSection />
-        </motion.div>
-      </motion.section>
+        </div>
+      </Reveal>
     </div>
   );
 }

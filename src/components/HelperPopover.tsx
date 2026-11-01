@@ -1,7 +1,6 @@
 "use client";
 import { RefObject, useEffect, useState, useSyncExternalStore } from "react";
 import { Popover, Checkbox, popoverVariants } from "@heroui/react";
-import { motion } from "framer-motion";
 
 const OPT_OUT_KEY = "lesas-helper-opted-out";
 
@@ -90,11 +89,9 @@ export default function HelperPopover({ duration = 6000, triggerRef }: Props) {
         </div>
         {/* Progress bar */}
         <div className="h-1 w-full rounded-full bg-default-200 overflow-hidden mb-3">
-          <motion.div
-            className="h-full bg-primary-500"
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ ease: "linear", duration: duration / 1000 }}
+          <div
+            className="h-full bg-primary-500 origin-left"
+            style={{ animation: `grow-x ${duration}ms linear` }}
           />
         </div>
       </Popover.Dialog>

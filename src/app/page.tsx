@@ -1,106 +1,56 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { buttonVariants as buttonStyles } from "@heroui/styles";
 import Link from "next/link";
 import NetworkBackground from "@/components/NetworkBackground";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
-};
-
-const staggerContainer = {
-  initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const itemVariants = {
-  initial: { opacity: 0, y: 30 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-    },
-  },
-};
-
-const buttonVariants = {
-  initial: { opacity: 0, scale: 0.9 },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.15,
-    },
-  },
-  hover: {
-    scale: 1.05,
-    transition: { duration: 0.2 },
-  },
-};
+// Entrance timings (ms), staggered like the hero always was: the lines follow each
+// other 100ms apart after a 300ms lead-in (see `enter` in globals.css)
+const itemEntrance = "enter enter-duration-300 [--enter-y:30px]";
+const buttonEntrance =
+  "enter enter-delay-600 enter-duration-150 [--enter-scale:0.9] transition-transform duration-200 hover:scale-105";
 
 export default function HomePage() {
   const { getAvailableHeight } = useNavigationSpace();
 
   return (
     <NetworkBackground className="w-full flex-1">
-      <motion.div
-        className="relative z-10 flex items-center justify-center"
+      <div
+        className="relative z-10 flex items-center justify-center enter enter-duration-500 [--enter-y:20px]"
         style={{ minHeight: getAvailableHeight() }}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        variants={pageVariants}
-        transition={{ duration: 0.5 }}
       >
-        <motion.div
-          className="text-center max-w-4xl mx-auto px-6"
-          variants={staggerContainer}
-        >
-          <motion.h1
-            className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
-            variants={itemVariants}
+        <div className="text-center max-w-4xl mx-auto px-6 enter">
+          <h1
+            className={`text-5xl md:text-7xl font-bold mb-8 leading-tight ${itemEntrance} enter-delay-300`}
             data-network-collider
           >
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Dimitri Lesas
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.h2
-            className="text-xl md:text-3xl text-foreground/90 mb-8 font-light"
-            variants={itemVariants}
+          <h2
+            className={`text-xl md:text-3xl text-foreground/90 mb-8 font-light ${itemEntrance} enter-delay-400`}
             data-network-collider
           >
             Full Stack Engineer & Data Scientist
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            className="text-md md:text-lg lg:text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed"
-            variants={itemVariants}
+          <p
+            className={`text-md md:text-lg lg:text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed ${itemEntrance} enter-delay-500`}
             data-network-collider
           >
             Building bridges between complex data and elegant solutions.
             Crafting intelligent applications that transform insights into
             impact.
-          </motion.p>
+          </p>
 
-          <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-            variants={itemVariants}
+          <div
+            className={`flex flex-col sm:flex-row gap-4 justify-center ${itemEntrance} enter-delay-600`}
             data-network-collider
           >
-            <motion.div variants={buttonVariants} whileHover="hover">
+            <div className={buttonEntrance}>
               <Link
                 href="/about"
                 className={buttonStyles({
@@ -111,8 +61,8 @@ export default function HomePage() {
               >
                 Learn More About Me
               </Link>
-            </motion.div>
-            <motion.div variants={buttonVariants} whileHover="hover">
+            </div>
+            <div className={buttonEntrance}>
               <Link
                 href="/cv"
                 className={buttonStyles({
@@ -123,10 +73,10 @@ export default function HomePage() {
               >
                 View My CV
               </Link>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+            </div>
+          </div>
+        </div>
+      </div>
     </NetworkBackground>
   );
 }
