@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Popover, Button, Switch, Separator } from "@heroui/react";
 import {
   FaCog,
@@ -9,13 +10,32 @@ import {
   FaChevronLeft,
   FaCloud,
 } from "react-icons/fa";
-import {
-  NetworkBackgroundSettings,
-  ColorSettingsPanel,
-  WordCloudSettingsPanel,
-} from "./panels";
 import { useDebug } from "@/contexts/DebugContext";
 import { useHardwarePerformance } from "@/contexts/HardwarePerformanceContext";
+
+// ============================================================================
+// Lazy Panels
+// ============================================================================
+
+/**
+ * The panels (sliders, colour picker) load when the menu is first opened rather
+ * than with every page; opening the menu starts the download, so a submenu is
+ * normally ready by the time it is hovered
+ */
+const loadPanels = () => import("./panels");
+const PanelPlaceholder = () => <div className="w-80 h-40" />;
+const NetworkBackgroundSettings = dynamic(
+  () => loadPanels().then((m) => m.NetworkBackgroundSettings),
+  { ssr: false, loading: PanelPlaceholder }
+);
+const ColorSettingsPanel = dynamic(
+  () => loadPanels().then((m) => m.ColorSettingsPanel),
+  { ssr: false, loading: PanelPlaceholder }
+);
+const WordCloudSettingsPanel = dynamic(
+  () => loadPanels().then((m) => m.WordCloudSettingsPanel),
+  { ssr: false, loading: PanelPlaceholder }
+);
 
 // ============================================================================
 // Constants
@@ -354,6 +374,7 @@ export function SettingsMenu() {
    */
   const handleMainOpenChange = (open: boolean) => {
     setIsMainOpen(open);
+    if (open) void loadPanels();
     if (!open) {
       // Close all submenus
       setIsNetworkOpen(false);

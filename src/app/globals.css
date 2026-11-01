@@ -1,5 +1,34 @@
+/*
+ * HeroUI's selective import (heroui.com/docs/handbook/theming, and "Importing Specific
+ * Components" in the @heroui/styles README): only the components this site uses,
+ * rather than all ~90 in `@import "@heroui/styles"`, since the whole stylesheet is
+ * render-blocking. Add a component's stylesheet here when you start using it.
+ */
+@layer theme, base, components, utilities;
 @import "tailwindcss";
-@import "@heroui/styles";
+/* Required prelude. Utilities and variants stay unlayered, as in the package README:
+   they define @utility / @custom-variant rules, which Tailwind refuses inside a layer */
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
+@import "@heroui/styles/base" layer(base);
+@import "@heroui/styles/themes/default" layer(theme);
+/* Only the components used */
+@import "@heroui/styles/components/label.css" layer(components);
+@import "@heroui/styles/components/button.css" layer(components);
+@import "@heroui/styles/components/slider.css" layer(components);
+@import "@heroui/styles/components/switch.css" layer(components);
+@import "@heroui/styles/components/chip.css" layer(components);
+@import "@heroui/styles/components/skeleton.css" layer(components);
+@import "@heroui/styles/components/progress-bar.css" layer(components);
+@import "@heroui/styles/components/spinner.css" layer(components);
+@import "@heroui/styles/components/checkbox.css" layer(components);
+@import "@heroui/styles/components/input.css" layer(components);
+@import "@heroui/styles/components/textfield.css" layer(components);
+@import "@heroui/styles/components/textarea.css" layer(components);
+@import "@heroui/styles/components/card.css" layer(components);
+@import "@heroui/styles/components/separator.css" layer(components);
+@import "@heroui/styles/components/popover.css" layer(components);
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -327,4 +356,107 @@
 }
 .map-dark .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) grayscale(0.55) brightness(0.85) contrast(0.9);
+}
+
+/*
+ * Entrance animations
+ *
+ * In CSS rather than framer-motion, so server-rendered content is painted (and already
+ * animating) before the page hydrates. An element with `enter` fades in from
+ * --enter-opacity and moves from its --enter-x / --enter-y / --enter-scale offsets,
+ * timed by enter-delay-* and enter-duration-* (ms). The easings are framer's
+ * defaults, springs included, so the motion matches what the pages had. `backwards`
+ * holds the first frame through the delay, then hands the element back to its own
+ * styles (hover scales and the like).
+ */
+:root {
+  /* framer's default tween (opacity, 300ms) */
+  --ease-fade: cubic-bezier(0.25, 0.1, 0.35, 1);
+  /* framer's easeInOut, for movement given a duration */
+  --ease-tween: cubic-bezier(0.42, 0, 0.58, 1);
+  /* framer's default spring for x / y (stiffness 500, damping 25), settles in ~425ms */
+  --ease-spring: linear(0, 0.067, 0.226, 0.425, 0.624, 0.799, 0.936, 1.033, 1.091, 1.117, 1.119, 1.105, 1.084, 1.059, 1.036, 1.017, 1.002, 0.993, 0.987, 0.986, 0.986, 0.988, 0.991, 0.994, 1);
+  /* framer's default spring for scale (stiffness 550, damping 30), ~355ms */
+  --ease-spring-scale: linear(0, 0.051, 0.175, 0.333, 0.498, 0.652, 0.784, 0.89, 0.968, 1.022, 1.054, 1.07, 1.073, 1.068, 1.059, 1.047, 1.035, 1.024, 1.014, 1.007, 1.002, 0.998, 0.996, 0.995, 1);
+  /* stiffness 200, damping 25: the mobile menu panel, ~425ms */
+  --ease-spring-soft: linear(0, 0.027, 0.093, 0.181, 0.279, 0.378, 0.473, 0.56, 0.638, 0.707, 0.766, 0.815, 0.856, 0.89, 0.917, 0.939, 0.956, 0.969, 0.979, 0.986, 0.992, 0.996, 0.999, 1, 1);
+  /* stiffness 200 with framer's default damping (10): a bouncy pop, ~1060ms */
+  --ease-spring-bouncy: linear(0, 0.164, 0.524, 0.901, 1.174, 1.296, 1.284, 1.19, 1.071, 0.973, 0.918, 0.908, 0.929, 0.965, 0.998, 1.02, 1.028, 1.025, 1.015, 1.004, 0.996, 0.992, 0.992, 0.994, 1);
+}
+
+/* Not inherited, so a parent's timing never leaks into a child that animates too */
+@property --enter-delay { syntax: "<time>"; inherits: false; initial-value: 0ms; }
+@property --enter-duration { syntax: "<time>"; inherits: false; initial-value: 300ms; }
+@property --enter-fade-duration { syntax: "*"; inherits: false; }
+@property --enter-ease { syntax: "*"; inherits: false; }
+@property --enter-opacity { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --enter-x { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --enter-y { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --enter-scale { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+@keyframes enter-fade {
+  from {
+    opacity: var(--enter-opacity);
+  }
+}
+@keyframes enter-move {
+  from {
+    transform: translate(var(--enter-x), var(--enter-y)) scale(var(--enter-scale));
+  }
+}
+@keyframes exit {
+  to {
+    opacity: 0;
+    transform: translate(var(--enter-x), var(--enter-y));
+  }
+}
+
+@utility enter {
+  @media (prefers-reduced-motion: no-preference) {
+    animation:
+      enter-fade var(--enter-fade-duration, var(--enter-duration)) var(--ease-fade) var(--enter-delay) backwards,
+      enter-move var(--enter-duration) var(--enter-ease, var(--ease-tween)) var(--enter-delay) backwards;
+    /* Inherited: a .reveal section holds its children until it scrolls into view */
+    animation-play-state: var(--enter-play, running);
+  }
+}
+@utility enter-delay-* {
+  --enter-delay: calc(--value(integer) * 1ms);
+}
+@utility enter-duration-* {
+  --enter-duration: calc(--value(integer) * 1ms);
+}
+/* framer's default transitions: a 300ms fade, plus a spring for the movement */
+@utility enter-spring {
+  --enter-ease: var(--ease-spring);
+  --enter-duration: 425ms;
+  --enter-fade-duration: 300ms;
+}
+@utility enter-spring-scale {
+  --enter-ease: var(--ease-spring-scale);
+  --enter-duration: 355ms;
+  --enter-fade-duration: 300ms;
+}
+@utility enter-spring-bouncy {
+  --enter-ease: var(--ease-spring-bouncy);
+  --enter-duration: 1060ms;
+  --enter-fade-duration: 300ms;
+}
+/* Leaves towards --enter-x / --enter-y, staying hidden until the element is swapped out */
+@utility exit {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: exit var(--enter-duration) var(--ease-tween) forwards;
+  }
+}
+
+/* Sections that play their children's entrances once scrolled into view (Reveal.tsx) */
+.reveal:not([data-shown]) {
+  --enter-play: paused;
+}
+
+/* HelperPopover's countdown bar */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
 }
