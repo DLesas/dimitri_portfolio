@@ -10,25 +10,25 @@ import { ipAddress } from "@vercel/functions";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
 import { render, pretty } from "react-email";
 import { ContactFormEmail, contactFormText } from "./emailTemplate";
-import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX } from "@/lib/contactForm";
+import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX, CONTACT_FIELD_MIN } from "@/lib/contactForm";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 // Validation schema
 const contactFormSchema = z.object({
   name: z
     .string()
-    .min(2, "Name must be at least 2 characters")
+    .min(CONTACT_FIELD_MIN.name, `Name must be at least ${CONTACT_FIELD_MIN.name} characters`)
     .max(CONTACT_FIELD_MAX.name, `Name must be at most ${CONTACT_FIELD_MAX.name} characters`),
   email: z
     .email("Invalid email address")
     .max(CONTACT_FIELD_MAX.email, `Email must be at most ${CONTACT_FIELD_MAX.email} characters`),
   subject: z
     .string()
-    .min(3, "Subject must be at least 3 characters")
+    .min(CONTACT_FIELD_MIN.subject, `Subject must be at least ${CONTACT_FIELD_MIN.subject} characters`)
     .max(CONTACT_FIELD_MAX.subject, `Subject must be at most ${CONTACT_FIELD_MAX.subject} characters`),
   message: z
     .string()
-    .min(10, "Message must be at least 10 characters")
+    .min(CONTACT_FIELD_MIN.message, `Message must be at least ${CONTACT_FIELD_MIN.message} characters`)
     .max(CONTACT_FIELD_MAX.message, `Message must be at most ${CONTACT_FIELD_MAX.message} characters`),
 });
 
