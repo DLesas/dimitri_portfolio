@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, Chip, ProgressBar, Skeleton } from "@heroui/react";
 
 import Image from "next/image";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { useSkillsData } from "@/hooks/queries/useSkillsData";
-import type { SkillRecord } from "@/hooks/queries/useSkillsData";
+import type { SkillRecord } from "@/types/skills";
 import { WorkExperienceTimeline } from "./timeline";
 import type { WorkExperience } from "./timeline";
 import { FaArrowPointer } from "react-icons/fa6";

@@ -74,20 +74,9 @@ interface ColorScale {
 }
 
 /**
- * Complete theme palette for light mode
+ * Complete theme palette for one mode (light or dark)
  */
-interface LightThemePalette {
-  primary: ColorScale;
-  secondary: ColorScale;
-  accent: ColorScale;
-  background: string;
-  foreground: string;
-}
-
-/**
- * Complete theme palette for dark mode
- */
-interface DarkThemePalette {
+interface ThemePalette {
   primary: ColorScale;
   secondary: ColorScale;
   accent: ColorScale;
@@ -101,8 +90,8 @@ interface DarkThemePalette {
 export interface GeneratedTheme {
   name: string;
   primaryColorName: string;
-  light: LightThemePalette;
-  dark: DarkThemePalette;
+  light: ThemePalette;
+  dark: ThemePalette;
 }
 
 /**
@@ -115,8 +104,6 @@ export interface ThemeGenerationOptions {
   secondaryMode?: "analogic" | "complement" | "triad" | "analogic-complement";
   /** Scheme mode for accent color generation */
   accentMode?: "complement" | "triad" | "quad" | "analogic-complement";
-  /** Custom theme name (defaults to primary color name) */
-  customName?: string;
 }
 
 // ============================================================================
@@ -181,20 +168,6 @@ const DEFAULT_MODES = {
  */
 function cleanHex(hex: string): string {
   return hex.replace("#", "").toUpperCase();
-}
-
-/**
- * Ensure hex color has # prefix
- */
-function _ensureHexPrefix(hex: string): string {
-  return hex.startsWith("#") ? hex : `#${hex}`;
-}
-
-/**
- * Convert HSL values to CSS HSL string format
- */
-function _hslToCssString(h: number, s: number, l: number): string {
-  return `${h} ${s}% ${l}%`;
 }
 
 /**
@@ -281,19 +254,8 @@ function hslToHex(h: number, s: number, l: number): string {
 /**
  * Fetch color information from The Color API
  */
-async function fetchColorInfo(params: {
-  hex?: string;
-  rgb?: string;
-  hsl?: string;
-  cmyk?: string;
-}): Promise<ColorApiResponse> {
-  const searchParams = new URLSearchParams();
-
-  // Add provided parameters
-  if (params.hex) searchParams.set("hex", cleanHex(params.hex));
-  if (params.rgb) searchParams.set("rgb", params.rgb);
-  if (params.hsl) searchParams.set("hsl", params.hsl);
-  if (params.cmyk) searchParams.set("cmyk", params.cmyk);
+async function fetchColorInfo(hex: string): Promise<ColorApiResponse> {
+  const searchParams = new URLSearchParams({ hex: cleanHex(hex) });
 
   const url = `${COLOR_API_BASE}/id?${searchParams.toString()}`;
 
@@ -350,7 +312,7 @@ async function generateHarmoniousColors(
   accent: ColorApiResponse;
 }> {
   // First get primary color info
-  const primary = await fetchColorInfo({ hex: primaryColor });
+  const primary = await fetchColorInfo(primaryColor);
 
   // Then fetch both color schemes in parallel
   // Request more colors for better variety
@@ -454,7 +416,6 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
  *   primaryColor: '#3b82f6', // User selected blue
  *   secondaryMode: 'analogic', // Harmonious secondary
  *   accentMode: 'complement', // Contrasting accent
- *   customName: 'Ocean Blue'
  * });
  *
  * // Apply to HeroUI CSS variables
@@ -469,7 +430,6 @@ export async function generateThemeFromPrimary(
     primaryColor,
     secondaryMode = DEFAULT_MODES.secondary,
     accentMode = DEFAULT_MODES.accent,
-    customName,
   } = options;
 
   // Use retry utility for robust API calls
@@ -498,7 +458,7 @@ export async function generateThemeFromPrimary(
 
       // Create complete theme
       const theme: GeneratedTheme = {
-        name: customName || `${colors.primary.name.value} Theme`,
+        name: `${colors.primary.name.value} Theme`,
         primaryColorName: colors.primary.name.value,
         light: {
           primary: primaryScaleLight,
@@ -565,9 +525,7 @@ export async function generateThemeFromPrimary(
  * document.documentElement.style.setProperty('--heroui-primary-50', cssVars.primary[50]);
  * ```
  */
-export function convertThemeToHeroUIFormat(
-  palette: LightThemePalette | DarkThemePalette
-): {
+function convertThemeToHeroUIFormat(palette: ThemePalette): {
   primary: Record<keyof ColorScale, string>;
   secondary: Record<keyof ColorScale, string>;
   accent: Record<keyof ColorScale, string>;
@@ -707,56 +665,3 @@ function hexToHslString(hex: string): string {
 
   return `${hDeg} ${sPercent}% ${lPercent}%`;
 }
-
-// ============================================================================
-// Preset Theme Generators
-// ============================================================================
-
-/**
- * Generate popular theme presets
- */
-export const ThemePresets = {
-  /**
-   * Generate a blue-based professional theme
-   */
-  professional: () =>
-    generateThemeFromPrimary({
-      primaryColor: "#3b82f6",
-      secondaryMode: "analogic",
-      accentMode: "complement",
-      customName: "Professional Blue",
-    }),
-
-  /**
-   * Generate a purple-based creative theme
-   */
-  creative: () =>
-    generateThemeFromPrimary({
-      primaryColor: "#8b5cf6",
-      secondaryMode: "analogic-complement",
-      accentMode: "triad",
-      customName: "Creative Purple",
-    }),
-
-  /**
-   * Generate a green-based nature theme
-   */
-  nature: () =>
-    generateThemeFromPrimary({
-      primaryColor: "#10b981",
-      secondaryMode: "analogic",
-      accentMode: "complement",
-      customName: "Nature Green",
-    }),
-
-  /**
-   * Generate a warm orange-based theme
-   */
-  warm: () =>
-    generateThemeFromPrimary({
-      primaryColor: "#f59e0b",
-      secondaryMode: "analogic",
-      accentMode: "complement",
-      customName: "Warm Sunset",
-    }),
-} as const;

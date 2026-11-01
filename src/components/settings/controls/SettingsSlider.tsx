@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Label, Slider } from "@heroui/react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -14,8 +14,6 @@ import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 interface SettingsSliderProps {
   /** The setting key from NetworkBackgroundSettings */
   setting: keyof NetworkBackgroundSettings;
-  /** Optional CSS class name */
-  className?: string;
 }
 
 // ============================================================================
@@ -41,13 +39,9 @@ interface SettingsSliderProps {
  * @example
  * ```tsx
  * <SettingsSlider setting="nodeCount" />
- * <SettingsSlider setting="connectionDistance" className="my-4" />
  * ```
  */
-export function SettingsSlider({
-  setting,
-  className = "",
-}: SettingsSliderProps) {
+export function SettingsSlider({ setting }: SettingsSliderProps) {
   // ========================================
   // Context & Configuration
   // ========================================
@@ -119,7 +113,7 @@ export function SettingsSlider({
   // ========================================
 
   return (
-    <div className={className}>
+    <div>
       <Slider
         value={localValue}
         onChange={handleChange}

@@ -23,7 +23,7 @@ export const ANIMALS = [
   "Lion", "Swan", "Snail", "Ladybird", "Raccoon", "Chameleon", "Horse", "Monkey",
 ] as const;
 
-export const visitorName = (animal: number) => `Anonymous ${ANIMALS[animal]}`;
+const visitorName = (animal: number) => `Anonymous ${ANIMALS[animal]}`;
 
 export interface Visitor {
   id: string;
@@ -81,7 +81,7 @@ const API_KEY = process.env.NEXT_PUBLIC_REALTIME_API_KEY;
 /** Production, preview deployments and local development each get their own channel */
 const CHANNEL = `/cursors/${process.env.NEXT_PUBLIC_VERCEL_ENV ?? "development"}`;
 
-export const liveCursorsAvailable = Boolean(HTTP_HOST && WS_HOST && API_KEY);
+const liveCursorsAvailable = Boolean(HTTP_HOST && WS_HOST && API_KEY);
 
 const HEARTBEAT_MS = 10_000;
 /** A visitor who hasn't been heard from for this long has left */

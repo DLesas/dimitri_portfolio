@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { type SkillRecord } from "@/hooks/queries/useSkillsData";
+import type { SkillRecord } from "@/types/skills";
 
 // three.js and the scene load in their own chunk, after the page has painted
 const WordCloudCanvas = dynamic(() => import("./WordCloudCanvas"), { ssr: false });
@@ -63,5 +63,3 @@ export default function WordCloud({
     </div>
   );
 }
-
-export type { SkillRecord };

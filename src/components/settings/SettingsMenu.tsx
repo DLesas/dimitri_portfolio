@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Popover, Button, Switch, Separator } from "@heroui/react";
 import {

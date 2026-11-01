@@ -36,7 +36,6 @@ export type DOMCollider = {
   y: number;
   width: number;
   height: number;
-  element: HTMLElement;
 };
 
 export type MousePosition = { x: number; y: number; isActive: boolean };
@@ -184,7 +183,7 @@ export function createNetworkEngine() {
   const cursorMaterial = shaderMaterial(CURSOR_VERTEX, CURSOR_FRAGMENT, {
     uColor: { value: new THREE.Color() },
     uStrength: { value: 0 },
-    uSizePx: { value: 360 },
+    uSizePx: { value: 0 }, // set every frame
   });
   const cursor = new THREE.Points(cursorGeometry, cursorMaterial);
   cursor.frustumCulled = false;
@@ -197,7 +196,7 @@ export function createNetworkEngine() {
   remoteGeometry.setAttribute("aColor", remoteColor);
   remoteGeometry.setAttribute("aStrength", remoteStrength);
   const remoteMaterial = shaderMaterial(REMOTE_CURSOR_VERTEX, REMOTE_CURSOR_FRAGMENT, {
-    uSizePx: { value: 360 },
+    uSizePx: { value: 0 }, // set every frame
   });
   const remoteCursors = new THREE.Points(remoteGeometry, remoteMaterial);
   remoteCursors.frustumCulled = false;

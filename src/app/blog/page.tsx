@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-
 import { FaRss, FaCode, FaLightbulb, FaRocket } from "react-icons/fa";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 
 export default function BlogPage() {
-  const [_email, _setEmail] = useState("");
   const { getAvailableHeight } = useNavigationSpace();
 
   return (

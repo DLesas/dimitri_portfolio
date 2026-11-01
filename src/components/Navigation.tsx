@@ -60,7 +60,7 @@ export default function Navigation() {
             <span ref={settingsAnchorRef} className="inline-flex">
               <SettingsMenu />
             </span>
-            <HelperPopover duration={6000} triggerRef={settingsAnchorRef} />
+            <HelperPopover triggerRef={settingsAnchorRef} />
 
             {/* Mobile Menu Button */}
             <Button

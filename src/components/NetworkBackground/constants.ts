@@ -55,22 +55,19 @@ export const MOUSE_CONFIG = {
   MOVEMENT_THRESHOLD: 2, // Minimum pixel movement required to trigger position update
 } as const;
 
-// World coordinate system - Defines the 3D space boundaries
+// Where new nodes spawn, in world units
 export const WORLD_CONFIG = {
-  WIDTH: 100, // Default width of 3D world (used as fallback, now dynamically calculated)
-  HEIGHT: 60, // Default height of 3D world (used as fallback, now dynamically calculated)
-  DEPTH: 3, // Total depth of 3D world (-1 to +1 world units)
+  WIDTH: 100, // Minimum width of the spawn area (the visible area when that is wider)
+  HEIGHT: 60, // Minimum height of the spawn area (the visible area when that is taller)
+  DEPTH: 3, // Depth of the spawn area: nodes start within ±1.5 world units of z = 0
 } as const;
 
-// Visual styling - Controls appearance of nodes, connections, and lighting
+// Visual styling - Controls appearance of nodes, and the camera
 export const VISUAL_CONFIG = {
   NODE_RADIUS: 0.12, // Radius of node spheres in world units
-  NODE_SEGMENTS: 8, // Number of segments for sphere geometry (higher = smoother but slower)
   NODE_OPACITY: 0.8, // Transparency of nodes (0 = invisible, 1 = opaque)
-  NODE_EMISSIVE_INTENSITY: 0.4, // Strength of node glow effect
   CAMERA_POSITION: [0, 0, 10] as const, // 3D position of camera [x, y, z]
-  CAMERA_ZOOM: 20, // Orthographic camera zoom level (higher = more zoomed in)
-  AMBIENT_LIGHT_INTENSITY: 0.6, // Overall brightness of scene lighting
+  CAMERA_ZOOM: 20, // Orthographic camera zoom: pixels per world unit
 } as const;
 
 // Performance configurations for different device types
@@ -78,19 +75,19 @@ export const PERFORMANCE_CONFIGS = {
   low: {
     NODE_COUNT: 110, // Minimal nodes for weak devices (phones, old computers)
     CONNECTION_DISTANCE: 5, // Shorter connection range to reduce calculations
-    UPDATE_INTERVAL: 6, // Update every 6th frame (10fps) to save CPU
-    MAX_CONNECTIONS: 50, // Limit connections to reduce draw calls
+    UPDATE_INTERVAL: 6, // Recalculate connections every 6th 60 Hz physics step (10 times a second)
+    MAX_CONNECTIONS: 50, // Fewer connections to search for and draw
   },
   medium: {
     NODE_COUNT: 150, // Moderate nodes for average devices (laptops, tablets)
     CONNECTION_DISTANCE: 6, // Medium connection range
-    UPDATE_INTERVAL: 4, // Update every 3rd frame (20fps)
+    UPDATE_INTERVAL: 4, // Every 4th physics step (15 times a second)
     MAX_CONNECTIONS: 100, // More connections for richer visuals
   },
   high: {
     NODE_COUNT: 200, // Many nodes for powerful devices (gaming PCs, high-end laptops)
     CONNECTION_DISTANCE: 8, // Long connection range for complex network
-    UPDATE_INTERVAL: 3, // Update every frame (60fps) for smooth animation
+    UPDATE_INTERVAL: 3, // Every 3rd physics step (20 times a second)
     MAX_CONNECTIONS: 150, // Controlled connections to maintain performance
   },
 } as const;

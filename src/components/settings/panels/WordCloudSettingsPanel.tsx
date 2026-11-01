@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Button, Label, Slider } from "@heroui/react";
 import { FaUndo, FaCloud } from "react-icons/fa";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -16,8 +16,6 @@ import type { WordCloudSettings } from "@/contexts/SettingsContext";
 interface WordCloudSettingsSliderProps {
   /** The setting key from WordCloudSettings */
   setting: keyof WordCloudSettings;
-  /** Optional CSS class name */
-  className?: string;
 }
 
 // ============================================================================
@@ -27,10 +25,7 @@ interface WordCloudSettingsSliderProps {
 /**
  * Configuration-driven slider component for word cloud settings
  */
-function WordCloudSettingsSlider({
-  setting,
-  className = "",
-}: WordCloudSettingsSliderProps) {
+function WordCloudSettingsSlider({ setting }: WordCloudSettingsSliderProps) {
   const { wordCloudSettings, updateWordCloudSettings, resetGeneration } =
     useSettings();
   const config = WORDCLOUD_SETTINGS_CONFIG[setting];
@@ -64,7 +59,7 @@ function WordCloudSettingsSlider({
   };
 
   return (
-    <div className={className}>
+    <div>
       <Slider
         value={localValue}
         onChange={handleChange}

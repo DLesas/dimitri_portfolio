@@ -9,7 +9,6 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-import { retryWithBackoff, RetryPresets } from "@/utils/retry";
 import {
   generateThemeFromPrimary,
   applyThemeToCSS,
@@ -121,8 +120,6 @@ interface ThemeContextType {
   updateTheme: () => void;
   /** Whether theme has been initialized with real colors */
   isInitialized: boolean;
-  /** Whether theme extraction failed */
-  hasExtractionFailed: boolean;
   /** Set primary color for theme generation */
   setPrimaryColor: (color: string) => void;
   /** Current primary color being used */
@@ -518,7 +515,6 @@ const readSavedTheme = (): {
  * - Manual updates: Call updateTheme() when theme changes
  * - Multiple formats: Each color available in hex, hsl, rgba, hsla
  * - Complete color systems: Shades (50-950) and opacity variants (10-90%)
- * - Retry capability when extraction fails
  * - Custom theme generation from primary color
  *
  * @param children - React children
@@ -530,7 +526,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   const [isInitialized, setIsInitialized] = useState(false);
-  const [hasExtractionFailed, setHasExtractionFailed] = useState(false);
   const extractionRequestedRef = useRef(false);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -544,61 +539,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Extract theme colors with error handling and automatic retry
+   * Extract theme colors from the CSS variables. Never throws: a missing or unparseable
+   * variable falls back to its default colour.
    */
   const runExtraction = useCallback((immediate: boolean = false) => {
-    const extractThemeColorsIdle = async () => {
-      // Use the generalized retry utility for theme extraction
-      const result = await retryWithBackoff(
-        async () => {
-          const newColors = extractThemeColors(false); // Extract real colors
-          return newColors;
-        },
-        {
-          ...RetryPresets.standard, // Use standard preset for theme extraction
-          retryDelay: 3000, // 3 second delay between retries
-          maxRetries: immediate ? 0 : 3, // No retries for manual updates, 3 for automatic
-          onRetry: (error, attempt, delay) => {
-            console.log(
-              `Retrying theme extraction in ${delay}ms (attempt ${
-                attempt + 1
-              }/3): ${error.message}`
-            );
-            setHasExtractionFailed(false); // Clear failure state during retry
-          },
-          onSuccess: (newColors, totalAttempts) => {
-            setColors(newColors);
-            setIsInitialized(true);
-            setHasExtractionFailed(false);
+    const extractThemeColorsIdle = () => {
+      const newColors = extractThemeColors(false); // Extract real colors
+      setColors(newColors);
+      setIsInitialized(true);
 
-            // Log extraction results in development
-            if (process.env.NODE_ENV === "development") {
-              console.log("Theme colors extracted:", {
-                primaryBase: newColors.primary.shades[500].hex,
-                backgroundBase: newColors.background.base.hex,
-                foregroundBase: newColors.foreground.base.hex,
-                totalAttempts,
-                immediate,
-              });
-            }
-          },
-          onMaxRetriesReached: (lastError, totalAttempts) => {
-            console.warn(
-              `Theme extraction failed after ${totalAttempts} attempts, using fallback colors:`,
-              lastError
-            );
-            setHasExtractionFailed(true);
-            setIsInitialized(true);
-            // Keep existing fallback colors
-          },
-        }
-      );
-
-      // Handle the result for immediate extractions (manual updates)
-      if (immediate && !result.success) {
-        console.warn("Manual theme extraction failed:", result.error);
-        setHasExtractionFailed(true);
-        setIsInitialized(true);
+      // Log extraction results in development
+      if (process.env.NODE_ENV === "development") {
+        console.log("Theme colors extracted:", {
+          primaryBase: newColors.primary.shades[500].hex,
+          backgroundBase: newColors.background.base.hex,
+          foregroundBase: newColors.foreground.base.hex,
+          immediate,
+        });
       }
     };
 
@@ -633,7 +590,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     updateTimeoutRef.current = setTimeout(() => {
       runExtraction(true); // Run after CSS has updated
       updateTimeoutRef.current = null;
-    }, 0); // 200ms to ensure CSS custom properties have fully propagated
+    }, 0); // Next task, so the new CSS custom properties have applied
   }, [runExtraction]);
 
   // Apply the saved theme on mount
@@ -798,7 +755,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     colors,
     updateTheme,
     isInitialized,
-    hasExtractionFailed,
     setPrimaryColor,
     primaryColor,
     isGeneratingTheme,

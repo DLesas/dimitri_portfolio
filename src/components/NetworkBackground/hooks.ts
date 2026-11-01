@@ -1,18 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import {
-  convertMouseToWorldCoordinates,
-  convertDOMToWorldCoordinates,
-  PIXEL_TO_WORLD_RATIO,
-} from "../../utils/3D";
-import { WORLD_CONFIG, MOUSE_CONFIG } from "./constants";
+import { convertMouseToWorldCoordinates, convertDOMToWorldCoordinates } from "./world";
+import { MOUSE_CONFIG, VISUAL_CONFIG } from "./constants";
+import type { DOMCollider, MousePosition } from "./networkEngine";
 
 // Smart hook for mouse tracking with auto-disable and throttling
-export function useMouseTracking(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  worldWidth?: number,
-  worldHeight?: number
-) {
-  const mousePos = useRef({ x: 0, y: 0, isActive: false });
+export function useMouseTracking(containerRef: React.RefObject<HTMLDivElement | null>) {
+  const mousePos = useRef<MousePosition>({ x: 0, y: 0, isActive: false });
   const lastMoveTime = useRef(0);
   const timeoutId = useRef<NodeJS.Timeout | null>(null);
   const lastPosition = useRef({ x: 0, y: 0 });
@@ -109,14 +102,7 @@ export function useMouseTracking(
         }
       };
     }
-  }, [
-    containerRef,
-    worldWidth,
-    worldHeight,
-    MOUSE_TIMEOUT,
-    MOVEMENT_THRESHOLD,
-    THROTTLE_INTERVAL,
-  ]);
+  }, [containerRef, MOUSE_TIMEOUT, MOVEMENT_THRESHOLD, THROTTLE_INTERVAL]);
 
   return mousePos;
 }
@@ -124,19 +110,9 @@ export function useMouseTracking(
 // Hook for DOM collision detection
 export function useDOMColliders(
   containerRef: React.RefObject<HTMLDivElement | null>,
-  worldWidth?: number,
-  worldHeight?: number,
   collisionPadding: number = 0
 ) {
-  const domColliders = useRef<
-    Array<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      element: HTMLElement;
-    }>
-  >([]);
+  const domColliders = useRef<DOMCollider[]>([]);
 
   const updateDOMColliders = useCallback(() => {
     if (!containerRef.current) return;
@@ -165,16 +141,15 @@ export function useDOMColliders(
       // This ensures DOM elements maintain their size regardless of container size
       // Include padding in the world dimensions
       const elementWorldWidth =
-        rect.width / PIXEL_TO_WORLD_RATIO + collisionPadding * 2;
+        rect.width / VISUAL_CONFIG.CAMERA_ZOOM + collisionPadding * 2;
       const elementWorldHeight =
-        rect.height / PIXEL_TO_WORLD_RATIO + collisionPadding * 2;
+        rect.height / VISUAL_CONFIG.CAMERA_ZOOM + collisionPadding * 2;
 
       return {
         x: worldCoords.x,
         y: worldCoords.y,
         width: elementWorldWidth,
         height: elementWorldHeight,
-        element: element as HTMLElement,
       };
     });
   }, [containerRef, collisionPadding]);
@@ -209,13 +184,7 @@ export function useDOMColliders(
       observer.disconnect();
       domColliders.current = [];
     };
-  }, [
-    containerRef,
-    worldWidth,
-    worldHeight,
-    collisionPadding,
-    updateDOMColliders,
-  ]);
+  }, [containerRef, collisionPadding, updateDOMColliders]);
 
   return domColliders;
 }
@@ -264,117 +233,4 @@ export function useViewportVisibility(
     isTabActive,
     shouldAnimate,
   };
-}
-
-// Hook for dynamic container sizing and world coordinate calculation
-export function useContainerDimensions(
-  containerRef: React.RefObject<HTMLDivElement | null>
-) {
-  const [dimensions, setDimensions] = useState<{
-    width: number;
-    height: number;
-    aspectRatio: number;
-  }>({
-    width: WORLD_CONFIG.WIDTH,
-    height: WORLD_CONFIG.HEIGHT,
-    aspectRatio: 1,
-  });
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    let debounceTimeout: NodeJS.Timeout | null = null;
-
-    const updateDimensions = () => {
-      // Clear any existing timeout
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-
-      // Debounce the update to prevent excessive recalculations during resize
-      debounceTimeout = setTimeout(() => {
-        // Check if we should still proceed (not aborted)
-        if (abortController.signal.aborted) return;
-
-        if (containerRef.current) {
-          const rect = containerRef.current.getBoundingClientRect();
-          const aspectRatio = rect.width / rect.height;
-
-          // Calculate world dimensions based on container aspect ratio
-          // Keep a base size and scale based on aspect ratio
-          const baseSize = 30; // Base world size
-          let worldWidth, worldHeight;
-
-          if (aspectRatio > 1) {
-            // Wider than tall - expand width
-            worldWidth = baseSize * aspectRatio;
-            worldHeight = baseSize;
-          } else {
-            // Taller than wide - expand height
-            worldWidth = baseSize;
-            worldHeight = baseSize / aspectRatio;
-          }
-
-          // Check again if we should proceed before updating state
-          if (!abortController.signal.aborted) {
-            setDimensions({
-              width: worldWidth,
-              height: worldHeight,
-              aspectRatio,
-            });
-          }
-        }
-      }, 300); // 150ms debounce - smooth but not too slow
-    };
-
-    // Initial measurement (no debounce for first load)
-    const initialUpdate = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const aspectRatio = rect.width / rect.height;
-        const baseSize = 30;
-
-        let worldWidth, worldHeight;
-        if (aspectRatio > 1) {
-          worldWidth = baseSize * aspectRatio;
-          worldHeight = baseSize;
-        } else {
-          worldWidth = baseSize;
-          worldHeight = baseSize / aspectRatio;
-        }
-
-        setDimensions({
-          width: worldWidth,
-          height: worldHeight,
-          aspectRatio,
-        });
-      }
-    };
-
-    initialUpdate();
-
-    // Set up resize observer for dynamic updates
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    // Fallback resize listener with debouncing
-    window.addEventListener("resize", updateDimensions);
-
-    return () => {
-      // Abort any pending operations
-      abortController.abort();
-
-      // Clear timeout
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-
-      // Clean up observers
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", updateDimensions);
-    };
-  }, [containerRef]);
-
-  return dimensions;
 }

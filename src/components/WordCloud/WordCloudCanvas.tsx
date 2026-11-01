@@ -8,7 +8,7 @@ import { useTheme as useNextTheme } from "next-themes";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebug } from "@/contexts/DebugContext";
-import type { SkillRecord } from "@/hooks/queries/useSkillsData";
+import type { SkillRecord } from "@/types/skills";
 import {
   BASE_DISTANCE,
   FOV,
@@ -24,7 +24,6 @@ const Perf = lazy(() => import("r3f-perf").then((m) => ({ default: m.Perf })));
 const FOG_NEAR = 0;
 const FOG_FAR = 100;
 const DAMPING_FACTOR = 0.07;
-const fogTarget = new THREE.Color();
 
 interface CloudSceneProps {
   skills: SkillRecord[];
@@ -60,7 +59,6 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
     engineRef.current = engine;
     const { scene } = getThreeState();
     scene.add(engine.group);
-    engine.sync(() => invalidate());
     return () => {
       scene.remove(engine.group);
       engine.dispose();
@@ -159,8 +157,6 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
       state.gl.domElement.style.cursor = hovering ? "pointer" : "";
       onHoverRef.current(hoverChange);
     }
-    const fog = state.scene.fog;
-    if (fog instanceof THREE.Fog) fog.color.lerp(fogTarget.set(inputsRef.current.palette.fog), 0.5);
 
     // The canvas renders on demand: keep going while anything moves, stop once settled
     // (e.g. while the pointer rests on a word and the rotation has eased to a stop)

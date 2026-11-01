@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { SkillRecord, SkillsData } from "@/types/languages_modules";
+import type { SkillRecord, SkillsData } from "@/types/skills";
 
 /**
  * Fetches skills data for the word cloud visualization
@@ -26,6 +26,3 @@ export function useSkillsData(dataUrl: string = "/languages_modules.json") {
     retry: 2,
   });
 }
-
-// Re-export the type for convenience
-export type { SkillRecord } from "@/types/languages_modules";

@@ -10,29 +10,17 @@ const NetworkCanvas = dynamic(() => import("./NetworkCanvas"), { ssr: false });
 let globalCanvasActive = false;
 
 export type NetworkBackgroundProps = {
-  nodeCount?: number;
-  connectionDistance?: number;
-  color?: string;
   children?: React.ReactNode;
   className?: string;
-  performance?: "auto" | "low" | "medium" | "high";
-  disabled?: boolean; // Option to completely disable for very weak devices
 };
 
-export default function NetworkBackground({
-  nodeCount,
-  connectionDistance,
-  children,
-  className = "",
-  performance = "auto",
-  disabled = false,
-}: NetworkBackgroundProps) {
+export default function NetworkBackground({ children, className = "" }: NetworkBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canRender, setCanRender] = useState(false);
 
   // One canvas at a time, started once the browser is idle after first paint
   useEffect(() => {
-    if (disabled || globalCanvasActive) return;
+    if (globalCanvasActive) return;
 
     let owned = false;
     const start = () => {
@@ -50,7 +38,7 @@ export default function NetworkBackground({
       setCanRender(false);
       if (owned) globalCanvasActive = false;
     };
-  }, [disabled]);
+  }, []);
 
   return (
     <div
@@ -58,14 +46,7 @@ export default function NetworkBackground({
       className={`relative ${className}`}
       style={{ position: "relative", minHeight: "200px" }}
     >
-      {canRender && (
-        <NetworkCanvas
-          containerRef={containerRef}
-          nodeCount={nodeCount}
-          connectionDistance={connectionDistance}
-          performance={performance}
-        />
-      )}
+      {canRender && <NetworkCanvas containerRef={containerRef} />}
 
       {/* Foreground Content */}
       {children}

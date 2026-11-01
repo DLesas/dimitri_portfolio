@@ -5,12 +5,7 @@ import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { useTheme as useNextTheme } from "next-themes";
-import {
-  useContainerDimensions,
-  useMouseTracking,
-  useDOMColliders,
-  useViewportVisibility,
-} from "./hooks";
+import { useMouseTracking, useDOMColliders, useViewportVisibility } from "./hooks";
 import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
 import NetworkScene from "./NetworkScene";
 import type { DOMCollider, NetworkPalette, PerformanceLevel } from "./networkEngine";
@@ -33,25 +28,6 @@ function LiveVisitors() {
   );
   if (!presence.self || presence.others.length === 0) return null;
   return <VisitorAvatars presence={presence} />;
-}
-
-// Safe disposal function to prevent double context loss
-function safeDisposeRenderer(renderer: THREE.WebGLRenderer | null) {
-  if (!renderer) return;
-
-  // @ts-expect-error - custom flag to track disposal
-  if (renderer.__isDisposed) return;
-
-  renderer.dispose();
-
-  // Only force context loss if context is still available
-  const context = renderer.getContext();
-  if (context && !context.isContextLost()) {
-    renderer.forceContextLoss();
-  }
-
-  // @ts-expect-error - mark as disposed
-  renderer.__isDisposed = true;
 }
 
 // Debug component to visualize DOM colliders in 3D world coordinates
@@ -160,44 +136,27 @@ function useReducedMotion() {
   return reduced;
 }
 
-export interface NetworkCanvasProps {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  nodeCount?: number;
-  connectionDistance?: number;
-  performance?: "auto" | "low" | "medium" | "high";
-}
-
 export default function NetworkCanvas({
   containerRef,
-  nodeCount,
-  connectionDistance,
-  performance = "auto",
-}: NetworkCanvasProps) {
-  const glRef = useRef<THREE.WebGLRenderer | null>(null);
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
   const { networkSettings } = useSettings();
   const { isDebugEnabled } = useDebug();
   const { colors } = useTheme();
   const { resolvedTheme } = useNextTheme();
   const reducedMotion = useReducedMotion();
 
-  const [performanceLevel] = useState<PerformanceLevel>(() =>
-    performance === "auto" ? detectDevicePerformance() : performance
-  );
+  const [performanceLevel] = useState<PerformanceLevel>(detectDevicePerformance);
   const performanceConfig = PERFORMANCE_CONFIGS[performanceLevel];
 
-  // Settings priority: props > user settings > performance defaults
-  const resolvedNodeCount = nodeCount ?? networkSettings.nodeCount ?? performanceConfig.NODE_COUNT;
+  // A setting saved as NaN comes back from localStorage as null: use the device default
+  const resolvedNodeCount = networkSettings.nodeCount ?? performanceConfig.NODE_COUNT;
   const resolvedConnectionDistance =
-    connectionDistance ?? networkSettings.connectionDistance ?? performanceConfig.CONNECTION_DISTANCE;
+    networkSettings.connectionDistance ?? performanceConfig.CONNECTION_DISTANCE;
 
-  const containerDimensions = useContainerDimensions(containerRef);
-  const mousePos = useMouseTracking(containerRef, containerDimensions.width, containerDimensions.height);
-  const domColliders = useDOMColliders(
-    containerRef,
-    containerDimensions.width,
-    containerDimensions.height,
-    networkSettings.domCollisionPadding
-  );
+  const mousePos = useMouseTracking(containerRef);
+  const domColliders = useDOMColliders(containerRef, networkSettings.domCollisionPadding);
   const { shouldAnimate } = useViewportVisibility(containerRef);
 
   const dark = resolvedTheme !== "light";
@@ -240,13 +199,6 @@ export default function NetworkCanvas({
   // Fade the canvas in once it exists, rather than popping in
   const [shown, setShown] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      safeDisposeRenderer(glRef.current);
-      glRef.current = null;
-    };
-  }, []);
-
   const running = shouldAnimate && !reducedMotion;
 
   return (
@@ -276,10 +228,7 @@ export default function NetworkCanvas({
           // Nothing renders while the network is offscreen or the tab is hidden
           frameloop={running ? "always" : reducedMotion ? "demand" : "never"}
           style={{ background: "transparent", width: "100%", height: "100%" }}
-          onCreated={({ gl }) => {
-            glRef.current = gl;
-            setShown(true);
-          }}
+          onCreated={() => setShown(true)}
         >
           <NetworkScene
             nodeCount={resolvedNodeCount}

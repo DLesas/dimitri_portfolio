@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -11,8 +11,6 @@ interface DebugContextType {
   isDebugEnabled: boolean;
   /** Toggle debug mode on/off */
   toggleDebug: () => void;
-  /** Set debug mode to a specific value */
-  setDebugEnabled: (enabled: boolean) => void;
 }
 
 // ============================================================================
@@ -38,14 +36,9 @@ export function DebugProvider({ children }: { children: ReactNode }) {
     setIsDebugEnabledState((prev) => !prev);
   };
 
-  const setDebugEnabled = (enabled: boolean) => {
-    setIsDebugEnabledState(enabled);
-  };
-
   const contextValue: DebugContextType = {
     isDebugEnabled,
     toggleDebug,
-    setDebugEnabled,
   };
 
   return (
