@@ -95,7 +95,7 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
   const place = placeName(visitor);
 
   return (
-    <li className="group relative -ml-2 first:ml-0 hover:z-10 focus-within:z-10">
+    <li className="group relative">
       <button
         type="button"
         aria-label={isSelf ? `${visitor.name} (you)` : visitor.name}
@@ -103,13 +103,11 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setOpen(false)}
-        className={`flex size-9 items-center justify-center rounded-full text-foreground shadow-md ring-2 backdrop-blur-sm transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-foreground ${
-          isSelf ? "ring-foreground/60" : "ring-background"
-        }`}
-        // A tint of their colour, like their cursor's name flag
-        style={{ background: translucent(visitor.color, 0.45) }}
+        className="flex size-8 items-center justify-center rounded-full border-[1.5px] backdrop-blur-[2px] transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60"
+        // An outline in their colour, like their cursor
+        style={{ borderColor: translucent(visitor.color, 0.75), color: translucent(visitor.color, 0.9) }}
       >
-        <Icon aria-hidden className="size-5" />
+        <Icon aria-hidden className="size-[18px]" />
       </button>
 
       <div
@@ -134,8 +132,9 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
 
 /**
  * Who is on the home page right now, Google Docs style: this visitor first, then the
- * others, each an anonymous animal in their own colour. Hovering (or tapping) an avatar
- * shows their name and approximate location.
+ * others, each an anonymous animal outlined in their own colour. A side feature, so the
+ * stack stays faint until it's hovered or focused; an avatar then shows the visitor's
+ * name and approximate location (a tap does the same on touch screens).
  */
 export default function VisitorAvatars({ presence }: { presence: Presence }) {
   const { self, others } = presence;
@@ -147,14 +146,14 @@ export default function VisitorAvatars({ presence }: { presence: Presence }) {
     <ul
       data-network-overlay
       aria-label="People on this page"
-      className="fixed bottom-4 left-4 z-40 flex items-center enter [--enter-y:8px]"
+      className="fixed bottom-4 left-4 z-40 flex items-center gap-1.5 opacity-50 transition-opacity duration-200 hover:opacity-100 focus-within:opacity-100 enter [--enter-y:8px]"
     >
       <Avatar visitor={self} isSelf />
       {shown.map((visitor) => (
         <Avatar key={visitor.id} visitor={visitor} isSelf={false} />
       ))}
       {hidden > 0 && (
-        <li className="-ml-2 flex size-9 items-center justify-center rounded-full bg-default-500/30 text-xs font-semibold text-foreground ring-2 ring-background backdrop-blur-sm">
+        <li className="flex size-8 items-center justify-center rounded-full border-[1.5px] border-foreground/30 text-[11px] font-semibold text-foreground/70">
           +{hidden}
         </li>
       )}

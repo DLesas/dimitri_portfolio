@@ -81,6 +81,8 @@ const SETTLE_STEPS = 180;
 
 const NO_MOUSE: MousePosition = { x: 0, y: 0, isActive: false };
 const MAX_REMOTE_CURSORS = 16;
+/** Other visitors' glows are dimmer than this visitor's own: they're a side feature */
+const REMOTE_GLOW = 0.6;
 /** A packet starts just before its line and fades out just past the end (CSS pixels) */
 const PACKET_ENTRY_EXIT_PX = 40;
 
@@ -565,7 +567,7 @@ export function createNetworkEngine() {
       remotePosition.setXYZ(i, rc.x, rc.y, 0);
       remoteRgb.set(rc.color);
       remoteColor.setXYZ(i, remoteRgb.r, remoteRgb.g, remoteRgb.b);
-      remoteStrength.setX(i, rc.weight * glow * (additive ? 0.16 : 0.1));
+      remoteStrength.setX(i, rc.weight * REMOTE_GLOW * glow * (additive ? 0.16 : 0.1));
     }
     remotePosition.needsUpdate = remoteColor.needsUpdate = remoteStrength.needsUpdate = true;
     remoteGeometry.setDrawRange(0, remoteCount);

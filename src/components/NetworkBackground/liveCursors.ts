@@ -484,6 +484,8 @@ export type LiveCursors = NonNullable<ReturnType<typeof createLiveCursors>>;
 // ---- Marks: each visitor's pointer and name, drawn over their glow ----
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+/** Other visitors' pointers and names are a side feature: kept faint so they don't pull focus */
+const MARK_OPACITY = 0.6;
 /** A pointer whose tip is at (3, 2) in its 20×22 box */
 const ARROW_PATH = "M3 2 L3 19 L7.6 14.6 L10.6 21.4 L13.6 20.1 L10.7 13.4 L17 13.4 Z";
 const marksByLayer = new WeakMap<HTMLElement, Map<string, HTMLDivElement>>();
@@ -544,7 +546,7 @@ export function drawCursorMarks(layer: HTMLElement, cursors: RemoteCursor[], wid
     const px = cursor.x * zoom + width / 2;
     const py = -cursor.y * zoom + height / 2;
     mark.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
-    mark.style.opacity = cursor.weight.toFixed(3);
+    mark.style.opacity = (cursor.weight * MARK_OPACITY).toFixed(3);
     // Colour and name rarely change: only touch them when they do
     if (mark.dataset.color !== cursor.color || mark.dataset.name !== cursor.name) {
       mark.dataset.color = cursor.color;
@@ -552,7 +554,7 @@ export function drawCursorMarks(layer: HTMLElement, cursors: RemoteCursor[], wid
       mark.querySelector("path")!.setAttribute("stroke", translucent(cursor.color, 0.85));
       const label = mark.querySelector("span")!;
       label.textContent = cursor.name;
-      label.style.background = translucent(cursor.color, 0.45);
+      label.style.background = translucent(cursor.color, 0.3);
     }
   }
   for (const [cursorId, mark] of marks) {
