@@ -35,10 +35,6 @@ function networkBackdrop() {
   return { nodes, links };
 }
 
-// The lesas signature, as in src/app/icon.svg
-const SIGNATURE =
-  "M 60.000 200  c 9 0 33 0 30 -40 -10.5 -140 -20 55 -7 59 13 4 30 -15.9 30 -49 0 -4.2 -10 -35 -20 20 -6 33 -1.92 32.96 14.784 26.848 16.704 -6.112 18 -42.6 22 -46 10.8 -13.5 -12 -10 4 3 35.2 28.6 25 50 -5 45 m 27 -8 c 27 -8 30 -66 40 -30 -11 -38.5 -30 -20 -30 10 0 24 20 65 30 -30 -7 66.5 0 60 5 60 5 0 18 -47 22 -50 10.8 -13.5 -12 -10 4 3 35.2 28.6 25 50 -5 45";
-
 export default async function OpenGraphImage() {
   const interBold = await readFile(join(process.cwd(), "public/fonts/Inter-Bold.ttf"));
   const { nodes, links } = networkBackdrop();
@@ -87,27 +83,8 @@ export default async function OpenGraphImage() {
             height: "100%",
           }}
         >
-          <svg width={150} height={150} viewBox="62.4 51.3 246 246">
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor={BLUE} />
-                <stop offset="1" stopColor={PURPLE} />
-              </linearGradient>
-            </defs>
-            <g transform="scale(1.2) translate(0, -20)">
-              <path
-                d={SIGNATURE}
-                fill="none"
-                stroke="url(#g)"
-                strokeWidth={7}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </g>
-          </svg>
           <div
             style={{
-              marginTop: 24,
               fontSize: 104,
               lineHeight: 1.05,
               backgroundImage: `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
