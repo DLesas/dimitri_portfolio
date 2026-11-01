@@ -21,7 +21,6 @@ export interface ContactFormResponse {
  * - Loading states
  * - Error handling
  * - Success callbacks
- * - Automatic retry logic
  *
  * @example
  * ```tsx
@@ -70,8 +69,7 @@ export function useContactFormMutation(options?: {
 
       return result;
     },
-    retry: 1, // Retry once on failure
-    retryDelay: 1000, // Wait 1 second before retrying
+    // No retries: a retried send can email twice, and the firewall's 429 won't pass sooner
     ...options,
   });
 }

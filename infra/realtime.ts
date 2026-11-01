@@ -51,7 +51,7 @@ export const realtimeEnv: Record<string, pulumi.Input<string>> = {
 
 // ---- Automatic cutoff ----
 
-// The API key is public, so anyone could run up the bill. Two checks share one way out:
+// The API key is public, so anyone could run up the bill. Three checks share one way out:
 // a Lambda deletes the API's keys, which stops all traffic within a few minutes, and an
 // email says so. `npm run restore` brings a new key back, after which the site needs a
 // redeploy.
@@ -61,10 +61,14 @@ export const realtimeEnv: Record<string, pulumi.Input<string>> = {
 //   messages a minute). They're read per API (EventAPIId): that's where AppSync reports them.
 // - Slow drains kept under those limits: every 15 minutes the Lambda estimates this
 //   month's spend, counted from when the current key was made, and cuts off past the cap.
+// - Anything else AppSync bills: a budget on the month's actual AppSync charges. The bill
+//   lags by up to a day, so this is the backstop, not the first line.
 const CUTOFF_LIMITS = {
   InboundMessages: 30_000, // messages published per minute
   OutboundMessages: 200_000, // messages delivered per minute (published × subscribers)
-  ConnectRequests: 3_000, // connections opened per minute
+  ConnectRequests: 3_000, // connections opened per minute, failed ones included
+  SubscribeSuccess: 3_000, // subscriptions made per minute
+  SubscribeClientError: 3_000, // subscriptions refused per minute
   ActiveConnections: 300, // open connections
 };
 const MONTHLY_CAP_USD = config.require("realtimeMonthlyCapUsd");
@@ -154,4 +158,51 @@ new aws.lambda.Permission("realtime-cutoff-from-schedule", {
   function: cutoff.name,
   principal: "events.amazonaws.com",
   sourceArn: spendCheck.arn,
+});
+
+// The backstop has its own topic, so the alarms' topic keeps its default policy
+const budgetTopic = new aws.sns.Topic("realtime-budget", { name: "lesas-realtime-budget" });
+new aws.sns.TopicPolicy("realtime-budget", {
+  arn: budgetTopic.arn,
+  policy: pulumi.jsonStringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Effect: "Allow",
+        Principal: { Service: "budgets.amazonaws.com" },
+        Action: "sns:Publish",
+        Resource: budgetTopic.arn,
+        Condition: { StringEquals: { "aws:SourceAccount": aws.getCallerIdentityOutput().accountId } },
+      },
+    ],
+  }),
+});
+new aws.lambda.Permission("realtime-cutoff-from-budget", {
+  action: "lambda:InvokeFunction",
+  function: cutoff.name,
+  principal: "sns.amazonaws.com",
+  sourceArn: budgetTopic.arn,
+});
+new aws.sns.TopicSubscription("realtime-budget-lambda", {
+  topic: budgetTopic.arn,
+  protocol: "lambda",
+  endpoint: cutoff.arn,
+});
+new aws.budgets.Budget("realtime", {
+  name: "lesas-realtime",
+  budgetType: "COST",
+  limitAmount: MONTHLY_CAP_USD,
+  limitUnit: "USD",
+  timeUnit: "MONTHLY",
+  costFilters: [{ name: "Service", values: ["AWS AppSync"] }],
+  notifications: [
+    {
+      notificationType: "ACTUAL",
+      comparisonOperator: "GREATER_THAN",
+      threshold: 100,
+      thresholdType: "PERCENTAGE",
+      subscriberEmailAddresses: [alertEmail],
+      subscriberSnsTopicArns: [budgetTopic.arn],
+    },
+  ],
 });

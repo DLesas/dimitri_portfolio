@@ -1,10 +1,14 @@
 # The main Pulumi stack (infra/): previewed on pull requests, deployed on merge to main.
 #
-# AWS sign-in is keyless (GitHub OIDC): pull requests get a read-only role, main a deploy
-# role that can't change IAM. Both roles, and infra/access/, are deployed by hand.
+# Each job runs in a GitHub environment, which holds its secrets and is the only thing
+# its AWS role trusts (GitHub OIDC, no stored keys), so code in a pull request can't
+# reach either until its rules pass:
+#   infra-preview  the repo owner approves each run; read-only AWS role
+#   infra          main only; a deploy role that can't change IAM
+# Both roles, and infra/access/, are deployed by hand.
 #
 # Repository variables: AWS_PREVIEW_ROLE_ARN, AWS_DEPLOY_ROLE_ARN (from infra/access)
-# Repository secrets: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN
+# Environment secrets, in both: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN
 
 name: Infrastructure
 
@@ -28,18 +32,20 @@ env:
   AWS_REGION: eu-west-2
   PULUMI_BACKEND_URL: s3://lesas-pulumi-state-472c02?region=eu-west-2
   PULUMI_SKIP_UPDATE_CHECK: "true"
-  PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
-  VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
 
 jobs:
   preview:
     # Pull requests from forks get no secrets, so only this repository's own
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: infra-preview
     permissions:
       contents: read
       id-token: write
       pull-requests: write
+    env:
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,9 +71,13 @@ jobs:
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: infra
     permissions:
       contents: read
       id-token: write
+    env:
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

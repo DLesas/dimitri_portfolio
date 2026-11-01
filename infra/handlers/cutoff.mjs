@@ -5,9 +5,10 @@
  * API's keys: every connection, subscription and publish then fails, and the bill stops
  * growing. Restore with `npm run restore` in infra/, then redeploy the site.
  *
- * - Through SNS: a CloudWatch alarm on a burst of traffic (infra/realtime.ts)
+ * - Through SNS: a CloudWatch alarm on a burst of traffic (infra/realtime.ts), or the
+ *   AppSync budget once the month's actual charges pass the cap
  * - Every 15 minutes: an estimate of this month's spend. Past the cap it raises its own
- *   alarm on the same SNS topic, so the keys go and the email arrives as for a burst.
+ *   alarm on the alarms' SNS topic, so the keys go and the email arrives as for a burst.
  */
 import { AppSyncClient, DeleteApiKeyCommand, ListApiKeysCommand } from "@aws-sdk/client-appsync";
 import { CloudWatchClient, GetMetricDataCommand } from "@aws-sdk/client-cloudwatch";
@@ -26,11 +27,12 @@ const PERIOD_S = 300;
 export async function handler(event) {
   if (event?.source === "aws.events") return checkSpend();
 
+  // Alarms send JSON; budgets send text, with the budget's name in the subject
   const alarms = (event?.Records ?? []).map((record) => {
     try {
       return JSON.parse(record.Sns.Message).AlarmName;
     } catch {
-      return "unknown";
+      return record.Sns.Subject ?? "unknown";
     }
   });
 
@@ -72,16 +74,28 @@ async function checkSpend() {
     new GetMetricDataCommand({
       StartTime: new Date(since),
       EndTime: new Date(now),
-      MetricDataQueries: ["InboundMessages", "OutboundMessages", "ConnectRequests"].map(metric),
+      MetricDataQueries: [
+        "InboundMessages",
+        "OutboundMessages",
+        "ConnectRequests",
+        "SubscribeSuccess",
+        "SubscribeClientError",
+      ].map(metric),
     })
   );
   const total = (id) =>
     (MetricDataResults.find((result) => result.Id === id)?.Values ?? []).reduce((sum, value) => sum + value, 0);
 
-  // A publish is billed twice (the message and its handler), a connection twice
-  // (connecting and subscribing), a delivery once. Connection minutes are left out:
-  // under the ActiveConnections alarm they come to about $1 a month at most.
-  const operations = 2 * total("inboundmessages") + total("outboundmessages") + 2 * total("connectrequests");
+  // Billed operations: a publish counts twice (the message and its handler), a delivery
+  // once, a connection attempt once, a subscription twice (it and its unsubscribe), a
+  // refused subscription once. Connection minutes are left out: under the
+  // ActiveConnections alarm they come to about $1 a month at most.
+  const operations =
+    2 * total("inboundmessages") +
+    total("outboundmessages") +
+    total("connectrequests") +
+    2 * total("subscribesuccess") +
+    total("subscribeclienterror");
   const spend = operations * USD_PER_OPERATION;
   const cap = Number(process.env.MONTHLY_CAP_USD);
   console.log(JSON.stringify({ check: "spend", since: new Date(since).toISOString(), operations, spend, cap }));

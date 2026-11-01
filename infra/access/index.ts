@@ -156,21 +156,29 @@ const githubTrust = (subject: string) =>
     },
   ]);
 
-// The main stack's state lives under these prefixes (this stack's state is not among them)
-const mainState = [".pulumi/stacks/lesas-infra/*", ".pulumi/history/lesas-infra/*", ".pulumi/backups/lesas-infra/*"].map(
-  (prefix) => pulumi.interpolate`${stateBucket.arn}/${prefix}`
-);
+// The main stack's state, and the lock `pulumi up` takes on it, live under these prefixes
+// (this stack's are not among them)
+const mainState = [
+  ".pulumi/stacks/lesas-infra/*",
+  ".pulumi/history/lesas-infra/*",
+  ".pulumi/backups/lesas-infra/*",
+  ".pulumi/locks/organization/lesas-infra/*",
+].map((prefix) => pulumi.interpolate`${stateBucket.arn}/${prefix}`);
 const readState = {
   Effect: "Allow",
   Action: ["s3:GetObject", "s3:ListBucket"],
   Resource: [stateBucket.arn, pulumi.interpolate`${stateBucket.arn}/*`],
 };
 
+// Each role trusts one GitHub environment, not a branch or event: a job only gets the
+// environment's secrets and this sign-in once the environment's rules let it run
+// (infra-preview: approved by the repo owner; infra: the main branch only).
+
 // Pull requests: preview what would change, read-only
 const previewRole = new aws.iam.Role("ci-preview", {
   name: "lesas-infra-preview",
   description: "GitHub Actions on pull requests: previews the main Pulumi stack",
-  assumeRolePolicy: githubTrust(`repo:${githubRepo}:pull_request`),
+  assumeRolePolicy: githubTrust(`repo:${githubRepo}:environment:infra-preview`),
 });
 new aws.iam.RolePolicy("ci-preview", {
   role: previewRole.id,
@@ -207,7 +215,7 @@ new aws.iam.RolePolicy("ci-preview", {
 const deployRole = new aws.iam.Role("ci-deploy", {
   name: "lesas-infra-deploy",
   description: "GitHub Actions on main: deploys the main Pulumi stack",
-  assumeRolePolicy: githubTrust(`repo:${githubRepo}:ref:refs/heads/main`),
+  assumeRolePolicy: githubTrust(`repo:${githubRepo}:environment:infra`),
 });
 new aws.iam.RolePolicy("ci-deploy", {
   role: deployRole.id,
@@ -216,7 +224,16 @@ new aws.iam.RolePolicy("ci-deploy", {
     { Effect: "Allow", Action: ["s3:PutObject", "s3:DeleteObject"], Resource: mainState },
     {
       Effect: "Allow",
-      Action: ["sts:GetCallerIdentity", "appsync:List*", "lambda:List*", "sns:ListTopics", "ses:GetAccount", "ses:List*"],
+      // Actions that can't be narrowed to a resource
+      Action: [
+        "sts:GetCallerIdentity",
+        "appsync:List*",
+        "lambda:List*",
+        "sns:ListTopics",
+        "logs:DescribeLogGroups",
+        "ses:GetAccount",
+        "ses:List*",
+      ],
       Resource: "*",
     },
     { Effect: "Allow", Action: "appsync:*", Resource: arn("appsync", "*") },
@@ -225,7 +242,11 @@ new aws.iam.RolePolicy("ci-deploy", {
     { Effect: "Allow", Action: "cloudwatch:*", Resource: arn("cloudwatch", "alarm:lesas-*") },
     { Effect: "Allow", Action: "events:*", Resource: arn("events", "rule/lesas-*") },
     { Effect: "Allow", Action: "logs:*", Resource: arn("logs", "log-group:/aws/lambda/lesas-*") },
-    { Effect: "Allow", Action: "budgets:*", Resource: arn("budgets", "budget/monthly-cost", false) },
+    {
+      Effect: "Allow",
+      Action: "budgets:*",
+      Resource: ["budget/monthly-cost", "budget/lesas-realtime"].map((budget) => arn("budgets", budget, false)),
+    },
     {
       Effect: "Allow",
       Action: "ses:*",
