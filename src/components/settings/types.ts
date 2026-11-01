@@ -1,4 +1,5 @@
-import React from "react";
+import type { IconType } from "react-icons";
+import type { NetworkBackgroundSettings, WordCloudSettings } from "@/contexts/SettingsContext";
 
 // ============================================================================
 // Settings Configuration Types
@@ -27,43 +28,29 @@ export interface SliderConfig {
 }
 
 /**
- * Complete configuration mapping for all network background settings
- *
- * This type ensures that every setting in NetworkBackgroundSettings has
- * a corresponding SliderConfig. It provides compile-time safety and
- * centralizes all slider configurations for maintainability.
+ * A slider for every network background setting, checked at compile time
  */
-export type NetworkSettingsConfig = {
-  [K in keyof import("@/contexts/SettingsContext").NetworkBackgroundSettings]: SliderConfig;
-};
+export type NetworkSettingsConfig = Record<keyof NetworkBackgroundSettings, SliderConfig>;
 
 /**
- * Complete configuration mapping for all wordCloud settings
- *
- * This type ensures that every setting in WordCloudSettings has
- * a corresponding SliderConfig. It provides compile-time safety and
- * centralizes all slider configurations for maintainability.
+ * A slider for every word cloud setting, checked at compile time
  */
-export type WordCloudSettingsConfig = {
-  [K in keyof import("@/contexts/SettingsContext").WordCloudSettings]: SliderConfig;
-};
+export type WordCloudSettingsConfig = Record<keyof WordCloudSettings, SliderConfig>;
 
 // ============================================================================
 // Settings Organization Types
 // ============================================================================
 
 /**
- * Settings category configuration for organizing related controls
+ * A group of related settings, shown under a heading in a settings panel
  *
- * Categories provide logical grouping of settings in the UI, making the
- * settings interface more navigable and intuitive. Each category includes
- * visual elements (title, icon) and defines which settings belong to it.
+ * @template K - The settings' keys
  */
-export interface SettingsCategory {
+export interface SettingsCategory<K extends string = string> {
   /** Category display name */
   title: string;
-  /** Icon component to display next to title */
-  icon: React.ReactNode;
-  /** List of setting keys that belong to this category */
-  settings: string[];
+  /** Icon shown next to the title */
+  icon?: IconType;
+  /** The settings in this category, in order */
+  settings: K[];
 }

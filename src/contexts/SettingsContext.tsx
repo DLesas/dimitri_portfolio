@@ -2,16 +2,19 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
-  useState,
   useEffect,
-  ReactNode,
+  useMemo,
+  useState,
+  type ReactNode,
 } from "react";
 import {
   ANIMATION_CONFIG,
   EFFECTS_CONFIG,
   VISUAL_CONFIG,
   PERFORMANCE_CONFIGS,
+  type PerformanceLevel,
 } from "@/components/NetworkBackground/constants";
 import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useHardwarePerformance } from "./HardwarePerformanceContext";
@@ -100,23 +103,23 @@ const DEFAULT_WORDCLOUD_SETTINGS: WordCloudSettings = {
 };
 
 /**
- * Generate default network background settings based on hardware performance
+ * Default network background settings for a performance tier
  * This ensures optimal performance across different device types
  */
 function generateDefaultNetworkSettings(
-  performanceConfig: Record<string, unknown>
+  performanceConfig: (typeof PERFORMANCE_CONFIGS)[PerformanceLevel]
 ): NetworkBackgroundSettings {
   return {
     // Node configuration
-    nodeCount: performanceConfig.NODE_COUNT as number,
+    nodeCount: performanceConfig.NODE_COUNT,
     nodeRadius: VISUAL_CONFIG.NODE_RADIUS,
     nodeOpacity: VISUAL_CONFIG.NODE_OPACITY,
     organicMovementSpeed: ANIMATION_CONFIG.ORGANIC_MOVEMENT_SPEED,
 
     // Connection configuration
-    connectionDistance: performanceConfig.CONNECTION_DISTANCE as number,
-    maxConnections: performanceConfig.MAX_CONNECTIONS as number,
-    connectionLineWidth: 2.0,
+    connectionDistance: performanceConfig.CONNECTION_DISTANCE,
+    maxConnections: performanceConfig.MAX_CONNECTIONS,
+    connectionLineWidth: ANIMATION_CONFIG.CONNECTION_LINE_WIDTH,
 
     // Mouse interaction configuration
     mouseRepulsionRadius: ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS,
@@ -138,11 +141,9 @@ function generateDefaultNetworkSettings(
  * Medium performance defaults, used until hardware detection completes
  * These are good defaults that work well on most devices
  */
-const MEDIUM_DEFAULT_NETWORK_SETTINGS = generateDefaultNetworkSettings({
-  NODE_COUNT: PERFORMANCE_CONFIGS.medium.NODE_COUNT,
-  CONNECTION_DISTANCE: PERFORMANCE_CONFIGS.medium.CONNECTION_DISTANCE,
-  MAX_CONNECTIONS: PERFORMANCE_CONFIGS.medium.MAX_CONNECTIONS,
-});
+const MEDIUM_DEFAULT_NETWORK_SETTINGS = generateDefaultNetworkSettings(
+  PERFORMANCE_CONFIGS.medium
+);
 
 /**
  * Earlier default values of settings whose defaults have since changed.
@@ -193,15 +194,15 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 
 /**
  * Settings provider component
- * Manages network background settings with localStorage persistence and reset functionality
- * Now integrates with hardware performance detection for optimal defaults
+ * Manages network background and word cloud settings with localStorage persistence and
+ * reset, with network defaults sized for the device's performance tier
  */
 export function SettingsProvider({ children }: { children: ReactNode }) {
   // ========================================
   // Hardware Performance Integration
   // ========================================
 
-  const { performanceSettings, isDetectionComplete } = useHardwarePerformance();
+  const { performanceLevel, isDetectionComplete } = useHardwarePerformance();
   const { isDebugEnabled } = useDebug();
 
   // ========================================
@@ -238,9 +239,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [resetGeneration, setResetGeneration] = useState(0);
 
   /** Performance level the hardware defaults were last checked against */
-  const [checkedPerformanceLevel, setCheckedPerformanceLevel] = useState<
-    string | null
-  >(null);
+  const [checkedPerformanceLevel, setCheckedPerformanceLevel] =
+    useState<PerformanceLevel | null>(null);
 
   // ========================================
   // Hardware-Based Auto-Update
@@ -252,8 +252,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
    * modified settings from the initial medium defaults. Adjusted during render
    * rather than in an effect, so the canvas never renders the stale defaults.
    */
-  if (isDetectionComplete && checkedPerformanceLevel !== performanceSettings.level) {
-    setCheckedPerformanceLevel(performanceSettings.level);
+  if (isDetectionComplete && checkedPerformanceLevel !== performanceLevel) {
+    setCheckedPerformanceLevel(performanceLevel);
 
     if (!hasUserModifiedSettings) {
       // Check if current settings are still the initial medium defaults
@@ -264,7 +264,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (currentSettingsMatch) {
         // Generate hardware-appropriate defaults
         const hardwareDefaults = generateDefaultNetworkSettings(
-          performanceSettings.network
+          PERFORMANCE_CONFIGS[performanceLevel]
         );
 
         // Only update if the hardware defaults are different from current
@@ -275,7 +275,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
           if (isDebugEnabled) {
             console.log("Auto-updated to hardware-appropriate defaults:", {
-              performanceLevel: performanceSettings.level,
+              performanceLevel,
               settings: hardwareDefaults,
             });
           }
@@ -308,71 +308,82 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
    * Update specific network settings
    * Merges updates with existing settings and marks as user-modified
    */
-  const updateNetworkSettings = (
-    updates: Partial<NetworkBackgroundSettings>
-  ) => {
-    setHasUserModifiedSettings(true);
-    setNetworkSettings((prev) => ({ ...prev, ...updates }));
-  };
+  const updateNetworkSettings = useCallback(
+    (updates: Partial<NetworkBackgroundSettings>) => {
+      setHasUserModifiedSettings(true);
+      setNetworkSettings((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
 
   /**
    * Reset all network settings to hardware-appropriate defaults
    * Uses current hardware performance level for optimal reset values
    */
-  const resetNetworkSettings = () => {
+  const resetNetworkSettings = useCallback(() => {
     const currentDefaults = generateDefaultNetworkSettings(
-      performanceSettings.network
+      PERFORMANCE_CONFIGS[performanceLevel]
     );
     setNetworkSettings(currentDefaults);
     setResetGeneration((prev) => prev + 1);
 
     if (isDebugEnabled) {
       console.log("Reset to hardware-based defaults:", {
-        performanceLevel: performanceSettings.level,
+        performanceLevel,
         settings: currentDefaults,
       });
     }
-  };
+  }, [performanceLevel, isDebugEnabled]);
 
   /**
    * Update specific wordCloud settings
    * Merges updates with existing settings
    */
-  const updateWordCloudSettings = (updates: Partial<WordCloudSettings>) => {
-    setWordCloudSettings((prev) => ({ ...prev, ...updates }));
-  };
+  const updateWordCloudSettings = useCallback(
+    (updates: Partial<WordCloudSettings>) => {
+      setWordCloudSettings((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
 
   /**
    * Reset all wordCloud settings to defaults
    */
-  const resetWordCloudSettings = () => {
+  const resetWordCloudSettings = useCallback(() => {
     setWordCloudSettings(DEFAULT_WORDCLOUD_SETTINGS);
     setResetGeneration((prev) => prev + 1);
 
     if (isDebugEnabled) {
       console.log("Reset WordCloud to defaults:", DEFAULT_WORDCLOUD_SETTINGS);
     }
-  };
+  }, [isDebugEnabled]);
 
   // ========================================
   // Context Value
   // ========================================
 
-  const contextValue: SettingsContextType = {
-    networkSettings,
-    updateNetworkSettings,
-    resetNetworkSettings,
-    wordCloudSettings,
-    updateWordCloudSettings,
-    resetWordCloudSettings,
-    resetGeneration,
-  };
-
-  return (
-    <SettingsContext.Provider value={contextValue}>
-      {children}
-    </SettingsContext.Provider>
+  const contextValue = useMemo<SettingsContextType>(
+    () => ({
+      networkSettings,
+      updateNetworkSettings,
+      resetNetworkSettings,
+      wordCloudSettings,
+      updateWordCloudSettings,
+      resetWordCloudSettings,
+      resetGeneration,
+    }),
+    [
+      networkSettings,
+      updateNetworkSettings,
+      resetNetworkSettings,
+      wordCloudSettings,
+      updateWordCloudSettings,
+      resetWordCloudSettings,
+      resetGeneration,
+    ]
   );
+
+  return <SettingsContext value={contextValue}>{children}</SettingsContext>;
 }
 
 // ============================================================================

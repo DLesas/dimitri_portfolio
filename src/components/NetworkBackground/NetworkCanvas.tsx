@@ -3,19 +3,21 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
-import { useTheme as useNextTheme } from "next-themes";
+import { useTheme } from "next-themes";
 import { useMouseTracking, useDOMColliders } from "./hooks";
 import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
 import { PX_PER_UNIT } from "./world";
 import NetworkScene from "./NetworkScene";
-import { networkPalette, type DOMCollider, type PerformanceLevel } from "./networkEngine";
+import DebugColliders from "./DebugColliders";
+import { networkPalette } from "./networkEngine";
 import { createLiveCursors, presenceStore, type LiveCursors } from "./liveCursors";
 import DebugPerf from "@/components/three/DebugPerf";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebug } from "@/contexts/DebugContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useThemeColors } from "@/contexts/ThemeColorsContext";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { detectHardware, performanceLevelFor } from "@/lib/hardware";
 
 // The avatars (and their animal icons) load only once someone else is on the page
 const VisitorAvatars = dynamic(() => import("./VisitorAvatars"), { ssr: false });
@@ -31,101 +33,6 @@ function LiveVisitors() {
   return <VisitorAvatars presence={presence} />;
 }
 
-// Debug component to visualize DOM colliders in 3D world coordinates: the boxes the
-// physics uses, padding included, and the threshold around them where repulsion starts
-function DebugColliders({
-  domColliders,
-  domCollisionThreshold,
-}: {
-  domColliders: React.RefObject<DOMCollider[]>;
-  domCollisionThreshold: number;
-}) {
-  const { colors } = useTheme();
-  const [colliders, setColliders] = useState<DOMCollider[]>([]);
-
-  // The colliders ref is re-measured as the page moves and animates; mirror it here so the
-  // overlay shows up as soon as debug mode is on and follows text as it moves
-  useEffect(() => {
-    let lastKey = "";
-    const sync = () => {
-      const next = domColliders.current;
-      const key = next
-        .map((c) => `${c.x.toFixed(2)},${c.y.toFixed(2)},${c.width.toFixed(2)},${c.height.toFixed(2)}`)
-        .join("|");
-      if (key === lastKey) return;
-      lastKey = key;
-      setColliders(next.slice());
-    };
-    sync();
-    const id = window.setInterval(sync, 250);
-    return () => window.clearInterval(id);
-  }, [domColliders]);
-
-  // Create multiple layers for gradient shadow effect
-  const gradientLayers = 6;
-
-  return (
-    <group>
-      {colliders.map((collider, i) => (
-        <React.Fragment key={`collider-${i}`}>
-          {/* Render shadow gradient layers - largest to smallest for proper layering */}
-          {Array.from({ length: gradientLayers })
-            .reverse()
-            .map((_, reverseIndex) => {
-              const layerIndex = gradientLayers - 1 - reverseIndex;
-              const layerProgress = (layerIndex + 1) / gradientLayers;
-              const extension = domCollisionThreshold * layerProgress;
-              const opacity = 0.15 * Math.pow(1 - layerProgress, 1.5);
-
-              return (
-                <mesh
-                  key={`shadow-${i}-${layerIndex}`}
-                  position={[collider.x, collider.y, -0.002 - layerIndex * 0.001]}
-                >
-                  <boxGeometry
-                    args={[collider.width + extension * 2, collider.height + extension * 2, 0.001]}
-                  />
-                  <meshBasicMaterial
-                    color={colors.accent.shades[500].hex}
-                    transparent={true}
-                    opacity={opacity}
-                  />
-                </mesh>
-              );
-            })}
-
-          {/* Main collision box - wireframe outline on top */}
-          <mesh key={`wireframe-${i}`} position={[collider.x, collider.y, 0]}>
-            <boxGeometry args={[collider.width, collider.height, 0.001]} />
-            <meshBasicMaterial
-              color={colors.accent.shades[500].hex}
-              wireframe={true}
-              transparent={true}
-              opacity={1.0}
-            />
-          </mesh>
-        </React.Fragment>
-      ))}
-    </group>
-  );
-}
-
-// Device performance detection
-const detectDevicePerformance = (): PerformanceLevel => {
-  // Check for mobile devices
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    return "low";
-  }
-
-  // Check hardware concurrency (CPU cores) and available memory (if supported)
-  const cores = navigator.hardwareConcurrency || 2;
-  const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory || 4;
-
-  if (cores <= 2 || memory <= 2) return "low";
-  if (cores <= 4 || memory <= 4) return "medium";
-  return "high";
-};
-
 export default function NetworkCanvas({
   containerRef,
 }: {
@@ -133,11 +40,13 @@ export default function NetworkCanvas({
 }) {
   const { networkSettings } = useSettings();
   const { isDebugEnabled } = useDebug();
-  const { colors } = useTheme();
-  const { resolvedTheme } = useNextTheme();
+  const { colors } = useThemeColors();
+  const { resolvedTheme } = useTheme();
   const reducedMotion = useReducedMotion();
 
-  const [performanceLevel] = useState<PerformanceLevel>(detectDevicePerformance);
+  // The same tier as the settings' defaults (HardwarePerformanceContext): the detection
+  // runs once per page, so whichever asks first does it. Needed now, for the renderer.
+  const [performanceLevel] = useState(() => performanceLevelFor(detectHardware()));
   const performanceConfig = PERFORMANCE_CONFIGS[performanceLevel];
 
   // A setting saved as NaN comes back from localStorage as null: use the device default

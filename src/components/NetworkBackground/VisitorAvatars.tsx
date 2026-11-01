@@ -36,7 +36,8 @@ import {
   GiTurtle,
   GiWolfHead,
 } from "react-icons/gi";
-import { ANIMALS, highlightVisitor, translucent, type Presence, type Visitor } from "./liveCursors";
+import { ANIMALS, type Presence, type Visitor } from "./liveCursors";
+import { highlightVisitor, translucent } from "./cursorMarks";
 
 const ANIMAL_ICONS: Record<(typeof ANIMALS)[number], IconType> = {
   Hedgehog: GiHedgehog,

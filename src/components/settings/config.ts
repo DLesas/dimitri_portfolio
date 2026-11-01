@@ -3,7 +3,8 @@ import { FaShareNodes } from "react-icons/fa6";
 import { TbCircleDashed } from "react-icons/tb";
 import { MdWeb } from "react-icons/md";
 import { HiSparkles } from "react-icons/hi";
-import {
+import type { NetworkBackgroundSettings, WordCloudSettings } from "@/contexts/SettingsContext";
+import type {
   NetworkSettingsConfig,
   WordCloudSettingsConfig,
   SettingsCategory,
@@ -207,21 +208,18 @@ export const WORDCLOUD_SETTINGS_CONFIG: WordCloudSettingsConfig = {
 // ============================================================================
 
 /**
- * Settings categories for organizing controls into logical groups
- *
- * This structure creates a hierarchical organization of settings that makes
- * the settings panel more navigable and maintainable. Each category has an
- * icon and groups related settings together.
- *
- * The categories correspond to the conceptual areas of the network visualization:
+ * The network background panel's groups of settings, in order. Each category has an
+ * icon and groups related settings together:
  * - Nodes: Visual properties and behavior of individual nodes
  * - Connections: Properties of lines connecting nodes
  * - Mouse Interaction: How the visualization responds to user interaction
+ * - DOM Collision: How nodes keep clear of the page's text
+ * - Effects: Glow and travelling pulses
  */
-export const SETTINGS_CATEGORIES: SettingsCategory[] = [
+export const NETWORK_SETTINGS_CATEGORIES: SettingsCategory<keyof NetworkBackgroundSettings>[] = [
   {
     title: "Nodes",
-    icon: <TbCircleDashed className="w-4 h-4 text-primary/70" />,
+    icon: TbCircleDashed,
     settings: [
       "nodeCount",
       "organicMovementSpeed",
@@ -231,17 +229,17 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   },
   {
     title: "Connections",
-    icon: <FaShareNodes className="w-4 h-4 text-primary/70" />,
+    icon: FaShareNodes,
     settings: ["connectionDistance", "maxConnections", "connectionLineWidth"],
   },
   {
     title: "Mouse Interaction",
-    icon: <BsMouseFill className="w-4 h-4 text-primary/70" />,
+    icon: BsMouseFill,
     settings: ["mouseRepulsionRadius", "mouseRepulsionStrength"],
   },
   {
     title: "DOM Collision",
-    icon: <MdWeb className="w-4 h-4 text-primary/70" />,
+    icon: MdWeb,
     settings: [
       "domCollisionPadding",
       "domCollisionStrength",
@@ -250,7 +248,21 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   },
   {
     title: "Effects",
-    icon: <HiSparkles className="w-4 h-4 text-primary/70" />,
+    icon: HiSparkles,
     settings: ["glowIntensity", "pulseDensity", "pulseSpeed"],
+  },
+];
+
+/**
+ * The word cloud panel's groups of settings, in order (without icons)
+ */
+export const WORDCLOUD_SETTINGS_CATEGORIES: SettingsCategory<keyof WordCloudSettings>[] = [
+  {
+    title: "Rotation",
+    settings: ["rotationSpeedX", "rotationSpeedY"],
+  },
+  {
+    title: "Appearance",
+    settings: ["baseFontSize"],
   },
 ];

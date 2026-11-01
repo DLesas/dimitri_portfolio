@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { useTheme as useNextTheme } from "next-themes";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
+import { useThemeColors } from "@/contexts/ThemeColorsContext";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { LOCATION, SITE_NAME } from "@/lib/site";
@@ -41,8 +41,8 @@ const pinHtml = (color: string, borderColor: string) =>
   `</div>`;
 
 export function Map() {
-  const { theme } = useNextTheme();
-  const { colors } = useTheme();
+  const { theme } = useTheme();
+  const { colors } = useThemeColors();
   const isDark = theme === "dark";
 
   // Both pins in the theme's secondary colour, outlined to stand off the basemap

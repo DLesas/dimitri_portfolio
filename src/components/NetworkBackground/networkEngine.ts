@@ -15,6 +15,7 @@ import {
   PERFORMANCE_CONFIGS,
   VISUAL_CONFIG,
   WORLD_CONFIG,
+  type PerformanceLevel,
 } from "./constants";
 import {
   CURSOR_FRAGMENT,
@@ -30,9 +31,7 @@ import { PX_PER_UNIT } from "./world";
 import type { RemoteCursor } from "./liveCursors";
 import { blendingFor } from "@/components/three/blending";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
-import type { ThemeColors } from "@/contexts/ThemeContext";
-
-export type PerformanceLevel = "low" | "medium" | "high";
+import type { ThemeColors } from "@/lib/theme/readThemeColors";
 
 export type DOMCollider = {
   x: number;

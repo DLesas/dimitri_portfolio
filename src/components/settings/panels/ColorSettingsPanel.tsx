@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { ColorPicker, useColor, type IColor } from "react-color-palette";
 import "react-color-palette/dist/css/rcp.css";
-import { Button, Spinner, Card } from "@heroui/react";
-import { FaUndo, FaPalette } from "react-icons/fa";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Spinner, Card } from "@heroui/react";
+import { FaPalette } from "react-icons/fa";
+import { useThemeColors } from "@/contexts/ThemeColorsContext";
+import { SettingsPanel } from "../SettingsPanel";
 
 // ============================================================================
 // Component
@@ -32,7 +33,7 @@ export function ColorSettingsPanel() {
     themeGenerationError,
     resetTheme,
     colors, // Get the current theme colors for preview
-  } = useTheme();
+  } = useThemeColors();
 
   // Initialize color picker with current primary color
   const [color, setColor] = useColor(primaryColor);
@@ -61,128 +62,86 @@ export function ColorSettingsPanel() {
     setPrimaryColor(newColor.hex);
   };
 
+  /** The preview's rows of swatches */
+  const swatchRows = [
+    ["Primary", colors.primary],
+    ["Secondary", colors.secondary],
+    ["Accent", colors.accent],
+  ] as const;
+
   // ========================================
   // Render
   // ========================================
 
   return (
-    <div className="w-80 max-h-[80vh] flex flex-col">
-      {/* Panel Header */}
-      <div className="flex items-center justify-between p-4 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <FaPalette className="w-4 h-4 text-primary" />
-          <h3 className="text-lg font-bold">Color Settings</h3>
+    <SettingsPanel
+      title="Color Settings"
+      icon={<FaPalette className="w-4 h-4 text-primary" />}
+      onReset={resetTheme}
+      resetLabel="Reset to default theme"
+      resetDisabled={isGeneratingTheme}
+      bodyClassName="space-y-4"
+    >
+      {/* Color Picker Section */}
+      <div className="space-y-3">
+        {/* Color Picker */}
+        <div className="rounded-lg overflow-hidden border border-divider">
+          <ColorPicker
+            color={color}
+            hideAlpha={true}
+            onChange={handleColorChange}
+            height={180}
+            hideInput={["rgb", "hsv", "hex"]}
+          />
         </div>
-        <Button
-          size="sm"
-          variant="tertiary"
-          onPress={resetTheme}
-          aria-label="Reset to default theme"
-          isDisabled={isGeneratingTheme}
-        >
-          <FaUndo className="w-3 h-3" />
-          Reset
-        </Button>
-      </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Color Picker Section */}
-        <div className="space-y-3">
-          {/* Color Picker */}
-          <div className="rounded-lg overflow-hidden border border-divider">
-            <ColorPicker
-              color={color}
-              hideAlpha={true}
-              onChange={handleColorChange}
-              height={180}
-              hideInput={["rgb", "hsv", "hex"]}
-            />
+        {/* Loading State */}
+        {isGeneratingTheme && (
+          <div className="flex items-center gap-2 text-sm text-foreground/70">
+            <Spinner size="sm" color="accent" />
+            <span>Generating theme...</span>
           </div>
+        )}
 
-          {/* Loading State */}
-          {isGeneratingTheme && (
-            <div className="flex items-center gap-2 text-sm text-foreground/70">
-              <Spinner size="sm" color="accent" />
-              <span>Generating theme...</span>
-            </div>
-          )}
-
-          {/* Error State */}
-          {themeGenerationError && (
-            <Card className="border-danger">
-              <Card.Content className="py-3">
-                <div className="text-sm text-danger">
-                  Failed to generate theme. Please try again.
-                </div>
-              </Card.Content>
-            </Card>
-          )}
-
-          {/* Color Preview - Show when not loading */}
-          {!isGeneratingTheme && (
-            <div className="space-y-6">
-              {/* Color Preview Grid */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-foreground/80">
-                  Current Theme Colors
-                </div>
-
-                {/* Primary Colors */}
-                <div className="space-y-1">
-                  <div className="text-xs text-foreground/60">Primary</div>
-                  <div className="grid grid-cols-11 gap-1">
-                    {Object.entries(colors.primary.shades).map(
-                      ([shade, colorFormats]) => (
-                        <div
-                          key={shade}
-                          className="aspect-square rounded border border-divider/50"
-                          style={{ backgroundColor: colorFormats.hex }}
-                          title={`Primary ${shade}: ${colorFormats.hex}`}
-                        />
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* Secondary Colors */}
-                <div className="space-y-1">
-                  <div className="text-xs text-foreground/60">Secondary</div>
-                  <div className="grid grid-cols-11 gap-1">
-                    {Object.entries(colors.secondary.shades).map(
-                      ([shade, colorFormats]) => (
-                        <div
-                          key={shade}
-                          className="aspect-square rounded border border-divider/50"
-                          style={{ backgroundColor: colorFormats.hex }}
-                          title={`Secondary ${shade}: ${colorFormats.hex}`}
-                        />
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* Accent Colors */}
-                <div className="space-y-1">
-                  <div className="text-xs text-foreground/60">Accent</div>
-                  <div className="grid grid-cols-11 gap-1">
-                    {Object.entries(colors.accent.shades).map(
-                      ([shade, colorFormats]) => (
-                        <div
-                          key={shade}
-                          className="aspect-square rounded border border-divider/50"
-                          style={{ backgroundColor: colorFormats.hex }}
-                          title={`Accent ${shade}: ${colorFormats.hex}`}
-                        />
-                      )
-                    )}
-                  </div>
-                </div>
+        {/* Error State */}
+        {themeGenerationError && (
+          <Card className="border-danger">
+            <Card.Content className="py-3">
+              <div className="text-sm text-danger">
+                Failed to generate theme. Please try again.
               </div>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Color Preview - Show when not loading */}
+        {!isGeneratingTheme && (
+          <div className="space-y-6">
+            {/* Color Preview Grid */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-foreground/80">
+                Current Theme Colors
+              </div>
+
+              {swatchRows.map(([name, system]) => (
+                <div key={name} className="space-y-1">
+                  <div className="text-xs text-foreground/60">{name}</div>
+                  <div className="grid grid-cols-11 gap-1">
+                    {Object.entries(system.shades).map(([shade, { hex }]) => (
+                      <div
+                        key={shade}
+                        className="aspect-square rounded border border-divider/50"
+                        style={{ backgroundColor: hex }}
+                        title={`${name} ${shade}: ${hex}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </div>
+    </SettingsPanel>
   );
 }

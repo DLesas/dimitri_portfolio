@@ -32,6 +32,7 @@ export const ANIMATION_CONFIG = {
   CONNECTION_DISTANCE_FADE: 0.7, // How much opacity fades with distance (0=no fade, 1=full fade)
 
   // Line width scaling - How connection thickness varies with distance
+  CONNECTION_LINE_WIDTH: 2.0, // Line width in pixels for the closest connections (the default setting)
   CONNECTION_MIN_LINE_WIDTH: 0.2, // Minimum line width in pixels for distant connections
   CONNECTION_LINE_WIDTH_SCALE: 0.8, // How much line width scales with distance (0=no scaling, 1=full scaling)
 
@@ -91,3 +92,6 @@ export const PERFORMANCE_CONFIGS = {
     MAX_CONNECTIONS: 150, // Controlled connections to maintain performance
   },
 } as const;
+
+/** A device's tier, as detected by lib/hardware.ts */
+export type PerformanceLevel = keyof typeof PERFORMANCE_CONFIGS;

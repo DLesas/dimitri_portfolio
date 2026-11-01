@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PX_PER_UNIT } from "./world";
+import type { PerformanceLevel } from "./constants";
 import {
   createNetworkEngine,
   type DOMCollider,
@@ -8,9 +9,9 @@ import {
   type MousePosition,
   type NetworkInputs,
   type NetworkPalette,
-  type PerformanceLevel,
 } from "./networkEngine";
-import { drawCursorMarks, type LiveCursors, type RemoteCursor } from "./liveCursors";
+import type { LiveCursors, RemoteCursor } from "./liveCursors";
+import { drawCursorMarks } from "./cursorMarks";
 import { useSceneEngine } from "@/components/three/useSceneEngine";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 

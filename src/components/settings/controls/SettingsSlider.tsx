@@ -1,121 +1,62 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { Label, Slider } from "@heroui/react";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { NETWORK_SETTINGS_CONFIG } from "../config";
-import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
+import { useDebouncedSetting } from "@/hooks/useDebouncedSetting";
+import type { SliderConfig } from "../types";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface SettingsSliderProps {
-  /** The setting key from NetworkBackgroundSettings */
-  setting: keyof NetworkBackgroundSettings;
+  /** Range, step, label and help text */
+  config: SliderConfig;
+  /** The setting's current value */
+  value: number;
+  /** Saves a new value */
+  onCommit: (value: number) => void;
 }
+
+/** Changes are committed once the slider has rested this long */
+const COMMIT_DELAY_MS = 300;
 
 // ============================================================================
 // Component
 // ============================================================================
 
 /**
- * Configuration-driven slider component for network background settings
+ * Configuration-driven slider for a numeric setting
  *
- * Features:
- * - Automatic value retrieval from settings context
- * - Debounced updates to prevent excessive context updates
- * - Centralized configuration for min/max/step values via NETWORK_SETTINGS_CONFIG
- * - Reset-safe operation using generation-based update invalidation
- * - Tooltips and notes from configuration
- *
- * Reset Safety:
- * This component implements a generation-based approach to prevent race conditions
- * between user interactions and reset operations. Each debounced update carries
- * a "generation" number that must match the current reset generation for the
- * update to be applied. This prevents stale updates from overriding reset values.
+ * The slider moves at once; the value is committed once it rests (debounced), and a
+ * reset during that wait wins over the pending change (see useDebouncedSetting).
  *
  * @example
  * ```tsx
- * <SettingsSlider setting="nodeCount" />
+ * <SettingsSlider
+ *   config={NETWORK_SETTINGS_CONFIG.nodeCount}
+ *   value={networkSettings.nodeCount}
+ *   onCommit={(nodeCount) => updateNetworkSettings({ nodeCount })}
+ * />
  * ```
  */
-export function SettingsSlider({ setting }: SettingsSliderProps) {
-  // ========================================
-  // Context & Configuration
-  // ========================================
-
-  const { networkSettings, updateNetworkSettings, resetGeneration } =
-    useSettings();
-  const config = NETWORK_SETTINGS_CONFIG[setting];
-  const currentValue = networkSettings[setting];
-
-  // ========================================
-  // Debounced Value Management
-  // ========================================
-
-  const { localValue, debouncedValue, setLocalValue } = useDebouncedValue(
-    currentValue,
-    300 // 300ms debounce delay
+export function SettingsSlider({ config, value, onCommit }: SettingsSliderProps) {
+  const { resetGeneration } = useSettings();
+  const [shownValue, change] = useDebouncedSetting(
+    value,
+    onCommit,
+    resetGeneration,
+    COMMIT_DELAY_MS
   );
 
-  /**
-   * Reset generation tracking
-   * Captures the reset generation when a user interaction occurs.
-   * Debounced updates will only apply if their generation matches the current one.
-   */
-  const debouncedResetGeneration = useRef(resetGeneration);
-
-  // ========================================
-  // Effects
-  // ========================================
-
-  /**
-   * Apply debounced settings updates
-   * Only applies updates if they're from the current reset generation
-   * to prevent stale updates from overriding reset operations
-   */
-  useEffect(() => {
-    if (debouncedValue !== currentValue) {
-      // Generation check prevents race conditions with reset operations
-      if (debouncedResetGeneration.current === resetGeneration) {
-        updateNetworkSettings({ [setting]: debouncedValue });
-      }
-    }
-  }, [
-    debouncedValue,
-    currentValue,
-    setting,
-    updateNetworkSettings,
-    resetGeneration,
-  ]);
-
-  // ========================================
-  // Event Handlers
-  // ========================================
-
-  /**
-   * Handle slider value changes
-   * Captures the current reset generation to ensure this update is valid
-   */
-  const handleChange = (newValue: number | number[]) => {
-    // Capture current generation for this interaction
-    debouncedResetGeneration.current = resetGeneration;
-
-    // Extract numeric value (Hero UI sliders can return arrays)
-    const numValue = Array.isArray(newValue) ? newValue[0] : newValue;
-    setLocalValue(numValue);
-  };
-
-  // ========================================
-  // Render
-  // ========================================
+  // HeroUI sliders can report an array (for ranges)
+  const handleChange = (newValue: number | number[]) =>
+    change(Array.isArray(newValue) ? newValue[0] : newValue);
 
   return (
     <div>
       <Slider
-        value={localValue}
+        value={shownValue}
         onChange={handleChange}
         minValue={config.min}
         maxValue={config.max}

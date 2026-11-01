@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -30,22 +30,16 @@ const DebugContext = createContext<DebugContextType | undefined>(undefined);
  * of debug information like performance stats, hardware info, etc.
  */
 export function DebugProvider({ children }: { children: ReactNode }) {
-  const [isDebugEnabled, setIsDebugEnabledState] = useState(false);
+  const [isDebugEnabled, setIsDebugEnabled] = useState(false);
 
-  const toggleDebug = () => {
-    setIsDebugEnabledState((prev) => !prev);
-  };
+  const toggleDebug = useCallback(() => setIsDebugEnabled((prev) => !prev), []);
 
-  const contextValue: DebugContextType = {
-    isDebugEnabled,
-    toggleDebug,
-  };
-
-  return (
-    <DebugContext.Provider value={contextValue}>
-      {children}
-    </DebugContext.Provider>
+  const contextValue = useMemo<DebugContextType>(
+    () => ({ isDebugEnabled, toggleDebug }),
+    [isDebugEnabled, toggleDebug]
   );
+
+  return <DebugContext value={contextValue}>{children}</DebugContext>;
 }
 
 // ============================================================================

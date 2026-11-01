@@ -6,7 +6,7 @@ import {
   QueryClientProvider,
   environmentManager,
 } from "@tanstack/react-query";
-import { ThemeProvider as HeroUIThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeColorsProvider } from "@/contexts/ThemeColorsContext";
 import { HardwarePerformanceProvider } from "@/contexts/HardwarePerformanceContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { DebugProvider } from "@/contexts/DebugContext";
@@ -42,7 +42,7 @@ function getQueryClient() {
  * Provider hierarchy (outer to inner):
  * 1. QueryClientProvider - Provides React Query functionality for data fetching
  * 2. ThemeProvider - Manages light/dark theme switching
- * 3. HeroUIThemeProvider - Extracts and provides HeroUI theme colors in multiple formats
+ * 3. ThemeColorsProvider - Provides HeroUI theme colors as hex, and custom theme generation
  * 4. DebugProvider - Manages debug mode state for showing/hiding debug information
  * 5. HardwarePerformanceProvider - Detects device capabilities and provides performance settings
  * 6. NavigationSpaceProvider - Measures the navigation bar, for pages' --nav-height
@@ -57,7 +57,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        <HeroUIThemeProvider>
+        <ThemeColorsProvider>
           <DebugProvider>
             <HardwarePerformanceProvider>
               <NavigationSpaceProvider>
@@ -65,7 +65,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               </NavigationSpaceProvider>
             </HardwarePerformanceProvider>
           </DebugProvider>
-        </HeroUIThemeProvider>
+        </ThemeColorsProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

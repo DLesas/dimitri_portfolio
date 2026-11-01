@@ -1,131 +1,43 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Button, Label, Slider } from "@heroui/react";
-import { FaUndo, FaCloud } from "react-icons/fa";
-import { useSettings } from "@/contexts/SettingsContext";
-import { SettingsSection } from "../SettingsSection";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { WORDCLOUD_SETTINGS_CONFIG } from "../config";
-import type { WordCloudSettings } from "@/contexts/SettingsContext";
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface WordCloudSettingsSliderProps {
-  /** The setting key from WordCloudSettings */
-  setting: keyof WordCloudSettings;
-}
-
-// ============================================================================
-// WordCloud Settings Slider Component
-// ============================================================================
-
-/**
- * Configuration-driven slider component for word cloud settings
- */
-function WordCloudSettingsSlider({ setting }: WordCloudSettingsSliderProps) {
-  const { wordCloudSettings, updateWordCloudSettings, resetGeneration } =
-    useSettings();
-  const config = WORDCLOUD_SETTINGS_CONFIG[setting];
-  const currentValue = wordCloudSettings[setting];
-
-  const { localValue, debouncedValue, setLocalValue } = useDebouncedValue(
-    currentValue,
-    300
-  );
-
-  const debouncedResetGeneration = useRef(resetGeneration);
-
-  useEffect(() => {
-    if (debouncedValue !== currentValue) {
-      if (debouncedResetGeneration.current === resetGeneration) {
-        updateWordCloudSettings({ [setting]: debouncedValue });
-      }
-    }
-  }, [
-    debouncedValue,
-    currentValue,
-    setting,
-    updateWordCloudSettings,
-    resetGeneration,
-  ]);
-
-  const handleChange = (newValue: number | number[]) => {
-    debouncedResetGeneration.current = resetGeneration;
-    const numValue = Array.isArray(newValue) ? newValue[0] : newValue;
-    setLocalValue(numValue);
-  };
-
-  return (
-    <div>
-      <Slider
-        value={localValue}
-        onChange={handleChange}
-        minValue={config.min}
-        maxValue={config.max}
-        step={config.step}
-      >
-        <Label title={config.tooltip}>{config.label}</Label>
-        <Slider.Output />
-        <Slider.Track>
-          <Slider.Fill />
-          <Slider.Thumb />
-        </Slider.Track>
-      </Slider>
-      {config.note && (
-        <div className="text-xs text-foreground/60 mt-1 ml-1">
-          {config.note}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Component
-// ============================================================================
+import { useCallback } from "react";
+import { FaCloud } from "react-icons/fa";
+import { useSettings, type WordCloudSettings } from "@/contexts/SettingsContext";
+import { SettingsCategory } from "../SettingsSection";
+import { SettingsPanel } from "../SettingsPanel";
+import { WORDCLOUD_SETTINGS_CATEGORIES, WORDCLOUD_SETTINGS_CONFIG } from "../config";
 
 /**
  * WordCloud Settings Panel
  *
- * A settings panel for controlling word cloud visualization parameters.
- * Currently supports rotation speed controls for X and Y axes.
+ * The word cloud's rotation and text size, by category, from
+ * WORDCLOUD_SETTINGS_CATEGORIES
  */
 export function WordCloudSettingsPanel() {
-  const { resetWordCloudSettings } = useSettings();
+  const { wordCloudSettings, updateWordCloudSettings, resetWordCloudSettings } = useSettings();
+
+  const commit = useCallback(
+    (key: keyof WordCloudSettings, value: number) => updateWordCloudSettings({ [key]: value }),
+    [updateWordCloudSettings]
+  );
 
   return (
-    <div className="w-80 max-h-[80vh] flex flex-col">
-      {/* Panel Header with Reset Button - Fixed at top */}
-      <div className="flex items-center justify-between p-4 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <FaCloud className="w-4 h-4 text-primary/70" />
-          <h3 className="text-lg font-bold">Word Cloud</h3>
-        </div>
-        <Button
-          size="sm"
-          variant="tertiary"
-          onPress={resetWordCloudSettings}
-          aria-label="Reset all word cloud settings to defaults"
-        >
-          <FaUndo className="w-3 h-3" />
-          Reset
-        </Button>
-      </div>
-
-      {/* Scrollable Settings Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-8">
-        <SettingsSection title="Rotation" icon={null}>
-          <WordCloudSettingsSlider setting="rotationSpeedX" />
-          <WordCloudSettingsSlider setting="rotationSpeedY" />
-        </SettingsSection>
-
-        <SettingsSection title="Appearance" icon={null}>
-          <WordCloudSettingsSlider setting="baseFontSize" />
-        </SettingsSection>
-      </div>
-    </div>
+    <SettingsPanel
+      title="Word Cloud"
+      icon={<FaCloud className="w-4 h-4 text-primary/70" />}
+      onReset={resetWordCloudSettings}
+      resetLabel="Reset all word cloud settings to defaults"
+      bodyClassName="space-y-8"
+    >
+      {WORDCLOUD_SETTINGS_CATEGORIES.map((category) => (
+        <SettingsCategory
+          key={category.title}
+          category={category}
+          config={WORDCLOUD_SETTINGS_CONFIG}
+          values={wordCloudSettings}
+          onCommit={commit}
+        />
+      ))}
+    </SettingsPanel>
   );
 }
