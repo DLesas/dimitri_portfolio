@@ -4,9 +4,13 @@ import type { Metadata } from "next";
 export const SITE_URL = "https://lesas.dev";
 export const SITE_NAME = "Dimitri Lesas";
 
-export const DEFAULT_TITLE = "Dimitri Lesas - Full Stack Engineer & Data Scientist";
+/** The role shown under the name: home page, share image, structured data, console */
+export const JOB_TITLE = "Founding Engineer";
+export const SPECIALISMS = "Full Stack, Data & AI";
+
+export const DEFAULT_TITLE = `${SITE_NAME} – ${JOB_TITLE} | ${SPECIALISMS}`;
 export const DEFAULT_DESCRIPTION =
-  "Portfolio of Dimitri Lesas, a passionate full-stack engineer and data scientist specializing in intelligent solutions and modern web technologies.";
+  "Dimitri Lesas is a London-based founding engineer who takes products from idea to production, leading teams and building across full-stack, data and AI.";
 
 export const LINKEDIN_URL = "https://www.linkedin.com/in/dimitri-lesas-analytics/";
 export const GITHUB_URL = "https://github.com/DLesas";

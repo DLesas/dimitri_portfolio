@@ -7,6 +7,7 @@ import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
   GITHUB_URL,
+  JOB_TITLE,
   LINKEDIN_URL,
   SITE_NAME,
   SITE_URL,
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
   description: DEFAULT_DESCRIPTION,
   keywords:
-    "Full Stack Engineer, Data Scientist, React, Python, Machine Learning, TypeScript, Next.js",
+    "Founding Engineer, Full Stack Engineer, Technical Leadership, Data Engineering, Machine Learning, AI, React, TypeScript, Python, Next.js",
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
   // Every page's own URL on lesas.dev (`./` resolves against the page's path), so the
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     ...sharedOpenGraph,
     title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
-    description: "Building bridges between complex data and elegant solutions",
+    description: "Taking products from idea to production across full-stack, data and AI.",
   },
   // Title, description and image are copied from openGraph, page by page
   twitter: { card: "summary_large_image" },
@@ -43,7 +44,7 @@ const structuredData = {
       "@id": `${SITE_URL}/#person`,
       name: SITE_NAME,
       url: SITE_URL,
-      jobTitle: "Full Stack Engineer & Data Scientist",
+      jobTitle: JOB_TITLE,
       address: {
         "@type": "PostalAddress",
         addressLocality: "London",

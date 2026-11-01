@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { JOB_TITLE } from "@/lib/seo";
 
 export function ConsoleEasterEgg() {
   const { colors, isInitialized } = useTheme();
@@ -86,7 +87,7 @@ export function ConsoleEasterEgg() {
 
         // Subtitle using secondary color
         console.log(
-          "%cFull Stack Engineer & Data Scientist",
+          `%c${JOB_TITLE}`,
           `color: ${nameColors[7]}; font-size: 16px; font-weight: bold; font-style: italic;`
         );
 

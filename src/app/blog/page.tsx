@@ -33,7 +33,7 @@ export default function BlogPage() {
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8 enter enter-spring enter-delay-400 [--enter-y:20px]">
             I&apos;m working on something exciting! My blog will feature
             in-depth articles about web development, AI, performance
-            optimization, and insights from my journey as a full-stack engineer.
+            optimization, and insights from my journey as a founding engineer.
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center mb-12 enter enter-delay-600">

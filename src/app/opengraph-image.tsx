@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { OG_IMAGE } from "@/lib/seo";
+import { JOB_TITLE, OG_IMAGE, SPECIALISMS } from "@/lib/seo";
 
 // The picture shown when a link to the site is shared (LinkedIn, Slack, X, ...).
 // Rendered once at build time; every page uses it.
@@ -95,7 +95,7 @@ export default async function OpenGraphImage() {
             Dimitri Lesas
           </div>
           <div style={{ marginTop: 22, fontSize: 42, color: "#e4e4e7" }}>
-            Full Stack Engineer & Data Scientist
+            {`${JOB_TITLE} · ${SPECIALISMS}`}
           </div>
           <div style={{ marginTop: 40, fontSize: 30, color: "#a1a1aa" }}>lesas.dev</div>
         </div>
