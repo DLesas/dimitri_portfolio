@@ -336,6 +336,10 @@ export function createLiveCursors(initialColor: string) {
       case "subscribe_success":
         subscribed = true;
         attempts = 0;
+        // After a dropped connection the others may still be showing this cursor, or may
+        // have forgotten it: the next frame sends its state afresh, moving or gone
+        sentActive = true;
+        sentX = NaN;
         hello();
         window.clearInterval(heartbeatTimer);
         heartbeatTimer = window.setInterval(hello, HEARTBEAT_MS);
