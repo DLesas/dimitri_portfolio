@@ -1,6 +1,7 @@
 "use client";
 
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { useTheme as useNextTheme } from "next-themes";
@@ -13,13 +14,26 @@ import {
 import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
 import NetworkScene from "./NetworkScene";
 import type { DOMCollider, NetworkPalette, PerformanceLevel } from "./networkEngine";
-import { createLiveCursors, type LiveCursors } from "./liveCursors";
+import { createLiveCursors, presenceStore, type LiveCursors } from "./liveCursors";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebug } from "@/contexts/DebugContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // r3f-perf is debug-only, so it loads only when debug mode is switched on
 const Perf = lazy(() => import("r3f-perf").then((m) => ({ default: m.Perf })));
+// The avatars (and their animal icons) load only once someone else is on the page
+const VisitorAvatars = dynamic(() => import("./VisitorAvatars"), { ssr: false });
+
+/** Who else is on the page, bottom left, once there is anyone */
+function LiveVisitors() {
+  const presence = useSyncExternalStore(
+    presenceStore.subscribe,
+    presenceStore.getSnapshot,
+    presenceStore.getServerSnapshot
+  );
+  if (!presence.self || presence.others.length === 0) return null;
+  return <VisitorAvatars presence={presence} />;
+}
 
 // Safe disposal function to prevent double context loss
 function safeDisposeRenderer(renderer: THREE.WebGLRenderer | null) {
@@ -236,63 +250,72 @@ export default function NetworkCanvas({
   const running = shouldAnimate && !reducedMotion;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: -1,
-        pointerEvents: "auto",
-        overflow: "hidden",
-        opacity: shown ? 1 : 0,
-        transition: "opacity 600ms ease-out",
-      }}
-      aria-hidden="true"
-    >
-      <Canvas
-        orthographic
-        camera={{ position: [...VISUAL_CONFIG.CAMERA_POSITION], zoom: VISUAL_CONFIG.CAMERA_ZOOM, near: 0.1, far: 100 }}
-        dpr={performanceLevel === "low" ? [1, 1] : [1, 1.5]}
-        // Edges are anti-aliased in the shaders, so MSAA is not needed
-        gl={{
-          alpha: true,
-          antialias: false,
-          powerPreference: performanceLevel === "low" ? "low-power" : "default",
+    <>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: "auto",
+          overflow: "hidden",
+          opacity: shown ? 1 : 0,
+          transition: "opacity 600ms ease-out",
         }}
-        // Nothing renders while the network is offscreen or the tab is hidden
-        frameloop={running ? "always" : reducedMotion ? "demand" : "never"}
-        style={{ background: "transparent", width: "100%", height: "100%" }}
-        onCreated={({ gl }) => {
-          glRef.current = gl;
-          setShown(true);
-        }}
+        aria-hidden="true"
       >
-        <NetworkScene
-          nodeCount={resolvedNodeCount}
-          connectionDistance={resolvedConnectionDistance}
-          settings={networkSettings}
-          performanceLevel={performanceLevel}
-          palette={palette}
-          mousePos={mousePos}
-          domColliders={domColliders}
-          liveCursors={liveCursorsRef}
-          cursorLayer={cursorLayerRef}
-          still={reducedMotion}
-        />
+        <Canvas
+          orthographic
+          camera={{ position: [...VISUAL_CONFIG.CAMERA_POSITION], zoom: VISUAL_CONFIG.CAMERA_ZOOM, near: 0.1, far: 100 }}
+          dpr={performanceLevel === "low" ? [1, 1] : [1, 1.5]}
+          // Edges are anti-aliased in the shaders, so MSAA is not needed
+          gl={{
+            alpha: true,
+            antialias: false,
+            powerPreference: performanceLevel === "low" ? "low-power" : "default",
+          }}
+          // Nothing renders while the network is offscreen or the tab is hidden
+          frameloop={running ? "always" : reducedMotion ? "demand" : "never"}
+          style={{ background: "transparent", width: "100%", height: "100%" }}
+          onCreated={({ gl }) => {
+            glRef.current = gl;
+            setShown(true);
+          }}
+        >
+          <NetworkScene
+            nodeCount={resolvedNodeCount}
+            connectionDistance={resolvedConnectionDistance}
+            settings={networkSettings}
+            performanceLevel={performanceLevel}
+            palette={palette}
+            mousePos={mousePos}
+            domColliders={domColliders}
+            liveCursors={liveCursorsRef}
+            cursorLayer={cursorLayerRef}
+            still={reducedMotion}
+          />
 
-        {isDebugEnabled && (
-          <>
-            {/* Only the performance panel waits on its lazy chunk */}
-            <Suspense fallback={null}>
-              <Perf position="bottom-right" antialias={false} showGraph deepAnalyze={false} matrixUpdate={false} />
-            </Suspense>
-            <DebugColliders
-              domColliders={domColliders}
-              domCollisionThreshold={networkSettings.domCollisionThreshold}
-            />
-          </>
-        )}
-      </Canvas>
-      <div ref={cursorLayerRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
-    </div>
+          {isDebugEnabled && (
+            <>
+              {/* Only the performance panel waits on its lazy chunk */}
+              <Suspense fallback={null}>
+                <Perf position="bottom-right" antialias={false} showGraph deepAnalyze={false} matrixUpdate={false} />
+              </Suspense>
+              <DebugColliders
+                domColliders={domColliders}
+                domCollisionThreshold={networkSettings.domCollisionThreshold}
+              />
+            </>
+          )}
+        </Canvas>
+      </div>
+      {/* Other visitors' pointers and names sit over the page, like in Google Docs (their
+          glows stay in the canvas), and never catch the mouse */}
+      <div
+        ref={cursorLayerRef}
+        aria-hidden="true"
+        style={{ position: "absolute", inset: 0, zIndex: 20, overflow: "hidden", pointerEvents: "none" }}
+      />
+      <LiveVisitors />
+    </>
   );
 }

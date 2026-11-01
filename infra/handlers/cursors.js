@@ -5,10 +5,13 @@
  * Only well-formed cursor messages are broadcast, rebuilt from their known fields, so
  * the key can't be used to push other data through the channel.
  *
- * A message: { v: 1, id, t, c, x?, y? }
+ * A message: { v: 1, id, t, c, a?, x?, y?, ci?, co? }
  *   id: the visitor's random id; t: "hi" (presence), "mv" (moved), "out" (cursor left
  *   or went idle), "bye" (left the page); c: their primary colour, "#rrggbb";
- *   x, y: cursor position in the network's world units (only with "mv")
+ *   a: their animal (an index, for "Anonymous Otter"-style names);
+ *   x, y: cursor position in the network's world units (only with "mv");
+ *   ci, co: their approximate city and country code (only with "hi")
+ * Optional fields that don't fit are dropped rather than rejecting the message.
  */
 export function onPublish(ctx) {
   return ctx.events
@@ -30,6 +33,15 @@ function isCoordinate(n) {
 }
 
 function clean(m) {
-  if (m.t !== "mv") return { v: 1, id: m.id, t: m.t, c: m.c };
-  return { v: 1, id: m.id, t: m.t, c: m.c, x: m.x, y: m.y };
+  const out = { v: 1, id: m.id, t: m.t, c: m.c };
+  if (typeof m.a === "number" && m.a >= 0 && m.a < 256) out.a = m.a;
+  if (m.t === "mv") {
+    out.x = m.x;
+    out.y = m.y;
+  }
+  if (m.t === "hi") {
+    if (typeof m.ci === "string" && m.ci.length > 0 && m.ci.length <= 40) out.ci = m.ci;
+    if (typeof m.co === "string" && m.co.length === 2) out.co = m.co;
+  }
+  return out;
 }

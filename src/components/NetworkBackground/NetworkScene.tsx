@@ -10,7 +10,7 @@ import {
   type NetworkPalette,
   type PerformanceLevel,
 } from "./networkEngine";
-import { drawCursorArrows, type LiveCursors, type RemoteCursor } from "./liveCursors";
+import { drawCursorMarks, type LiveCursors, type RemoteCursor } from "./liveCursors";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 
 export type { DOMCollider, NetworkPalette, PerformanceLevel };
@@ -27,7 +27,7 @@ interface NetworkSceneProps {
   domColliders: React.RefObject<DOMCollider[]>;
   /** Other visitors' cursors, when connected */
   liveCursors: React.RefObject<LiveCursors | null>;
-  /** Where their pointers are drawn, over the canvas */
+  /** Where their pointers and names are drawn, over the page */
   cursorLayer: React.RefObject<HTMLDivElement | null>;
   /** Freeze the network: no drift, packets or mouse response */
   still: boolean;
@@ -111,7 +111,7 @@ export default function NetworkScene({
       colliders: domColliders.current,
     });
     if (cursorLayer.current) {
-      drawCursorArrows(cursorLayer.current, remotes, state.size.width, state.size.height);
+      drawCursorMarks(cursorLayer.current, remotes, state.size.width, state.size.height);
     }
   });
 

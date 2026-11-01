@@ -7,26 +7,67 @@
  * Remote cursors ease towards their latest position and fade in and out; they go once
  * their visitor's cursor leaves or stops, and the visitor themselves once they stop
  * announcing. Framework-free, like the network engine: the scene drives it every frame.
+ *
+ * Like Google Docs, every visitor is an anonymous animal ("Anonymous Otter"), kept per
+ * browser. Once someone else is on the page, each tab also shares its approximate
+ * location (city and country from /api/location) for the avatars' hover cards.
  */
 import { VISUAL_CONFIG } from "./constants";
 import type { MousePosition } from "./networkEngine";
 
+/** Visitors' anonymous names. Messages send the index, so only ever append to this. */
+export const ANIMALS = [
+  "Hedgehog", "Hummingbird", "Butterfly", "Flamingo", "Dolphin", "Squirrel", "Wolf", "Kangaroo",
+  "Cat", "Bear", "Duck", "Sloth", "Fox", "Camel", "Deer", "Octopus",
+  "Panda", "Gorilla", "Turtle", "Penguin", "Beaver", "Shark", "Crab", "Parrot",
+  "Lion", "Swan", "Snail", "Ladybird", "Raccoon", "Chameleon", "Horse", "Monkey",
+] as const;
+
+export const visitorName = (animal: number) => `Anonymous ${ANIMALS[animal]}`;
+
+export interface Visitor {
+  id: string;
+  name: string;
+  /** Index into ANIMALS */
+  animal: number;
+  /** Their primary colour, #rrggbb */
+  color: string;
+  city: string | null;
+  /** ISO 3166-1 alpha-2 code */
+  country: string | null;
+}
+
 export interface RemoteCursor {
   id: string;
+  name: string;
   /** Eased position, network world units */
   x: number;
   y: number;
-  /** Their primary colour, #rrggbb */
   color: string;
   /** 0 hidden – 1 shown, eased */
   weight: number;
 }
 
-type Message =
-  | { v: 1; id: string; t: "hi" | "out" | "bye"; c: string }
-  | { v: 1; id: string; t: "mv"; c: string; x: number; y: number };
+/** Who is on the page, for the avatars: this tab, and everyone else */
+export interface Presence {
+  self: Visitor | null;
+  others: Visitor[];
+}
 
-interface Peer extends RemoteCursor {
+// a: animal index; ci, co: city and country code (on "hi" once known)
+interface BaseMessage {
+  v: 1;
+  id: string;
+  c: string;
+  a?: number;
+}
+type HelloMessage = BaseMessage & { t: "hi"; ci?: string; co?: string };
+type Message =
+  | HelloMessage
+  | (BaseMessage & { t: "out" | "bye" })
+  | (BaseMessage & { t: "mv"; x: number; y: number });
+
+interface Peer extends RemoteCursor, Visitor {
   targetX: number;
   targetY: number;
   /** The cursor is on the page and moving */
@@ -49,7 +90,10 @@ const PEER_TIMEOUT_MS = 25_000;
 const MOVE_INTERVAL_MS = 80;
 const MAX_PEERS = 16;
 const MAX_RECONNECT_DELAY_MS = 60_000;
+const ANIMAL_KEY = "lesas-visitor-animal";
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const CITY = /^[\p{L}\p{M}0-9 .,'’()-]{1,40}$/u;
+const COUNTRY = /^[A-Z]{2}$/;
 
 function base64Url(value: object) {
   return btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -64,16 +108,81 @@ function isMessage(m: unknown): m is Message {
   return msg.t === "hi" || msg.t === "out" || msg.t === "bye";
 }
 
+// Optional fields are checked separately: a bad one is ignored rather than dropping the message
+const cleanCity = (value: unknown) => (typeof value === "string" && CITY.test(value) ? value : null);
+const cleanCountry = (value: unknown) => (typeof value === "string" && COUNTRY.test(value) ? value : null);
+const cleanAnimal = (value: unknown) =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) < ANIMALS.length ? (value as number) : null;
+
+/** A stable animal for visitors whose messages don't name one */
+function animalFromId(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return hash % ANIMALS.length;
+}
+
+/** This browser's animal: the same one on every visit */
+function ownAnimal() {
+  try {
+    const saved = localStorage.getItem(ANIMAL_KEY);
+    const animal = saved === null ? null : cleanAnimal(Number(saved));
+    if (animal !== null) return animal;
+  } catch {
+    // Storage unavailable: a new animal each visit
+  }
+  const animal = Math.floor(Math.random() * ANIMALS.length);
+  try {
+    localStorage.setItem(ANIMAL_KEY, String(animal));
+  } catch {
+    // Not remembered, which is fine
+  }
+  return animal;
+}
+
+// ---- Presence, for the avatars (one connection at a time, so a single store) ----
+
+const NO_PRESENCE: Presence = { self: null, others: [] };
+let presence = NO_PRESENCE;
+const presenceListeners = new Set<() => void>();
+
+export const presenceStore = {
+  subscribe(listener: () => void) {
+    presenceListeners.add(listener);
+    return () => {
+      presenceListeners.delete(listener);
+    };
+  },
+  getSnapshot: () => presence,
+  getServerSnapshot: () => NO_PRESENCE,
+};
+
+function setPresence(next: Presence) {
+  presence = next;
+  presenceListeners.forEach((listener) => listener());
+}
+
+const toVisitor = ({ id, name, animal, color, city, country }: Visitor): Visitor => ({
+  id,
+  name,
+  animal,
+  color,
+  city,
+  country,
+});
+
 /** Connects to the channel; returns null when the site isn't configured for live cursors */
 export function createLiveCursors(initialColor: string) {
   if (!liveCursorsAvailable) return null;
 
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const animal = ownAnimal();
   const auth = { host: HTTP_HOST!, "x-api-key": API_KEY! };
   const peers = new Map<string, Peer>();
   const visible: RemoteCursor[] = [];
 
   let color = initialColor;
+  let location: { city: string | null; country: string | null } | null = null;
+  let locating = false;
   let socket: WebSocket | null = null;
   let subscribed = false;
   let closed = false;
@@ -90,6 +199,20 @@ export function createLiveCursors(initialColor: string) {
   let sentY = NaN;
   let lastMoveAt = 0;
 
+  function syncPresence() {
+    setPresence({
+      self: {
+        id,
+        name: visitorName(animal),
+        animal,
+        color,
+        city: location?.city ?? null,
+        country: location?.country ?? null,
+      },
+      others: Array.from(peers.values(), toVisitor),
+    });
+  }
+
   function publish(message: Message) {
     if (!socket || !subscribed) return;
     socket.send(
@@ -103,7 +226,27 @@ export function createLiveCursors(initialColor: string) {
     );
   }
 
-  const hello = () => publish({ v: 1, id, t: "hi", c: color });
+  function hello() {
+    const message: HelloMessage = { v: 1, id, t: "hi", c: color, a: animal };
+    if (location?.city) message.ci = location.city;
+    if (location?.country) message.co = location.country;
+    publish(message);
+  }
+
+  /** Looks up this visitor's location, only once someone else is there to see it */
+  function locate() {
+    if (location || locating) return;
+    locating = true;
+    fetch("/api/location")
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null)
+      .then((data: { city?: unknown; country?: unknown } | null) => {
+        location = { city: cleanCity(data?.city), country: cleanCountry(data?.country) };
+        if (closed) return;
+        syncPresence();
+        hello();
+      });
+  }
 
   function receive(message: Message) {
     if (message.id === id) return;
@@ -117,18 +260,51 @@ export function createLiveCursors(initialColor: string) {
       }
       return;
     }
+
+    let changed = false;
+    const peerAnimal = cleanAnimal(message.a) ?? animalFromId(message.id);
     if (!peer) {
       if (peers.size >= MAX_PEERS) return;
-      peer = { id: message.id, x: 0, y: 0, targetX: 0, targetY: 0, color: message.c, weight: 0, active: false, lastSeen: now };
+      peer = {
+        id: message.id,
+        name: visitorName(peerAnimal),
+        animal: peerAnimal,
+        color: message.c,
+        city: null,
+        country: null,
+        x: 0,
+        y: 0,
+        targetX: 0,
+        targetY: 0,
+        weight: 0,
+        active: false,
+        lastSeen: now,
+      };
       peers.set(message.id, peer);
+      changed = true;
+      locate();
       // Answer a newcomer straight away rather than at the next heartbeat, and show them
       // where this tab's cursor is even if it isn't moving
       if (message.t === "hi") hello();
       sentActive = false;
     }
     peer.lastSeen = now;
-    peer.color = message.c;
-    if (message.t === "mv") {
+    if (peer.color !== message.c || peer.animal !== peerAnimal) {
+      peer.color = message.c;
+      peer.animal = peerAnimal;
+      peer.name = visitorName(peerAnimal);
+      changed = true;
+    }
+
+    if (message.t === "hi") {
+      const city = cleanCity(message.ci);
+      const country = cleanCountry(message.co);
+      if (city !== peer.city || country !== peer.country) {
+        peer.city = city;
+        peer.country = country;
+        changed = true;
+      }
+    } else if (message.t === "mv") {
       // A cursor that was hidden appears where it is rather than sliding in from its last spot
       if (peer.weight < 0.05) {
         peer.x = message.x;
@@ -140,6 +316,8 @@ export function createLiveCursors(initialColor: string) {
     } else if (message.t === "out") {
       peer.active = false;
     }
+
+    if (changed) syncPresence();
   }
 
   function onSocketMessage(event: MessageEvent) {
@@ -217,7 +395,7 @@ export function createLiveCursors(initialColor: string) {
   function disconnect() {
     window.clearTimeout(reconnectTimer);
     if (!socket) return;
-    publish({ v: 1, id, t: "bye", c: color });
+    publish({ v: 1, id, t: "bye", c: color, a: animal });
     const ws = socket;
     socket = null;
     subscribed = false;
@@ -226,6 +404,7 @@ export function createLiveCursors(initialColor: string) {
     window.clearTimeout(keepAliveTimer);
     ws.close();
     peers.clear();
+    syncPresence();
   }
 
   // Only connected while the tab is in front
@@ -241,9 +420,13 @@ export function createLiveCursors(initialColor: string) {
   function update(delta: number, mouse: MousePosition): RemoteCursor[] {
     const now = performance.now();
 
+    let left = false;
     for (const [peerId, peer] of peers) {
-      if (now - peer.lastSeen > PEER_TIMEOUT_MS) peers.delete(peerId);
+      if (now - peer.lastSeen <= PEER_TIMEOUT_MS) continue;
+      peers.delete(peerId);
+      left = true;
     }
+    if (left) syncPresence();
 
     if (subscribed && peers.size > 0) {
       if (mouse.isActive) {
@@ -251,12 +434,12 @@ export function createLiveCursors(initialColor: string) {
         if ((moved || !sentActive) && now - lastMoveAt >= MOVE_INTERVAL_MS) {
           sentX = Math.round(mouse.x * 100) / 100;
           sentY = Math.round(mouse.y * 100) / 100;
-          publish({ v: 1, id, t: "mv", c: color, x: sentX, y: sentY });
+          publish({ v: 1, id, t: "mv", c: color, a: animal, x: sentX, y: sentY });
           sentActive = true;
           lastMoveAt = now;
         }
       } else if (sentActive) {
-        publish({ v: 1, id, t: "out", c: color });
+        publish({ v: 1, id, t: "out", c: color, a: animal });
         sentActive = false;
       }
     }
@@ -276,6 +459,7 @@ export function createLiveCursors(initialColor: string) {
   function setColor(next: string) {
     if (next === color) return;
     color = next;
+    syncPresence();
     hello();
   }
 
@@ -284,64 +468,92 @@ export function createLiveCursors(initialColor: string) {
     disconnect();
     document.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("pagehide", disconnect);
+    setPresence(NO_PRESENCE);
   }
 
+  syncPresence();
   return { update, setColor, close };
 }
 
 export type LiveCursors = NonNullable<ReturnType<typeof createLiveCursors>>;
 
-// ---- Arrows: each visitor's pointer, drawn over their glow ----
+// ---- Marks: each visitor's pointer and name, drawn over their glow ----
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** A pointer whose tip is at (3, 2) in its 20×22 box */
 const ARROW_PATH = "M3 2 L3 19 L7.6 14.6 L10.6 21.4 L13.6 20.1 L10.7 13.4 L17 13.4 Z";
-const arrowsByLayer = new WeakMap<HTMLElement, Map<string, SVGSVGElement>>();
+const marksByLayer = new WeakMap<HTMLElement, Map<string, HTMLDivElement>>();
 
-function createArrow() {
+/** A visitor's colour, see-through: their pointers, names and avatars are tinted, not solid */
+export function translucent(hex: string, alpha: number) {
+  return `${hex}${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
+}
+
+function createMark() {
+  const mark = document.createElement("div");
+  mark.style.cssText = "position:absolute;left:0;top:0;will-change:transform,opacity";
+
+  // An outline pointer, in the visitor's colour
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("width", "20");
   svg.setAttribute("height", "22");
-  svg.style.cssText =
-    "position:absolute;left:-3px;top:-2px;filter:drop-shadow(0 1px 2px rgb(0 0 0 / 0.45));will-change:transform";
+  svg.style.cssText = "position:absolute;left:-3px;top:-2px;overflow:visible";
   const path = document.createElementNS(SVG_NS, "path");
   path.setAttribute("d", ARROW_PATH);
-  path.setAttribute("stroke", "white");
-  path.setAttribute("stroke-width", "1.5");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke-width", "1.6");
   path.setAttribute("stroke-linejoin", "round");
   svg.appendChild(path);
-  return svg;
+
+  // The name flag, as in Google Docs: a tint of their colour, in the page's text colour
+  const label = document.createElement("span");
+  label.style.cssText =
+    "position:absolute;left:13px;top:17px;padding:2px 6px;border-radius:6px;white-space:nowrap;" +
+    "font:600 11px/1.4 system-ui,sans-serif;color:var(--foreground);" +
+    "backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)";
+
+  mark.append(svg, label);
+  return mark;
 }
 
 /**
- * Places an arrow at each remote cursor in `layer`, which covers the network canvas.
- * World units convert to pixels as in the canvas: centred, CAMERA_ZOOM pixels per unit.
+ * Places each remote cursor's pointer and name in `layer`, which covers the same area
+ * as the network canvas. World units convert to pixels as in the canvas: centred,
+ * CAMERA_ZOOM pixels per unit.
  */
-export function drawCursorArrows(layer: HTMLElement, cursors: RemoteCursor[], width: number, height: number) {
-  let arrows = arrowsByLayer.get(layer);
-  if (!arrows) {
-    arrows = new Map();
-    arrowsByLayer.set(layer, arrows);
+export function drawCursorMarks(layer: HTMLElement, cursors: RemoteCursor[], width: number, height: number) {
+  let marks = marksByLayer.get(layer);
+  if (!marks) {
+    marks = new Map();
+    marksByLayer.set(layer, marks);
   }
   const zoom = VISUAL_CONFIG.CAMERA_ZOOM;
   const shown = new Set<string>();
   for (const cursor of cursors) {
-    let arrow = arrows.get(cursor.id);
-    if (!arrow) {
-      arrow = createArrow();
-      arrows.set(cursor.id, arrow);
-      layer.appendChild(arrow);
+    let mark = marks.get(cursor.id);
+    if (!mark) {
+      mark = createMark();
+      marks.set(cursor.id, mark);
+      layer.appendChild(mark);
     }
     shown.add(cursor.id);
     const px = cursor.x * zoom + width / 2;
     const py = -cursor.y * zoom + height / 2;
-    arrow.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
-    arrow.style.opacity = cursor.weight.toFixed(3);
-    arrow.firstElementChild!.setAttribute("fill", cursor.color);
+    mark.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
+    mark.style.opacity = cursor.weight.toFixed(3);
+    // Colour and name rarely change: only touch them when they do
+    if (mark.dataset.color !== cursor.color || mark.dataset.name !== cursor.name) {
+      mark.dataset.color = cursor.color;
+      mark.dataset.name = cursor.name;
+      mark.querySelector("path")!.setAttribute("stroke", translucent(cursor.color, 0.85));
+      const label = mark.querySelector("span")!;
+      label.textContent = cursor.name;
+      label.style.background = translucent(cursor.color, 0.45);
+    }
   }
-  for (const [cursorId, arrow] of arrows) {
+  for (const [cursorId, mark] of marks) {
     if (shown.has(cursorId)) continue;
-    arrow.remove();
-    arrows.delete(cursorId);
+    mark.remove();
+    marks.delete(cursorId);
   }
 }
