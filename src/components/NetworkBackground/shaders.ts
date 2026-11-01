@@ -210,3 +210,30 @@ export const CURSOR_VERTEX = /* glsl */ `
     gl_PointSize = uSizePx;
   }
 `;
+
+/** Other visitors' cursor glows: the same glow, each in its visitor's colour */
+export const REMOTE_CURSOR_VERTEX = /* glsl */ `
+  attribute vec3 aColor;
+  attribute float aStrength;
+  uniform float uSizePx;
+  varying vec3 vColor;
+  varying float vStrength;
+  void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = uSizePx;
+    vColor = aColor;
+    vStrength = aStrength;
+  }
+`;
+
+export const REMOTE_CURSOR_FRAGMENT = /* glsl */ `
+  varying vec3 vColor;
+  varying float vStrength;
+  void main() {
+    vec2 p = gl_PointCoord * 2.0 - 1.0;
+    float a = exp(-dot(p, p) * 3.5) * (1.0 - smoothstep(0.8, 1.0, length(p))) * vStrength;
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(vColor, a);
+    #include <colorspace_fragment>
+  }
+`;

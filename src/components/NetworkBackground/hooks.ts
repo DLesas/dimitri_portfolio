@@ -186,7 +186,14 @@ export function useDOMColliders(
     // Set up periodic updates to catch animated elements
     const intervalId = setInterval(updateDOMColliders, 500);
 
-    const observer = new MutationObserver(updateDOMColliders);
+    // Live cursors and avatars ([data-network-overlay]) change every frame and never
+    // collide, so their changes alone don't call for re-measuring
+    const fromOverlay = (node: Node) =>
+      Boolean((node instanceof Element ? node : node.parentElement)?.closest("[data-network-overlay]"));
+    const observer = new MutationObserver((records) => {
+      if (records.every((record) => fromOverlay(record.target))) return;
+      updateDOMColliders();
+    });
     if (containerRef.current) {
       observer.observe(containerRef.current, {
         childList: true,
