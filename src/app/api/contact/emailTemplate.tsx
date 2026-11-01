@@ -6,7 +6,6 @@ import {
   Heading,
   Hr,
   Html,
-  Preview,
   Section,
   Text,
   Tailwind,
@@ -22,8 +21,10 @@ export const ContactFormEmail = ({
   message,
 }: ContactFormData) => (
   <Html>
+    {/* No <Preview>: it pads the inbox preview with a hidden run of zero-width characters,
+        which spam filters (Outlook's included) count against the message. The heading
+        below is what shows in the preview instead. */}
     <Head />
-    <Preview>New contact form submission from {name}</Preview>
     <Tailwind>
       <Body className="bg-gray-100 font-sans">
         <Container className="mx-auto py-20 px-0">
