@@ -1,0 +1,8 @@
+name: lesas-access
+description: Identity and access for lesas.dev's infrastructure (Pulumi state bucket, OIDC trust for GitHub and Vercel, IAM roles). Deployed by hand, never by CI.
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+backend:
+  url: s3://lesas-pulumi-state-472c02?region=eu-west-2

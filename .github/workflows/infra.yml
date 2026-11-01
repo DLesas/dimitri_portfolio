@@ -1,0 +1,127 @@
+# The main Pulumi stack (infra/): previewed on pull requests, deployed on merge to main.
+#
+# Each job runs in a GitHub environment, which holds its secrets and is the only thing
+# its AWS role trusts (GitHub OIDC, no stored keys), so code in a pull request can't
+# reach either until its rules pass:
+#   infra-preview  the repo owner approves each run; read-only AWS role
+#   infra          main only; a deploy role that can't change IAM
+# Both roles, and infra/access/, are deployed by hand.
+#
+# Repository variables: AWS_PREVIEW_ROLE_ARN, AWS_DEPLOY_ROLE_ARN (from infra/access)
+# Environment secrets, in both: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN
+#
+# Actions are pinned to full commit SHAs (the version is in the comment), so a moved tag
+# upstream can't change what runs with the deploy role and secrets.
+
+name: Infrastructure
+
+# infra/access/ is deployed by hand, so changes there alone don't run this
+on:
+  pull_request:
+    paths: ["infra/**", "!infra/access/**", ".github/workflows/infra.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**", "!infra/access/**", ".github/workflows/infra.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: eu-west-2
+  PULUMI_BACKEND_URL: s3://lesas-pulumi-state-472c02?region=eu-west-2
+  PULUMI_SKIP_UPDATE_CHECK: "true"
+
+jobs:
+  preview:
+    # Pull requests from forks get no secrets, so only this repository's own
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: infra-preview
+    # A newer push to the same pull request replaces its preview
+    concurrency:
+      group: infra-preview-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+      - run: npm ci
+        working-directory: infra
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ vars.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      # Secrets only on the steps that use them, not on npm ci's install scripts
+      - uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 # v6.6.1
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+        with:
+          command: preview
+          stack-name: prod
+          work-dir: infra
+          cloud-url: ${{ env.PULUMI_BACKEND_URL }}
+          comment-on-pr: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: infra
+    # One deploy at a time, never cancelled midway. Of several waiting, only the newest
+    # runs, which is the one with the latest main. Previews don't share this group, so
+    # they can't displace a waiting deploy.
+    concurrency:
+      group: infra-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+      - run: npm ci
+        working-directory: infra
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 # v6.6.1
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+        with:
+          command: up
+          stack-name: prod
+          work-dir: infra
+          cloud-url: ${{ env.PULUMI_BACKEND_URL }}
+
+      # Vercel reads environment variables when a build starts, so a deploy that changed
+      # anything is followed by a fresh production build from main
+      - name: Rebuild the site if anything changed
+        working-directory: infra
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+        run: |
+          changes=$(pulumi stack history --stack prod --json --page-size 1 \
+            | jq '[.[0].resourceChanges // {} | to_entries[] | select(.key != "same") | .value] | add // 0')
+          echo "Resources changed: $changes"
+          if [ "$changes" -gt 0 ]; then
+            curl -fsS -X POST "https://api.vercel.com/v13/deployments?slug=dlesas-projects" \
+              -H "Authorization: Bearer $VERCEL_API_TOKEN" -H "Content-Type: application/json" \
+              -d '{"name":"dimitri-portfolio","project":"dimitri-portfolio","target":"production","gitSource":{"type":"github","org":"DLesas","repo":"dimitri_portfolio","ref":"main"}}' \
+              | jq '{id, url, readyState}'
+          fi

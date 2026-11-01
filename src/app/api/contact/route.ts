@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { awsCredentialsProvider } from "@vercel/functions/oidc";
 import { render, pretty } from "@react-email/render";
 import { ContactFormEmail } from "./emailTemplate";
 
@@ -12,14 +13,15 @@ const contactFormSchema = z.object({
   message: z.string().min(10, "Message must be at least 10 characters"),
 });
 
-// AWS SES Configuration
+// AWS SES configuration (infra/email.ts). On Vercel the function swaps its OIDC token
+// for AWS_ROLE_ARN's credentials, so no access key is stored; without a role (local
+// development) the SDK's usual credential chain applies
 const sesClient = process.env.AWS_REGION
   ? new SESClient({
       region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      },
+      credentials: process.env.AWS_ROLE_ARN
+        ? awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN })
+        : undefined,
     })
   : null;
 

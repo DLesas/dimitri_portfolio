@@ -17,6 +17,7 @@
     "@react-three/fiber": "^9.8.2",
     "@tanstack/react-query": "^5.105.0",
     "@types/three": "^0.186.0",
+    "@vercel/functions": "^3.10.5",
     "d3-force-3d": "^3.0.6",
     "leaflet": "^1.9.4",
     "next": "16.4.3",

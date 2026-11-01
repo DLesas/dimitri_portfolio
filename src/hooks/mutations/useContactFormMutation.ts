@@ -21,7 +21,6 @@ export interface ContactFormResponse {
  * - Loading states
  * - Error handling
  * - Success callbacks
- * - Automatic retry logic
  *
  * @example
  * ```tsx
@@ -53,6 +52,12 @@ export function useContactFormMutation(options?: {
         body: JSON.stringify(data),
       });
 
+      // The firewall allows a few messages per visitor (infra/site.ts), and its 429
+      // isn't this API's JSON
+      if (response.status === 429) {
+        throw new Error("Too many messages for now. Please try again in a few minutes.");
+      }
+
       const result = await response.json();
 
       // If the API returns an error, throw it so React Query handles it
@@ -64,8 +69,7 @@ export function useContactFormMutation(options?: {
 
       return result;
     },
-    retry: 1, // Retry once on failure
-    retryDelay: 1000, // Wait 1 second before retrying
+    // No retries: a retried send can email twice, and the firewall's 429 won't pass sooner
     ...options,
   });
 }

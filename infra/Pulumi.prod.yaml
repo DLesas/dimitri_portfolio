@@ -4,4 +4,5 @@ config:
   vercel:team: dlesas-projects
   lesas-infra:vercelProject: dimitri-portfolio
   lesas-infra:monthlyBudgetUsd: "3"
+  lesas-infra:realtimeMonthlyCapUsd: "2"
   lesas-infra:alertEmail: dlesas@hotmail.com
