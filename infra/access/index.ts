@@ -22,6 +22,8 @@ const region = aws.getRegionOutput().name;
 
 const policy = (statements: pulumi.Input<object>[]) =>
   pulumi.jsonStringify({ Version: "2012-10-17", Statement: statements });
+const arn = (service: string, resource: string, inRegion = true) =>
+  pulumi.interpolate`arn:aws:${service}:${inRegion ? region : ""}:${account}:${resource}`;
 
 // ---- Pulumi state ----
 
@@ -46,7 +48,8 @@ new aws.s3.BucketPublicAccessBlock(
 
 // ---- Roles the main stack's resources run as ----
 
-// The live cursors' circuit breaker (../realtime.ts): deletes the API keys under abuse
+// The live cursors' circuit breaker (../realtime.ts): deletes the API keys under abuse,
+// and every 15 minutes reads the API's traffic to check this month's spend
 const cutoffRole = new aws.iam.Role(
   "realtime-cutoff",
   {
@@ -74,6 +77,10 @@ new aws.iam.RolePolicy(
         Action: ["appsync:ListApiKeys", "appsync:DeleteApiKey"],
         Resource: [apiKeys, pulumi.interpolate`${apiKeys}/*`],
       },
+      // Metric reads can't be narrowed to one metric
+      { Effect: "Allow", Action: "cloudwatch:GetMetricData", Resource: "*" },
+      // Past the cap, it raises the alarm on its own topic
+      { Effect: "Allow", Action: "sns:Publish", Resource: arn("sns", "lesas-realtime-cutoff") },
     ]),
   },
   { protect: true }
@@ -181,6 +188,8 @@ new aws.iam.RolePolicy("ci-preview", {
         "sns:List*",
         "cloudwatch:Describe*",
         "cloudwatch:ListTagsForResource",
+        "events:Describe*",
+        "events:List*",
         "logs:Describe*",
         "logs:ListTagsForResource",
         "budgets:ViewBudget",
@@ -195,8 +204,6 @@ new aws.iam.RolePolicy("ci-preview", {
 
 // Merges to main: apply the main stack. Only this project's resources, and no IAM
 // changes: the roles it needs are made here, by hand.
-const arn = (service: string, resource: string, inRegion = true) =>
-  pulumi.interpolate`arn:aws:${service}:${inRegion ? region : ""}:${account}:${resource}`;
 const deployRole = new aws.iam.Role("ci-deploy", {
   name: "lesas-infra-deploy",
   description: "GitHub Actions on main: deploys the main Pulumi stack",
@@ -216,6 +223,7 @@ new aws.iam.RolePolicy("ci-deploy", {
     { Effect: "Allow", Action: "lambda:*", Resource: arn("lambda", "function:lesas-*") },
     { Effect: "Allow", Action: "sns:*", Resource: arn("sns", "lesas-*") },
     { Effect: "Allow", Action: "cloudwatch:*", Resource: arn("cloudwatch", "alarm:lesas-*") },
+    { Effect: "Allow", Action: "events:*", Resource: arn("events", "rule/lesas-*") },
     { Effect: "Allow", Action: "logs:*", Resource: arn("logs", "log-group:/aws/lambda/lesas-*") },
     { Effect: "Allow", Action: "budgets:*", Resource: arn("budgets", "budget/monthly-cost", false) },
     {

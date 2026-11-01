@@ -53,6 +53,12 @@ export function useContactFormMutation(options?: {
         body: JSON.stringify(data),
       });
 
+      // The firewall allows a few messages per visitor (infra/site.ts), and its 429
+      // isn't this API's JSON
+      if (response.status === 429) {
+        throw new Error("Too many messages for now. Please try again in a few minutes.");
+      }
+
       const result = await response.json();
 
       // If the API returns an error, throw it so React Query handles it

@@ -1,6 +1,6 @@
 /**
  * The Vercel project and its domains (imported as they were set up in the dashboard),
- * and the environment variables the site reads.
+ * its firewall, and the environment variables the site reads.
  */
 import * as pulumi from "@pulumi/pulumi";
 import * as vercel from "@pulumiverse/vercel";
@@ -34,6 +34,33 @@ new vercel.ProjectDomain(
   { projectId: site.id, domain: "www.lesas.dev", redirect: "lesas.dev", redirectStatusCode: 307 },
   { protect: true }
 );
+
+// Each contact form message is a real email, so a script could fill the inbox and the
+// SES bill: each IP gets a few, then a 429 until the window ends. (Hobby allows one
+// rate limit rule per project.)
+new vercel.FirewallConfig("firewall", {
+  projectId: site.id,
+  rules: {
+    rules: [
+      {
+        name: "Contact form",
+        description: "5 messages per IP every 10 minutes",
+        conditionGroups: [
+          {
+            conditions: [
+              { type: "path", op: "eq", value: "/api/contact" },
+              { type: "method", op: "eq", value: "POST" },
+            ],
+          },
+        ],
+        action: {
+          action: "rate_limit",
+          rateLimit: { algo: "fixed_window", window: 600, limit: 5, keys: ["ip"], action: "rate_limit" },
+        },
+      },
+    ],
+  },
+});
 
 // Not secrets: the realtime values ship in the browser bundle, and the contact form's
 // role can only be assumed from this project's own deployments

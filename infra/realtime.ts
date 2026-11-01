@@ -6,7 +6,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import { access, alertEmail } from "./config";
+import { access, alertEmail, config } from "./config";
 
 const api = new aws.appsync.Api("realtime", {
   name: "lesas-dev-realtime",
@@ -51,17 +51,25 @@ export const realtimeEnv: Record<string, pulumi.Input<string>> = {
 
 // ---- Automatic cutoff ----
 
-// The API key is public, so the channel can be flooded. AppSync reports traffic every
-// minute; if it passes any of these limits (far above real use: a handful of visitors
-// sends a few thousand messages a minute), a Lambda deletes the API's keys, which stops
-// all traffic within a few minutes, and an email says so. `npm run restore` brings a
-// new key back, after which the site needs a redeploy.
-// The metrics are read per API (EventAPIId): that's where AppSync reports all three.
+// The API key is public, so anyone could run up the bill. Two checks share one way out:
+// a Lambda deletes the API's keys, which stops all traffic within a few minutes, and an
+// email says so. `npm run restore` brings a new key back, after which the site needs a
+// redeploy.
+//
+// - Bursts: AppSync reports traffic every minute, and an alarm fires if any of these
+//   passes its limit (far above real use: a handful of visitors sends a few thousand
+//   messages a minute). They're read per API (EventAPIId): that's where AppSync reports them.
+// - Slow drains kept under those limits: every 15 minutes the Lambda estimates this
+//   month's spend, counted from when the current key was made, and cuts off past the cap.
 const CUTOFF_LIMITS = {
   InboundMessages: 30_000, // messages published per minute
   OutboundMessages: 200_000, // messages delivered per minute (published × subscribers)
+  ConnectRequests: 3_000, // connections opened per minute
   ActiveConnections: 300, // open connections
 };
+const MONTHLY_CAP_USD = config.require("realtimeMonthlyCapUsd");
+
+const cutoffTopic = new aws.sns.Topic("realtime-cutoff", { name: "lesas-realtime-cutoff" });
 
 const cutoffLogs = new aws.cloudwatch.LogGroup("realtime-cutoff", {
   name: "/aws/lambda/lesas-realtime-cutoff",
@@ -77,16 +85,29 @@ const cutoff = new aws.lambda.Function(
     code: new pulumi.asset.AssetArchive({
       "cutoff.mjs": new pulumi.asset.FileAsset(path.join(__dirname, "handlers", "cutoff.mjs")),
     }),
-    // Allowed to list and delete the API's keys (access/index.ts)
+    // Allowed to delete the API's keys, read its traffic and publish to the topic
+    // (access/index.ts)
     role: access.requireOutput("cutoffRoleArn") as pulumi.Output<string>,
     memorySize: 128,
     timeout: 15,
-    environment: { variables: { API_ID: api.apiId } },
+    environment: {
+      variables: {
+        API_ID: api.apiId,
+        TOPIC_ARN: cutoffTopic.arn,
+        MONTHLY_CAP_USD,
+        // The key's expiry is set a year ahead, so this is when it was made: a restored
+        // key starts the month's count afresh (without one, the count starts at the month).
+        // AppSync rounds expiries down to the hour, so a key restored in the same hour as
+        // a cutoff counts that hour's burst too, and is cut off again.
+        KEY_CREATED: apiKey.expires.apply((expires) =>
+          expires ? new Date(Date.parse(expires) - YEAR_MS).toISOString() : ""
+        ),
+      },
+    },
   },
   { dependsOn: [cutoffLogs] }
 );
 
-const cutoffTopic = new aws.sns.Topic("realtime-cutoff", { name: "lesas-realtime-cutoff" });
 new aws.lambda.Permission("realtime-cutoff-from-sns", {
   action: "lambda:InvokeFunction",
   function: cutoff.name,
@@ -121,3 +142,16 @@ for (const [metric, limit] of Object.entries(CUTOFF_LIMITS)) {
     alarmActions: [cutoffTopic.arn],
   });
 }
+
+const spendCheck = new aws.cloudwatch.EventRule("realtime-spend-check", {
+  name: "lesas-realtime-spend-check",
+  description: `Live cursors: has this month's traffic passed $${MONTHLY_CAP_USD}?`,
+  scheduleExpression: "rate(15 minutes)",
+});
+new aws.cloudwatch.EventTarget("realtime-spend-check", { rule: spendCheck.name, arn: cutoff.arn });
+new aws.lambda.Permission("realtime-cutoff-from-schedule", {
+  action: "lambda:InvokeFunction",
+  function: cutoff.name,
+  principal: "events.amazonaws.com",
+  sourceArn: spendCheck.arn,
+});
