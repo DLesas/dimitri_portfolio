@@ -1,6 +1,7 @@
 /**
  * Email for the contact form: the SES identities (imported as they were set up in the
- * console), and what the site needs to send through them.
+ * console), the table that counts each visitor's messages, and what the site needs to
+ * send through them.
  *
  * The site's Vercel functions get an OIDC token from Vercel and swap it for the contact
  * form role's credentials (see src/app/api/contact/route.ts), so no AWS access key is
@@ -33,10 +34,23 @@ new aws.sesv2.EmailIdentity(
   { protect: true }
 );
 
+// ---- Daily limit ----
+
+// How many messages each visitor has sent today: one item per visitor per day, which
+// DynamoDB deletes a couple of days later (the route sets `expires`)
+const contactLimits = new aws.dynamodb.Table("contact-limits", {
+  name: "lesas-contact-limits",
+  billingMode: "PAY_PER_REQUEST",
+  hashKey: "visitor",
+  attributes: [{ name: "visitor", type: "S" }],
+  ttl: { attributeName: "expires", enabled: true },
+});
+
 /** What the contact form reads (src/app/api/contact/route.ts) */
 export const contactEnv: Record<string, pulumi.Input<string>> = {
   AWS_REGION: aws.getRegionOutput().name,
   AWS_ROLE_ARN: access.requireOutput("contactRoleArn") as pulumi.Output<string>,
   SES_FROM_EMAIL: FROM_ADDRESS,
   CONTACT_EMAIL: INBOX,
+  CONTACT_LIMITS_TABLE: contactLimits.name,
 };

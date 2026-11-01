@@ -1,12 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
+import type { ContactFormData } from "@/lib/contactForm";
 
-// Types for the contact form
-export interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
+export type { ContactFormData };
 
 export interface ContactFormResponse {
   success: boolean;
@@ -52,10 +47,11 @@ export function useContactFormMutation(options?: {
         body: JSON.stringify(data),
       });
 
-      // The firewall allows a few messages per visitor (infra/site.ts), and its 429
-      // isn't this API's JSON
+      // Too many: past the day's limit the API says so; the firewall's own 429, for a
+      // burst (infra/site.ts), isn't the API's JSON
       if (response.status === 429) {
-        throw new Error("Too many messages for now. Please try again in a few minutes.");
+        const limited = await response.json().catch(() => null);
+        throw new Error(limited?.message ?? "Too many messages for now. Please try again in a few minutes.");
       }
 
       const result = await response.json();

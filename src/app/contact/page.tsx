@@ -23,6 +23,7 @@ import {
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { afterEntrances } from "@/lib/afterEntrances";
+import { CONTACT_FIELD_MAX } from "@/lib/contactForm";
 
 const MapPlaceholder = () => (
   <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -165,6 +166,7 @@ export default function ContactPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <TextField
                     name="name"
+                    maxLength={CONTACT_FIELD_MAX.name}
                     value={formData.name}
                     onChange={handleInputChange("name")}
                     isRequired
@@ -174,6 +176,7 @@ export default function ContactPage() {
                   </TextField>
                   <TextField
                     name="email"
+                    maxLength={CONTACT_FIELD_MAX.email}
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange("email")}
@@ -186,6 +189,7 @@ export default function ContactPage() {
 
                 <TextField
                   name="subject"
+                  maxLength={CONTACT_FIELD_MAX.subject}
                   value={formData.subject}
                   onChange={handleInputChange("subject")}
                   isRequired
@@ -196,6 +200,7 @@ export default function ContactPage() {
 
                 <TextField
                   name="message"
+                  maxLength={CONTACT_FIELD_MAX.message}
                   value={formData.message}
                   onChange={handleInputChange("message")}
                   isRequired
