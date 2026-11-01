@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@heroui/react";
 import { buttonVariants as buttonStyles } from "@heroui/styles";
 import { FaDownload, FaExpand } from "react-icons/fa";

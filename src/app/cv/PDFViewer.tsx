@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "@heroui/react";
 import { FaDownload, FaCompress } from "react-icons/fa";

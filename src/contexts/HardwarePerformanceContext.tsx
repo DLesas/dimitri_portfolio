@@ -1,15 +1,7 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { PERFORMANCE_CONFIGS } from "@/components/NetworkBackground/constants";
-import { retryWithBackoff, RetryPresets } from "@/utils/retry";
 
 // ============================================================================
 // Types & Interfaces
@@ -28,25 +20,16 @@ export interface HardwareInfo {
   cores: number;
   /** Device memory in GB (if available) */
   memory: number;
-  /** User agent string for device detection */
-  userAgent: string;
   /** Whether this appears to be a mobile device */
   isMobile: boolean;
   /** Whether this appears to be a tablet */
   isTablet: boolean;
-  /** Whether this appears to be a desktop/laptop */
-  isDesktop: boolean;
   /** GPU renderer information (if available) */
   gpu?: string;
   /** Whether hardware acceleration is available */
   hasHardwareAcceleration: boolean;
   /** Browser name and version */
   browser: {
-    name: string;
-    version: string;
-  };
-  /** Operating system information */
-  os: {
     name: string;
     version: string;
   };
@@ -60,18 +43,6 @@ export interface PerformanceSettings {
   level: PerformanceLevel;
   /** Network background configuration */
   network: (typeof PERFORMANCE_CONFIGS)[PerformanceLevel];
-  /** Recommended animation settings */
-  animations: {
-    reducedMotion: boolean;
-    maxParticles: number;
-    targetFPS: number;
-  };
-  /** Display settings */
-  display: {
-    pixelRatio: number;
-    antialiasing: boolean;
-    shadowQuality: "off" | "low" | "medium" | "high";
-  };
 }
 
 /**
@@ -82,12 +53,8 @@ interface HardwarePerformanceContextType {
   hardwareInfo: HardwareInfo;
   /** Performance settings based on hardware */
   performanceSettings: PerformanceSettings;
-  /** Manual override for performance level */
-  setPerformanceLevel: (level: PerformanceLevel) => void;
   /** Whether detection is complete */
   isDetectionComplete: boolean;
-  /** Whether detection failed */
-  hasDetectionFailed: boolean;
 }
 
 // ============================================================================
@@ -100,7 +67,6 @@ interface HardwarePerformanceContextType {
 function detectDeviceType(userAgent: string): {
   isMobile: boolean;
   isTablet: boolean;
-  isDesktop: boolean;
 } {
   const mobileRegex =
     /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
@@ -108,16 +74,15 @@ function detectDeviceType(userAgent: string): {
 
   const isMobile = mobileRegex.test(userAgent) && !tabletRegex.test(userAgent);
   const isTablet = tabletRegex.test(userAgent);
-  const isDesktop = !isMobile && !isTablet;
 
-  return { isMobile, isTablet, isDesktop };
+  return { isMobile, isTablet };
 }
 
 /**
  * Parse browser information from user agent
  */
 function detectBrowser(userAgent: string): { name: string; version: string } {
-  // Chrome/Chromium
+  // Chrome/Chromium (Edge too: its user agent includes "Chrome")
   if (userAgent.includes("Chrome")) {
     const match = userAgent.match(/Chrome\/(\d+)/);
     return { name: "Chrome", version: match?.[1] || "unknown" };
@@ -130,59 +95,9 @@ function detectBrowser(userAgent: string): { name: string; version: string } {
   }
 
   // Safari
-  if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) {
+  if (userAgent.includes("Safari")) {
     const match = userAgent.match(/Safari\/(\d+)/);
     return { name: "Safari", version: match?.[1] || "unknown" };
-  }
-
-  // Edge
-  if (userAgent.includes("Edg")) {
-    const match = userAgent.match(/Edg\/(\d+)/);
-    return { name: "Edge", version: match?.[1] || "unknown" };
-  }
-
-  return { name: "Unknown", version: "unknown" };
-}
-
-/**
- * Parse operating system information from user agent
- */
-function detectOS(userAgent: string): { name: string; version: string } {
-  // Windows
-  if (userAgent.includes("Windows")) {
-    if (userAgent.includes("Windows NT 10.0"))
-      return { name: "Windows", version: "10/11" };
-    if (userAgent.includes("Windows NT 6.3"))
-      return { name: "Windows", version: "8.1" };
-    if (userAgent.includes("Windows NT 6.1"))
-      return { name: "Windows", version: "7" };
-    return { name: "Windows", version: "unknown" };
-  }
-
-  // macOS
-  if (userAgent.includes("Mac OS X")) {
-    const match = userAgent.match(/Mac OS X (\d+_\d+)/);
-    return {
-      name: "macOS",
-      version: match?.[1]?.replace("_", ".") || "unknown",
-    };
-  }
-
-  // iOS
-  if (userAgent.includes("iPhone OS") || userAgent.includes("OS ")) {
-    const match = userAgent.match(/OS (\d+_\d+)/);
-    return { name: "iOS", version: match?.[1]?.replace("_", ".") || "unknown" };
-  }
-
-  // Android
-  if (userAgent.includes("Android")) {
-    const match = userAgent.match(/Android (\d+\.?\d*)/);
-    return { name: "Android", version: match?.[1] || "unknown" };
-  }
-
-  // Linux
-  if (userAgent.includes("Linux")) {
-    return { name: "Linux", version: "unknown" };
   }
 
   return { name: "Unknown", version: "unknown" };
@@ -233,16 +148,13 @@ function detectHardwareInfo(): HardwareInfo {
       : 4;
   const deviceType = detectDeviceType(userAgent);
   const browser = detectBrowser(userAgent);
-  const os = detectOS(userAgent);
   const gpuInfo = detectGPU();
 
   return {
     cores,
     memory,
-    userAgent,
     ...deviceType,
     browser,
-    os,
     ...gpuInfo,
   };
 }
@@ -289,38 +201,6 @@ function determinePerformanceLevel(
   return "medium";
 }
 
-/**
- * Generate performance settings based on hardware level
- */
-function generatePerformanceSettings(
-  level: PerformanceLevel,
-  hardwareInfo: HardwareInfo
-): PerformanceSettings {
-  const networkConfig = PERFORMANCE_CONFIGS[level];
-
-  return {
-    level,
-    network: networkConfig,
-    animations: {
-      reducedMotion: level === "low" || hardwareInfo.isMobile,
-      maxParticles: level === "low" ? 50 : level === "medium" ? 200 : 500,
-      targetFPS: level === "low" ? 30 : level === "medium" ? 45 : 60,
-    },
-    display: {
-      pixelRatio:
-        level === "low"
-          ? 1
-          : Math.min(
-              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-              2
-            ),
-      antialiasing: level !== "low",
-      shadowQuality:
-        level === "low" ? "off" : level === "medium" ? "low" : "medium",
-    },
-  };
-}
-
 // ============================================================================
 // Context Creation
 // ============================================================================
@@ -343,10 +223,8 @@ const HardwarePerformanceContext = createContext<
  * Features:
  * - Comprehensive hardware detection (CPU, memory, GPU, device type)
  * - Performance level determination (low/medium/high)
- * - Optimized settings for network background, animations, and display
- * - Manual performance level override capability
- * - Browser and OS detection for compatibility adjustments
- * - Automatic retry on detection failure
+ * - Optimized settings for the network background
+ * - Browser detection for compatibility adjustments
  */
 export function HardwarePerformanceProvider({
   children,
@@ -358,81 +236,28 @@ export function HardwarePerformanceProvider({
   // ========================================
 
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo | null>(null);
-  const [manualPerformanceLevel, setManualPerformanceLevel] =
-    useState<PerformanceLevel | null>(null);
   const [isDetectionComplete, setIsDetectionComplete] = useState(false);
-  const [hasDetectionFailed, setHasDetectionFailed] = useState(false);
 
   // ========================================
-  // Hardware Detection Function
+  // Automatic Detection on Mount
   // ========================================
 
-  const runDetection = useCallback(() => {
-    const detectHardware = async () => {
-      // Use the generalized retry utility for hardware detection
-      const result = await retryWithBackoff(
-        async () => {
-          const info = detectHardwareInfo();
-          return info;
-        },
-        {
-          ...RetryPresets.slow, // Use slow preset for hardware detection
-          retryDelay: 2000, // 2 second delay between retries
-          maxRetries: 3, // Maximum 3 retries
-          onRetry: (error, attempt, delay) => {
-            console.log(
-              `Retrying hardware detection in ${delay}ms (attempt ${
-                attempt + 1
-              }/3): ${error.message}`
-            );
-            setHasDetectionFailed(false); // Clear failure state during retry
-          },
-          onSuccess: (info, totalAttempts) => {
-            setHardwareInfo(info);
-            setIsDetectionComplete(true);
-            setHasDetectionFailed(false);
+  /**
+   * Detect the hardware once, on mount, during idle time, so it never blocks the
+   * initial render. Detection never throws (detectGPU catches WebGL failures).
+   */
+  useEffect(() => {
+    const detectHardware = () => {
+      const info = detectHardwareInfo();
+      setHardwareInfo(info);
+      setIsDetectionComplete(true);
 
-            // Log detection results in development
-            if (process.env.NODE_ENV === "development") {
-              console.log("Hardware Performance Detection:", {
-                level:
-                  manualPerformanceLevel || determinePerformanceLevel(info),
-                info,
-                totalAttempts,
-              });
-            }
-          },
-          onMaxRetriesReached: (lastError, totalAttempts) => {
-            console.warn(
-              `Hardware detection failed after ${totalAttempts} attempts, using fallback values:`,
-              lastError
-            );
-            setHasDetectionFailed(true);
-            setIsDetectionComplete(true);
-
-            // Set fallback hardware info
-            setHardwareInfo({
-              cores: 2,
-              memory: 4,
-              userAgent:
-                typeof navigator !== "undefined" ? navigator.userAgent : "",
-              isMobile: false,
-              isTablet: false,
-              isDesktop: true,
-              hasHardwareAcceleration: false,
-              browser: { name: "Unknown", version: "unknown" },
-              os: { name: "Unknown", version: "unknown" },
-            });
-          },
-        }
-      );
-
-      // Handle the result (success is already handled in onSuccess callback)
-      if (!result.success && !result.retriesExhausted) {
-        // This case handles when shouldRetry returns false
-        console.warn("Hardware detection aborted:", result.error);
-        setHasDetectionFailed(true);
-        setIsDetectionComplete(true);
+      // Log detection results in development
+      if (process.env.NODE_ENV === "development") {
+        console.log("Hardware Performance Detection:", {
+          level: determinePerformanceLevel(info),
+          info,
+        });
       }
     };
 
@@ -445,49 +270,13 @@ export function HardwarePerformanceProvider({
       // Fallback for older browsers - use setTimeout with delay
       setTimeout(() => detectHardware(), 100);
     }
-  }, [manualPerformanceLevel]);
-
-  // ========================================
-  // Automatic Detection on Mount
-  // ========================================
-
-  /**
-   * Automatic run hardware detection on component mount during idle time
-   * This ensures hardware info is available without blocking initial render
-   */
-  useEffect(() => {
-    runDetection();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run on mount
+  }, []);
 
   // ========================================
   // Computed Values
   // ========================================
 
-  const performanceLevel =
-    manualPerformanceLevel ||
-    (hardwareInfo ? determinePerformanceLevel(hardwareInfo) : "medium");
-  const performanceSettings = hardwareInfo
-    ? generatePerformanceSettings(performanceLevel, hardwareInfo)
-    : generatePerformanceSettings("medium", {
-        cores: 4,
-        memory: 4,
-        userAgent: "",
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        hasHardwareAcceleration: true,
-        browser: { name: "Unknown", version: "unknown" },
-        os: { name: "Unknown", version: "unknown" },
-      });
-
-  // ========================================
-  // Methods
-  // ========================================
-
-  const setPerformanceLevel = (level: PerformanceLevel) => {
-    setManualPerformanceLevel(level);
-  };
+  const level = hardwareInfo ? determinePerformanceLevel(hardwareInfo) : "medium";
 
   // ========================================
   // Context Value
@@ -497,18 +286,13 @@ export function HardwarePerformanceProvider({
     hardwareInfo: hardwareInfo || {
       cores: 4,
       memory: 4,
-      userAgent: "",
       isMobile: false,
       isTablet: false,
-      isDesktop: true,
       hasHardwareAcceleration: true,
       browser: { name: "Unknown", version: "unknown" },
-      os: { name: "Unknown", version: "unknown" },
     },
-    performanceSettings,
-    setPerformanceLevel,
+    performanceSettings: { level, network: PERFORMANCE_CONFIGS[level] },
     isDetectionComplete,
-    hasDetectionFailed,
   };
 
   return (

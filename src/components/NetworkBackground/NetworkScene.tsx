@@ -13,8 +13,6 @@ import {
 import { drawCursorMarks, type LiveCursors, type RemoteCursor } from "./liveCursors";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 
-export type { DOMCollider, NetworkPalette, PerformanceLevel };
-
 const NO_REMOTES: RemoteCursor[] = [];
 
 interface NetworkSceneProps {

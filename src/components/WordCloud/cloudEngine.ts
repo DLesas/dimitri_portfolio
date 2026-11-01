@@ -8,10 +8,9 @@
  */
 import * as THREE from "three";
 import { BatchedText, Text } from "troika-three-text";
-import { fibonacciSphere } from "@/utils/3D";
-import type { SkillRecord } from "@/hooks/queries/useSkillsData";
+import type { SkillRecord } from "@/types/skills";
 
-export const RADIUS = 22;
+const RADIUS = 22;
 export const FOV = 75;
 export const BASE_DISTANCE = 42;
 /** Half the width of the longest words, so edge words are never clipped */
@@ -52,8 +51,22 @@ const hash = (i: number) => {
   return x - Math.floor(x);
 };
 
+/** Points spread evenly over a sphere along a Fibonacci spiral */
+function fibonacciSphere(samples: number, radius: number) {
+  const points: [number, number, number][] = [];
+  const offset = 2 / samples;
+  const increment = Math.PI * (3 - Math.sqrt(5)); // Golden angle in radians
+  for (let i = 0; i < samples; i++) {
+    const y = i * offset - 1 + offset / 2;
+    const r = Math.sqrt(1 - y * y);
+    const phi = i * increment;
+    points.push([Math.cos(phi) * r * radius, y * radius, Math.sin(phi) * r * radius]);
+  }
+  return points;
+}
+
 /** Camera distance that keeps the whole sphere in view at this aspect ratio */
-export function fitDistance(aspect: number) {
+function fitDistance(aspect: number) {
   const vHalf = THREE.MathUtils.degToRad(FOV / 2);
   const hHalf = Math.atan(Math.tan(vHalf) * aspect);
   return Math.max(BASE_DISTANCE, (RADIUS + WORD_MARGIN) / Math.sin(Math.min(vHalf, hHalf)));
@@ -95,7 +108,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
   const batch = new BatchedText();
   group.add(batch);
 
-  const positions = fibonacciSphere(skills.length, { radius: RADIUS, format: "array" }) as number[][];
+  const positions = fibonacciSphere(skills.length, RADIUS);
   const words = skills.map((skill, i) => {
     const text = new Text();
     text.text = skill.name;
@@ -115,7 +128,7 @@ export function createCloudEngine(skills: SkillRecord[]) {
   });
 
   const shellGeometry = new THREE.BufferGeometry();
-  const shellPoints = fibonacciSphere(SHELL_POINTS, { radius: RADIUS + 2.5, format: "array" }) as number[][];
+  const shellPoints = fibonacciSphere(SHELL_POINTS, RADIUS + 2.5);
   shellGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(shellPoints.flat()), 3));
   shellGeometry.setAttribute(
     "aSeed",
@@ -371,7 +384,6 @@ export function createCloudEngine(skills: SkillRecord[]) {
 
   return {
     group,
-    sync: (onSynced: () => void) => batch.sync(onSynced),
     setFontSize,
     setPalette,
     fit,

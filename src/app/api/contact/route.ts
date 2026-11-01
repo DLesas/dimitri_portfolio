@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { ipAddress } from "@vercel/functions";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
-import { render, pretty } from "@react-email/render";
+import { render, pretty } from "react-email";
 import { ContactFormEmail } from "./emailTemplate";
 import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX } from "@/lib/contactForm";
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate the email HTML using @react-email/render
+      // Generate the email HTML using react-email
       const emailComponent = ContactFormEmail({
         name: validatedData.name,
         email: validatedData.email,

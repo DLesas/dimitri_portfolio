@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button } from "@heroui/react";
 import { FaUndo } from "react-icons/fa";
 import { useSettings } from "@/contexts/SettingsContext";

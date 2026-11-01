@@ -8,8 +8,8 @@ export function ConsoleEasterEgg() {
   const { colors, isInitialized } = useTheme();
 
   useEffect(() => {
-    // Only run in browser environment and when theme is initialized
-    if (typeof window !== "undefined" && isInitialized) {
+    // Only once the theme's real colours are known
+    if (isInitialized) {
       // Console Easter Egg Function that uses theme colors
       const printConsoleEasterEgg = () => {
         // Clear console first for a clean look
@@ -90,42 +90,6 @@ export function ConsoleEasterEgg() {
           `%c${JOB_TITLE}`,
           `color: ${nameColors[7]}; font-size: 16px; font-weight: bold; font-style: italic;`
         );
-
-        // // Divider using accent color
-        // console.log(
-        //   "%c" + "═".repeat(50),
-        //   `color: ${colors.accent.shades[500].hex}; font-weight: bold;`
-        // );
-
-        // // Tech stack header using primary color
-        // console.log(
-        //   "%c💻 Tech Stack:",
-        //   `color: ${colors.primary.shades[600].hex}; font-size: 14px; font-weight: bold;`
-        // );
-
-        // const techStack = [
-        //   "⚡ React & Next.js",
-        //   "🐍 Python & Machine Learning",
-        //   "📊 Data Science & Analytics",
-        //   "🎨 Three.js & WebGL",
-        //   "☁️ Cloud Architecture",
-        // ];
-
-        // // Use a mix of primary, secondary, and accent colors for tech stack
-        // const techStackColors = [
-        //   colors.primary.shades[500].hex, // React - primary
-        //   colors.secondary.shades[600].hex, // Python - secondary
-        //   colors.accent.shades[500].hex, // Data Science - accent
-        //   colors.primary.shades[400].hex, // Three.js - lighter primary
-        //   colors.secondary.shades[500].hex, // Cloud - lighter secondary
-        // ];
-
-        // techStack.forEach((tech, index) => {
-        //   console.log(
-        //     `%c${tech}`,
-        //     `color: ${techStackColors[index]}; font-size: 12px; margin-left: 10px;`
-        //   );
-        // });
       };
 
       printConsoleEasterEgg();

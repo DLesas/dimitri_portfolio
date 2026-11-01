@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { SettingsSlider } from "./controls/SettingsSlider";
 import type { SettingsCategory as SettingsCategoryType } from "./types";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
@@ -16,15 +16,11 @@ interface SettingsSectionProps {
   icon: ReactNode;
   /** Content to render within the section */
   children: ReactNode;
-  /** Optional CSS class name */
-  className?: string;
 }
 
 interface SettingsCategoryProps {
   /** Category configuration object */
   category: SettingsCategoryType;
-  /** Optional CSS class name */
-  className?: string;
 }
 
 // ============================================================================
@@ -50,14 +46,9 @@ interface SettingsCategoryProps {
  * </SettingsSection>
  * ```
  */
-export function SettingsSection({
-  title,
-  icon,
-  children,
-  className = "",
-}: SettingsSectionProps) {
+export function SettingsSection({ title, icon, children }: SettingsSectionProps) {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className="space-y-3">
       {/* Section Header */}
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground/80 border-b border-divider pb-2">
         {icon}
@@ -89,16 +80,9 @@ export function SettingsSection({
  * <SettingsCategory category={SETTINGS_CATEGORIES[0]} />
  * ```
  */
-export function SettingsCategory({
-  category,
-  className = "",
-}: SettingsCategoryProps) {
+export function SettingsCategory({ category }: SettingsCategoryProps) {
   return (
-    <SettingsSection
-      title={category.title}
-      icon={category.icon}
-      className={className}
-    >
+    <SettingsSection title={category.title} icon={category.icon}>
       {/* Render all sliders for this category */}
       <div className="space-y-3">
         {category.settings.map((settingKey) => (

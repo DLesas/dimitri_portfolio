@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { ColorPicker, useColor, type IColor } from "react-color-palette";
 import "react-color-palette/dist/css/rcp.css";
 import { Button, Spinner, Card } from "@heroui/react";
@@ -61,14 +61,6 @@ export function ColorSettingsPanel() {
     setPrimaryColor(newColor.hex);
   };
 
-  /**
-   * Handle theme reset
-   * Resets to default color (the hook will update primaryColor)
-   */
-  const handleReset = () => {
-    resetTheme();
-  };
-
   // ========================================
   // Render
   // ========================================
@@ -84,7 +76,7 @@ export function ColorSettingsPanel() {
         <Button
           size="sm"
           variant="tertiary"
-          onPress={handleReset}
+          onPress={resetTheme}
           aria-label="Reset to default theme"
           isDisabled={isGeneratingTheme}
         >
@@ -189,16 +181,6 @@ export function ColorSettingsPanel() {
               </div>
             </div>
           )}
-
-          {/* Theme Details */}
-          {/* <div className="pt-2 space-y-2 text-xs text-foreground/60">
-            <div>
-              <strong>Secondary:</strong> Triad (distinct)
-            </div>
-            <div>
-              <strong>Accent:</strong> Complement (contrasting)
-            </div>
-          </div> */}
         </div>
       </div>
     </div>

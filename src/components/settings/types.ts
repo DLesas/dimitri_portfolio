@@ -67,24 +67,3 @@ export interface SettingsCategory {
   /** List of setting keys that belong to this category */
   settings: string[];
 }
-
-// ============================================================================
-// Menu System Types
-// ============================================================================
-
-/**
- * Submenu configuration for the settings menu system
- *
- * Defines the structure for nested menu items in the settings interface.
- * Each submenu can have its own component and visual representation.
- */
-export interface SubmenuConfig {
-  /** Unique identifier for the submenu */
-  key: string;
-  /** Display title for the menu item */
-  title: string;
-  /** Icon component for the menu item */
-  icon: React.ReactNode;
-  /** Component to render when the submenu is opened */
-  component: React.ComponentType;
-}
