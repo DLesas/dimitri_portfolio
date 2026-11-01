@@ -6,3 +6,4 @@ config:
   lesas-infra:monthlyBudgetUsd: "3"
   lesas-infra:realtimeMonthlyCapUsd: "2"
   lesas-infra:alertEmail: dlesas@hotmail.com
+  lesas-infra:cloudflareZoneId: c446c2662c457e27422dcc9f28c41a94
