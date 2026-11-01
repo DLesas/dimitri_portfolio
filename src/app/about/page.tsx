@@ -297,11 +297,22 @@ export default function AboutPage() {
                 </div>
               </div>
             ) : skills && skills.length > 0 ? (
-              <WordCloud
-                skills={skills}
-                style={{ width: "100%", height: "100%" }}
-                onHoverChange={setHoveredSkill}
-              />
+              <>
+                <WordCloud
+                  skills={skills}
+                  style={{ width: "100%", height: "100%" }}
+                  onHoverChange={setHoveredSkill}
+                />
+                {/* The cloud is drawn on a canvas: the same skills as text, for
+                    screen readers and search engines */}
+                <ul className="sr-only" aria-label="Skills">
+                  {skills.map((skill) => (
+                    <li key={skill.name}>
+                      {skill.name} ({skill.type})
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <div className="h-[600px] flex items-center justify-center">
                 <p className="text-gray-500">No skills data available</p>
