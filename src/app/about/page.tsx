@@ -258,13 +258,11 @@ export default function AboutPage() {
         </h1>
 
         <p className={`text-xl text-gray-600 leading-relaxed max-w-3xl ${fadeInUp} enter-delay-300`}>
-          I guess you could call me a practical digital architect, building
-          intuitive and elegant solutions to solve real world problems and
-          provide value. Excelling in unraveling problems, I craft applications
-          that are visually striking and transform raw data into actionable
-          insights. I like to think this blend of engineering and data science
-          intuition opens new possibilities, enhancing business outcomes while
-          creating meaningful user experiences.
+          I&apos;m a founding engineer based in London. I set technical
+          direction, mentor engineers and still write a lot of the code:
+          production web apps, data platforms and machine learning systems,
+          including for defence and national security. What I enjoy most is
+          turning messy, data-heavy problems into products people actually use.
         </p>
       </section>
 

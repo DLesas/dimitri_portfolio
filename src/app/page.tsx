@@ -4,6 +4,7 @@ import { buttonVariants as buttonStyles } from "@heroui/styles";
 import Link from "next/link";
 import NetworkBackground from "@/components/NetworkBackground";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
+import { JOB_TITLE } from "@/lib/seo";
 
 // Entrance timings (ms), staggered like the hero always was: the lines follow each
 // other 100ms apart after a 300ms lead-in (see `enter` in globals.css)
@@ -34,16 +35,16 @@ export default function HomePage() {
             className={`text-xl md:text-3xl text-foreground/90 mb-8 font-light ${itemEntrance} enter-delay-400`}
             data-network-collider
           >
-            Full Stack Engineer & Data Scientist
+            {JOB_TITLE}
           </h2>
 
           <p
             className={`text-md md:text-lg lg:text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed ${itemEntrance} enter-delay-500`}
             data-network-collider
           >
-            Building bridges between complex data and elegant solutions.
-            Crafting intelligent applications that transform insights into
-            impact.
+            I take products from first commit to production: setting the
+            technical direction, building the team and still shipping the code,
+            across full-stack, data and AI.
           </p>
 
           <div
