@@ -145,6 +145,7 @@ export const LINK_FRAGMENT = /* glsl */ `
   uniform float uGlow;
   uniform float uPulseDensity;
   uniform float uPulseSpeed; // device pixels per second
+  uniform float uTravelPx; // longest possible line plus room to enter and exit, device pixels
   uniform float uPixelRatio;
   uniform float uIntro;
   uniform float uPacketStrength; // lower on light backgrounds, where packets darken
@@ -164,11 +165,12 @@ export const LINK_FRAGMENT = /* glsl */ `
     float glow = exp(-dist * dist / (2.0 * glowW * glowW)) * inside * uGlow * 0.55;
 
     // A packet travelling along some of the lines at a constant on-screen speed. Each line
-    // has a fixed cycle (long enough to cross a long line, plus a pause): it must not depend
-    // on the line's current length, which changes as nodes drift and would make it jump.
+    // has a fixed cycle (long enough to cross the longest possible line, plus a pause): it
+    // must not depend on the line's current length, which changes as nodes drift and would
+    // make it jump.
     float packet = 0.0;
     if (vSeed < uPulseDensity && uPulseSpeed > 0.0) {
-      float period = 280.0 * uPixelRatio / uPulseSpeed + 0.8 + fract(vSeed * 7.13) * 1.6;
+      float period = uTravelPx / uPulseSpeed + 0.8 + fract(vSeed * 7.13) * 1.6;
       float headPx = mod(uTime + vSeed * 97.0, period) * uPulseSpeed - 12.0 * uPixelRatio;
       float dp = vAlong * vLenPx - headPx;
       float len = 10.0 * uPixelRatio;
