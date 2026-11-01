@@ -1,0 +1,7 @@
+encryptionsalt: v1:ZuqEeRvF4YA=:v1:rlcmxiHWhf8+OonV:JSEK/R+qNXQEcO/XlLzxIYICYL6Mog==
+config:
+  aws:region: eu-west-2
+  vercel:team: dlesas-projects
+  lesas-infra:vercelProject: dimitri-portfolio
+  lesas-infra:monthlyBudgetUsd: "3"
+  lesas-infra:alertEmail: dlesas@hotmail.com

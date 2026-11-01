@@ -1,0 +1,8 @@
+name: lesas-infra
+description: Cloud resources for lesas.dev (live cursors on AppSync Events, Vercel environment variables, cost alert)
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+backend:
+  url: s3://lesas-pulumi-state-472c02?region=eu-west-2

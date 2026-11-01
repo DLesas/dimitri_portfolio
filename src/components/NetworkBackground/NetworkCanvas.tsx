@@ -13,6 +13,7 @@ import {
 import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
 import NetworkScene from "./NetworkScene";
 import type { DOMCollider, NetworkPalette, PerformanceLevel } from "./networkEngine";
+import { createLiveCursors, type LiveCursors } from "./liveCursors";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebug } from "@/contexts/DebugContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -202,6 +203,26 @@ export default function NetworkCanvas({
     };
   }, [dark, primary, secondary]);
 
+  // Other visitors' cursors, shown in their own primary colour. Not with reduced motion:
+  // this visitor neither sees moving cursors nor sends one.
+  const liveCursorsRef = useRef<LiveCursors | null>(null);
+  const cursorLayerRef = useRef<HTMLDivElement>(null);
+  const ownColor = primary[500].hex;
+  const ownColorRef = useRef(ownColor);
+  useEffect(() => {
+    ownColorRef.current = ownColor;
+    liveCursorsRef.current?.setColor(ownColor);
+  }, [ownColor]);
+  useEffect(() => {
+    if (reducedMotion) return;
+    const live = createLiveCursors(ownColorRef.current);
+    liveCursorsRef.current = live;
+    return () => {
+      live?.close();
+      liveCursorsRef.current = null;
+    };
+  }, [reducedMotion]);
+
   // Fade the canvas in once it exists, rather than popping in
   const [shown, setShown] = useState(false);
 
@@ -253,6 +274,8 @@ export default function NetworkCanvas({
           palette={palette}
           mousePos={mousePos}
           domColliders={domColliders}
+          liveCursors={liveCursorsRef}
+          cursorLayer={cursorLayerRef}
           still={reducedMotion}
         />
 
@@ -269,6 +292,7 @@ export default function NetworkCanvas({
           </>
         )}
       </Canvas>
+      <div ref={cursorLayerRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
     </div>
   );
 }

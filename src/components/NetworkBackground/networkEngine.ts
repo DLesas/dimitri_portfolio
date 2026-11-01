@@ -5,7 +5,8 @@
  * repulsion, return force, damping) but live in typed arrays and are stepped at a fixed
  * 60 Hz. Connections follow the original rules too (dynamic distance, early-terminated
  * candidate search, closest first, lifetimes with fade in / fade out). Everything is drawn
- * with three draw calls: the cursor glow, all connections, all nodes.
+ * with four draw calls: other visitors' cursor glows, the cursor glow, all connections,
+ * all nodes. Other visitors' cursors (liveCursors.ts) push nodes like this visitor's does.
  */
 import * as THREE from "three";
 import {
@@ -22,7 +23,10 @@ import {
   LINK_VERTEX,
   NODE_FRAGMENT,
   NODE_VERTEX,
+  REMOTE_CURSOR_FRAGMENT,
+  REMOTE_CURSOR_VERTEX,
 } from "./shaders";
+import type { RemoteCursor } from "./liveCursors";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 
 export type PerformanceLevel = "low" | "medium" | "high";
@@ -60,6 +64,8 @@ export interface FrameContext {
   height: number;
   dpr: number;
   mouse: MousePosition;
+  /** Other visitors' cursors */
+  remotes: RemoteCursor[];
   colliders: DOMCollider[];
 }
 
@@ -74,6 +80,7 @@ const PAIR_KEY_STRIDE = 4096;
 const SETTLE_STEPS = 180;
 
 const NO_MOUSE: MousePosition = { x: 0, y: 0, isActive: false };
+const MAX_REMOTE_CURSORS = 16;
 /** A packet starts just before its line and fades out just past the end (CSS pixels) */
 const PACKET_ENTRY_EXIT_PX = 40;
 
@@ -182,8 +189,22 @@ export function createNetworkEngine() {
   const cursor = new THREE.Points(cursorGeometry, cursorMaterial);
   cursor.frustumCulled = false;
 
+  const remoteGeometry = new THREE.BufferGeometry();
+  const remotePosition = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS * 3), 3);
+  const remoteColor = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS * 3), 3);
+  const remoteStrength = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS), 1);
+  remoteGeometry.setAttribute("position", remotePosition);
+  remoteGeometry.setAttribute("aColor", remoteColor);
+  remoteGeometry.setAttribute("aStrength", remoteStrength);
+  const remoteMaterial = shaderMaterial(REMOTE_CURSOR_VERTEX, REMOTE_CURSOR_FRAGMENT, {
+    uSizePx: { value: 360 },
+  });
+  const remoteCursors = new THREE.Points(remoteGeometry, remoteMaterial);
+  remoteCursors.frustumCulled = false;
+  const remoteRgb = new THREE.Color();
+
   const root = new THREE.Group();
-  root.add(cursor, links, nodes);
+  root.add(remoteCursors, cursor, links, nodes);
 
   // ---- simulation state ----
   let cap = 0;
@@ -286,7 +307,7 @@ export function createNetworkEngine() {
     cursorMaterial.uniforms.uColor.value.set(palette.halo);
     additive = palette.additive;
     const blending = palette.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
-    for (const m of [nodeMaterial, linkMaterial, cursorMaterial]) {
+    for (const m of [nodeMaterial, linkMaterial, cursorMaterial, remoteMaterial]) {
       m.blending = blending;
       m.needsUpdate = true;
     }
@@ -354,13 +375,25 @@ export function createNetworkEngine() {
     rebuildSlots();
   }
 
-  function physicsStep(inputs: NetworkInputs, mouse: MousePosition, colliders: DOMCollider[]) {
+  function physicsStep(
+    inputs: NetworkInputs,
+    mouse: MousePosition,
+    remotes: RemoteCursor[],
+    colliders: DOMCollider[]
+  ) {
     const st = inputs.settings;
     const pos = position!.array as Float32Array;
     const R = st.mouseRepulsionRadius;
     const pad = st.domCollisionPadding;
     const threshold = st.domCollisionThreshold;
     const FTS = A.FIXED_TIME_STEP;
+    /** Velocity change per unit of offset (dx, dy) from a cursor */
+    const repel = (dx: number, dy: number) => {
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d >= R || d <= 0) return 0;
+      const n = d / R;
+      return ((1 - n * n * (3 - 2 * n)) * st.mouseRepulsionStrength * FTS) / d;
+    };
 
     for (let i = 0; i < count; i++) {
       driftTarget(i, time, st.organicMovementSpeed);
@@ -370,13 +403,17 @@ export function createNetworkEngine() {
       // Mouse repulsion effect with velocity-based movement
       if (mouse.isActive) {
         const dx = x - mouse.x, dy = y - mouse.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < R && d > 0) {
-          const n = d / R;
-          const force = (1 - n * n * (3 - 2 * n)) * st.mouseRepulsionStrength;
-          vx += (dx / d) * force * FTS;
-          vy += (dy / d) * force * FTS;
-        }
+        const k = repel(dx, dy);
+        vx += dx * k;
+        vy += dy * k;
+      }
+      // Other visitors' cursors push the same way, fading with their cursor
+      for (let r = 0; r < remotes.length; r++) {
+        const rc = remotes[r];
+        const dx = x - rc.x, dy = y - rc.y;
+        const k = repel(dx, dy) * rc.weight;
+        vx += dx * k;
+        vy += dy * k;
       }
 
       // DOM element collision avoidance
@@ -458,7 +495,7 @@ export function createNetworkEngine() {
   /** Reduced motion: run the physics briefly so nodes clear the text, then hold still */
   function settle(inputs: NetworkInputs, colliders: DOMCollider[]) {
     if (!position) return;
-    for (let i = 0; i < SETTLE_STEPS; i++) physicsStep(inputs, NO_MOUSE, colliders);
+    for (let i = 0; i < SETTLE_STEPS; i++) physicsStep(inputs, NO_MOUSE, [], colliders);
     recalcConnections(inputs);
     // A still frame shows connections at full strength rather than mid-fade
     for (let k = 0; k < conn.count; k++) conn.birth[k] = time - A.CONNECTION_FADE_IN_TIME;
@@ -472,7 +509,7 @@ export function createNetworkEngine() {
     if (!inputs.still) {
       acc = Math.min(acc + delta, STEP * MAX_STEPS_PER_FRAME);
       while (acc >= STEP) {
-        physicsStep(inputs, ctx.mouse, ctx.colliders);
+        physicsStep(inputs, ctx.mouse, ctx.remotes, ctx.colliders);
         acc -= STEP;
       }
       intro = Math.min(1, intro + delta / EFFECTS_CONFIG.INTRO_SECONDS);
@@ -521,6 +558,19 @@ export function createNetworkEngine() {
     cu.uStrength.value = mouseHeat * glow * (additive ? 0.16 : 0.1);
     cu.uSizePx.value = 420 * ctx.dpr;
     cursor.visible = cu.uStrength.value > 0.002;
+
+    const remoteCount = Math.min(ctx.remotes.length, MAX_REMOTE_CURSORS);
+    for (let i = 0; i < remoteCount; i++) {
+      const rc = ctx.remotes[i];
+      remotePosition.setXYZ(i, rc.x, rc.y, 0);
+      remoteRgb.set(rc.color);
+      remoteColor.setXYZ(i, remoteRgb.r, remoteRgb.g, remoteRgb.b);
+      remoteStrength.setX(i, rc.weight * glow * (additive ? 0.16 : 0.1));
+    }
+    remotePosition.needsUpdate = remoteColor.needsUpdate = remoteStrength.needsUpdate = true;
+    remoteGeometry.setDrawRange(0, remoteCount);
+    remoteMaterial.uniforms.uSizePx.value = cu.uSizePx.value;
+    remoteCursors.visible = remoteCount > 0;
   }
 
   function dispose() {
@@ -530,6 +580,8 @@ export function createNetworkEngine() {
     linkMaterial.dispose();
     cursorGeometry.dispose();
     cursorMaterial.dispose();
+    remoteGeometry.dispose();
+    remoteMaterial.dispose();
   }
 
   return { root, setNodeCount, setPalette, settle, frame, dispose };

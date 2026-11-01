@@ -10,9 +10,12 @@ import {
   type NetworkPalette,
   type PerformanceLevel,
 } from "./networkEngine";
+import { drawCursorArrows, type LiveCursors, type RemoteCursor } from "./liveCursors";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 
 export type { DOMCollider, NetworkPalette, PerformanceLevel };
+
+const NO_REMOTES: RemoteCursor[] = [];
 
 interface NetworkSceneProps {
   nodeCount: number;
@@ -22,6 +25,10 @@ interface NetworkSceneProps {
   palette: NetworkPalette;
   mousePos: React.RefObject<MousePosition>;
   domColliders: React.RefObject<DOMCollider[]>;
+  /** Other visitors' cursors, when connected */
+  liveCursors: React.RefObject<LiveCursors | null>;
+  /** Where their pointers are drawn, over the canvas */
+  cursorLayer: React.RefObject<HTMLDivElement | null>;
   /** Freeze the network: no drift, packets or mouse response */
   still: boolean;
 }
@@ -38,6 +45,8 @@ export default function NetworkScene({
   palette,
   mousePos,
   domColliders,
+  liveCursors,
+  cursorLayer,
   still,
 }: NetworkSceneProps) {
   // Read the scene from the store at call time: three.js objects are meant to be
@@ -92,13 +101,18 @@ export default function NetworkScene({
   }, [still, nodeCount, connectionDistance, settings, domColliders, invalidate]);
 
   useFrame((state, delta) => {
+    const remotes = liveCursors.current?.update(delta, mousePos.current) ?? NO_REMOTES;
     engineRef.current?.frame(delta, inputsRef.current, {
       width: state.size.width,
       height: state.size.height,
       dpr: state.gl.getPixelRatio(),
       mouse: mousePos.current,
+      remotes,
       colliders: domColliders.current,
     });
+    if (cursorLayer.current) {
+      drawCursorArrows(cursorLayer.current, remotes, state.size.width, state.size.height);
+    }
   });
 
   return null;
