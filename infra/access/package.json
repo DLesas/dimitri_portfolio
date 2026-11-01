@@ -1,0 +1,19 @@
+{
+  "name": "lesas-access",
+  "private": true,
+  "description": "Pulumi project for lesas.dev's identity and access (run by hand)",
+  "main": "index.ts",
+  "scripts": {
+    "preview": "./pulumi.sh preview",
+    "deploy": "./pulumi.sh up",
+    "outputs": "./pulumi.sh stack output"
+  },
+  "dependencies": {
+    "@pulumi/aws": "^7.52.1",
+    "@pulumi/pulumi": "^3.273.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^6.0.3"
+  }
+}

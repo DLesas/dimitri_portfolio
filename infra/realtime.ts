@@ -6,7 +6,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import { alertEmail } from "./config";
+import { access, alertEmail } from "./config";
 
 const api = new aws.appsync.Api("realtime", {
   name: "lesas-dev-realtime",
@@ -63,32 +63,6 @@ const CUTOFF_LIMITS = {
   ActiveConnections: 300, // open connections
 };
 
-const cutoffRole = new aws.iam.Role("realtime-cutoff", {
-  assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" }),
-});
-new aws.iam.RolePolicyAttachment("realtime-cutoff-logs", {
-  role: cutoffRole.name,
-  policyArn: aws.iam.ManagedPolicy.AWSLambdaBasicExecutionRole,
-});
-new aws.iam.RolePolicy("realtime-cutoff-keys", {
-  role: cutoffRole.id,
-  // API key actions are authorised against arn:…:/v1/apis/<id>/apikeys[/<key>], not the
-  // API's own ARN (arn:…:apis/<id>)
-  policy: api.apiArn.apply((arn) => {
-    const keys = `${arn.replace(":apis/", ":/v1/apis/")}/apikeys`;
-    return JSON.stringify({
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Effect: "Allow",
-          Action: ["appsync:ListApiKeys", "appsync:DeleteApiKey"],
-          Resource: [keys, `${keys}/*`],
-        },
-      ],
-    });
-  }),
-});
-
 const cutoffLogs = new aws.cloudwatch.LogGroup("realtime-cutoff", {
   name: "/aws/lambda/lesas-realtime-cutoff",
   retentionInDays: 30,
@@ -103,7 +77,8 @@ const cutoff = new aws.lambda.Function(
     code: new pulumi.asset.AssetArchive({
       "cutoff.mjs": new pulumi.asset.FileAsset(path.join(__dirname, "handlers", "cutoff.mjs")),
     }),
-    role: cutoffRole.arn,
+    // Allowed to list and delete the API's keys (access/index.ts)
+    role: access.requireOutput("cutoffRoleArn") as pulumi.Output<string>,
     memorySize: 128,
     timeout: 15,
     environment: { variables: { API_ID: api.apiId } },

@@ -1,0 +1,7 @@
+encryptionsalt: v1:T1UPQyYb8mY=:v1:xWaP9X6aHIKLTglG:nH1WtnjNzpLTMWB/hvdcxmvC9wHCGA==
+config:
+  aws:region: eu-west-2
+  lesas-access:githubRepo: DLesas/dimitri_portfolio
+  lesas-access:vercelTeam: dlesas-projects
+  lesas-access:vercelProject: dimitri-portfolio
+  lesas-access:stateBucket: lesas-pulumi-state-472c02
