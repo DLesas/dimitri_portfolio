@@ -1,17 +1,18 @@
 # The main Pulumi stack (infra/): previewed on pull requests, deployed on merge to main.
 #
 # Each job runs in a GitHub environment, which holds its secrets and is the only thing
-# its AWS role trusts (GitHub OIDC, no stored keys), so code in a pull request can't
-# reach either until its rules pass:
-#   infra-preview  the repo owner approves each run; read-only AWS role
+# its AWS role trusts (GitHub OIDC, no stored keys):
+#   infra-preview  pull requests from this repository (not forks), without approval;
+#                  a read-only AWS role
 #   infra          main only; a deploy role that can't change IAM
 # Both roles, and infra/access/, are deployed by hand.
 #
 # Repository variables: AWS_PREVIEW_ROLE_ARN, AWS_DEPLOY_ROLE_ARN (from infra/access)
 # Environment secrets, in both: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN, CLOUDFLARE_API_TOKEN.
 # Previews run the pull request's own code, so infra-preview's Cloudflare token is a
-# read-only one (Zone: DNS Read, Zone Read); only infra holds the DNS-edit token. Vercel
-# tokens can't be read-only, which is why infra-preview needs the owner's approval.
+# read-only one (Zone: DNS Read, Zone Read); only infra holds the DNS-edit token. The
+# Vercel token can't be read-only, so previews only run for branches in this repository,
+# which only its owner can push to.
 #
 # Actions are pinned to full commit SHAs (the version is in the comment), so a moved tag
 # upstream can't change what runs with the deploy role and secrets.

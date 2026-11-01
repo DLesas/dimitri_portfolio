@@ -211,7 +211,7 @@ const readState = {
 
 // Each role trusts one GitHub environment, not a branch or event: a job only gets the
 // environment's secrets and this sign-in once the environment's rules let it run
-// (infra-preview: approved by the repo owner; infra: the main branch only).
+// (infra-preview: pull requests from this repository; infra: the main branch only).
 
 // Pull requests: preview what would change, read-only
 const previewRole = new aws.iam.Role("ci-preview", {
