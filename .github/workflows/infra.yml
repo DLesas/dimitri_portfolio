@@ -8,7 +8,10 @@
 # Both roles, and infra/access/, are deployed by hand.
 #
 # Repository variables: AWS_PREVIEW_ROLE_ARN, AWS_DEPLOY_ROLE_ARN (from infra/access)
-# Environment secrets, in both: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN, CLOUDFLARE_API_TOKEN
+# Environment secrets, in both: PULUMI_CONFIG_PASSPHRASE, VERCEL_API_TOKEN, CLOUDFLARE_API_TOKEN.
+# Previews run the pull request's own code, so infra-preview's Cloudflare token is a
+# read-only one (Zone: DNS Read, Zone Read); only infra holds the DNS-edit token. Vercel
+# tokens can't be read-only, which is why infra-preview needs the owner's approval.
 #
 # Actions are pinned to full commit SHAs (the version is in the comment), so a moved tag
 # upstream can't change what runs with the deploy role and secrets.
