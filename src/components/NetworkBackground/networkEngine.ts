@@ -74,6 +74,8 @@ const PAIR_KEY_STRIDE = 4096;
 const SETTLE_STEPS = 180;
 
 const NO_MOUSE: MousePosition = { x: 0, y: 0, isActive: false };
+/** A packet starts just before its line and fades out just past the end (CSS pixels) */
+const PACKET_ENTRY_EXIT_PX = 40;
 
 const smoothstep = (p: number) => {
   const t = p < 0 ? 0 : p > 1 ? 1 : p;
@@ -154,6 +156,7 @@ export function createNetworkEngine() {
     uTime: { value: 0 },
     uPulseDensity: { value: EFFECTS_CONFIG.PULSE_DENSITY },
     uPulseSpeed: { value: EFFECTS_CONFIG.PULSE_SPEED },
+    uTravelPx: { value: 400 },
     uIntro: { value: 0 },
     uColorA: { value: new THREE.Color() },
     uColorB: { value: new THREE.Color() },
@@ -502,7 +505,11 @@ export function createNetworkEngine() {
     l.uResolution.value.set(ctx.width * ctx.dpr, ctx.height * ctx.dpr);
     l.uGlow.value = glow;
     l.uPulseDensity.value = inputs.still ? 0 : (st.pulseDensity ?? EFFECTS_CONFIG.PULSE_DENSITY);
-    l.uPulseSpeed.value = EFFECTS_CONFIG.PULSE_SPEED * ctx.dpr;
+    l.uPulseSpeed.value = (st.pulseSpeed ?? EFFECTS_CONFIG.PULSE_SPEED) * ctx.dpr;
+    // Longest possible connection on screen (the connection distance swings by up to 1),
+    // plus room for a packet to enter and leave the line. Stable while nodes drift.
+    l.uTravelPx.value =
+      ((inputs.connectionDistance + 1) * VISUAL_CONFIG.CAMERA_ZOOM + PACKET_ENTRY_EXIT_PX) * ctx.dpr;
     l.uIntro.value = fadeIn;
     l.uMouse.value.copy(u.uMouse.value);
     l.uMouseActive.value = mouseHeat;

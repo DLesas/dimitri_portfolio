@@ -48,6 +48,7 @@ export interface NetworkBackgroundSettings {
   // Effects (0 = the classic look)
   glowIntensity: number;
   pulseDensity: number;
+  pulseSpeed: number;
 }
 
 /**
@@ -133,6 +134,7 @@ function generateDefaultNetworkSettings(
     // Effects configuration
     glowIntensity: EFFECTS_CONFIG.GLOW_INTENSITY,
     pulseDensity: EFFECTS_CONFIG.PULSE_DENSITY,
+    pulseSpeed: EFFECTS_CONFIG.PULSE_SPEED,
   };
 }
 
@@ -147,6 +149,20 @@ const MEDIUM_DEFAULT_NETWORK_SETTINGS = generateDefaultNetworkSettings({
 });
 
 /**
+ * Earlier default values of settings whose defaults have since changed.
+ *
+ * Settings are saved on first load, defaults included, so a saved value equal to an
+ * earlier default was never chosen by the visitor. Dropping it lets the current
+ * default apply; values the visitor actually picked are kept.
+ */
+const SUPERSEDED_NETWORK_DEFAULTS: Partial<
+  Record<keyof NetworkBackgroundSettings, number[]>
+> = {
+  pulseDensity: [0.35],
+  pulseSpeed: [60],
+};
+
+/**
  * Read previously saved settings from localStorage
  *
  * @returns The saved settings object, or null if none/unavailable
@@ -159,7 +175,14 @@ function readSavedSettings(): {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        const network = parsed?.networkSettings;
+        if (network) {
+          for (const [key, oldDefaults] of Object.entries(SUPERSEDED_NETWORK_DEFAULTS)) {
+            if (oldDefaults?.includes(network[key])) delete network[key];
+          }
+        }
+        return parsed;
       }
     }
   } catch (error) {
