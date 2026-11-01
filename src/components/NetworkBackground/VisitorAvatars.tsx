@@ -145,6 +145,7 @@ export default function VisitorAvatars({ presence }: { presence: Presence }) {
 
   return (
     <ul
+      data-network-overlay
       aria-label="People on this page"
       className="fixed bottom-4 left-4 z-40 flex items-center enter [--enter-y:8px]"
     >

@@ -312,6 +312,7 @@ export default function NetworkCanvas({
           glows stay in the canvas), and never catch the mouse */}
       <div
         ref={cursorLayerRef}
+        data-network-overlay
         aria-hidden="true"
         style={{ position: "absolute", inset: 0, zIndex: 20, overflow: "hidden", pointerEvents: "none" }}
       />
