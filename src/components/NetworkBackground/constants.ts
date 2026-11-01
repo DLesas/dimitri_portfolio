@@ -43,8 +43,8 @@ export const ANIMATION_CONFIG = {
 // Visual effects layered on top of the classic look (0 = classic)
 export const EFFECTS_CONFIG = {
   GLOW_INTENSITY: 0.7, // Soft halo around nodes, line glow and colour gradient along lines
-  PULSE_DENSITY: 0.35, // Share of connections carrying a travelling "data packet"
-  PULSE_SPEED: 60, // Packet speed in screen pixels per second
+  PULSE_DENSITY: 1, // Share of connections carrying a travelling "data packet"
+  PULSE_SPEED: 100, // Packet speed in screen pixels per second
   INTRO_SECONDS: 1.2, // Fade-in when the canvas first appears
 } as const;
 
