@@ -31,29 +31,14 @@ record("apex", "1b39b6bae564cddeccc0be73aa076826", {
   proxied: false,
   comment: "Vercel A record for root url",
 });
-// Proxied through Cloudflare; Vercel redirects it to the apex (site.ts)
+// DNS only, as Vercel recommends: Vercel serves www itself (with its own certificate)
+// and redirects it to the apex (site.ts)
 record("www", "2239bb8cf80e681918bf8f040d0ddfdf", {
   name: "www.lesas.dev",
   type: "CNAME",
   content: "4124c13de433a109.vercel-dns-017.com",
-  proxied: true,
+  proxied: false,
   comment: "vercel deployment",
-});
-// Left from an earlier setup: Cloudflare answers NS queries for its zones with its own
-// nameservers, so these two are never served
-record("vercel-ns-1", "0d77f083fcc74e1997a84d390fe72568", {
-  name: "lesas.dev",
-  type: "NS",
-  content: "ns1.vercel-dns.com",
-  proxied: false,
-  comment: "Vercel nameservers",
-});
-record("vercel-ns-2", "bfb56753ccb769432fa574292a2728cc", {
-  name: "lesas.dev",
-  type: "NS",
-  content: "ns2.vercel-dns.com",
-  proxied: false,
-  comment: "Vercel nameserver",
 });
 
 // ---- Email (SES) ----
@@ -85,10 +70,13 @@ record("spf", "652b961441cdbd437aa8678a3d096598", {
   proxied: false,
   comment: "AWS SES",
 });
+// Only SES sends as lesas.dev, and its mail passes DMARC (DKIM signed as lesas.dev, SPF
+// via mail.lesas.dev), so receivers can send anything else claiming to be lesas.dev
+// to spam
 record("dmarc", "b837616dd6b670d712976c6724f72dd9", {
   name: "_dmarc.lesas.dev",
   type: "TXT",
-  content: '"v=DMARC1; p=none;"',
+  content: '"v=DMARC1; p=quarantine;"',
   proxied: false,
   comment: "AWS SES",
 });
