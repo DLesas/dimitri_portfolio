@@ -8,7 +8,8 @@
     "deploy": "./pulumi.sh up",
     "renew-key": "./pulumi.sh up --replace 'urn:pulumi:prod::lesas-infra::aws:appsync/apiKey:ApiKey::browser'",
     "outputs": "./pulumi.sh stack output",
-    "restore": "./pulumi.sh up --refresh"
+    "restore": "./pulumi.sh up --refresh",
+    "rebuild-site": "./pulumi.sh ./rebuild-site.sh"
   },
   "dependencies": {
     "@pulumi/aws": "^7.52.1",

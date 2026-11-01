@@ -1,5 +1,5 @@
 name: lesas-infra
-description: Cloud resources for lesas.dev (live cursors on AppSync Events, Vercel environment variables, cost alert)
+description: Cloud resources for lesas.dev (live cursors on AppSync Events and their cutoff; SES and a DynamoDB limits table for the contact form; the Vercel project, its domains, firewall and environment variables; DNS on Cloudflare; cost alerts)
 runtime:
   name: nodejs
   options:

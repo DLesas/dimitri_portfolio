@@ -4,9 +4,9 @@
   "description": "Pulumi project for lesas.dev's identity and access (run by hand)",
   "main": "index.ts",
   "scripts": {
-    "preview": "./pulumi.sh preview",
-    "deploy": "./pulumi.sh up",
-    "outputs": "./pulumi.sh stack output"
+    "preview": "../pulumi.sh preview",
+    "deploy": "../pulumi.sh up",
+    "outputs": "../pulumi.sh stack output"
   },
   "dependencies": {
     "@pulumi/aws": "^7.52.1",

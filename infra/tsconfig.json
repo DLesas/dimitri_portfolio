@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "strict": true,
+    // This folder, for access/ too (which extends this file): it imports ../names.ts
+    "rootDir": ".",
     "outDir": "bin",
     "target": "es2022",
     "module": "nodenext",
