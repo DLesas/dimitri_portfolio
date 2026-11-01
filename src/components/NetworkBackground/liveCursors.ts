@@ -430,11 +430,15 @@ export function createLiveCursors(initialColor: string) {
 
     if (subscribed && peers.size > 0) {
       if (mouse.isActive) {
-        const moved = mouse.x !== sentX || mouse.y !== sentY;
+        // Compared as sent (two decimals), so a still cursor whose position doesn't round
+        // exactly isn't re-sent every interval
+        const x = Math.round(mouse.x * 100) / 100;
+        const y = Math.round(mouse.y * 100) / 100;
+        const moved = x !== sentX || y !== sentY;
         if ((moved || !sentActive) && now - lastMoveAt >= MOVE_INTERVAL_MS) {
-          sentX = Math.round(mouse.x * 100) / 100;
-          sentY = Math.round(mouse.y * 100) / 100;
-          publish({ v: 1, id, t: "mv", c: color, a: animal, x: sentX, y: sentY });
+          sentX = x;
+          sentY = y;
+          publish({ v: 1, id, t: "mv", c: color, a: animal, x, y });
           sentActive = true;
           lastMoveAt = now;
         }
