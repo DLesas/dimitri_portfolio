@@ -502,7 +502,7 @@ export function createNetworkEngine() {
     l.uResolution.value.set(ctx.width * ctx.dpr, ctx.height * ctx.dpr);
     l.uGlow.value = glow;
     l.uPulseDensity.value = inputs.still ? 0 : (st.pulseDensity ?? EFFECTS_CONFIG.PULSE_DENSITY);
-    l.uPulseSpeed.value = EFFECTS_CONFIG.PULSE_SPEED * ctx.dpr;
+    l.uPulseSpeed.value = (st.pulseSpeed ?? EFFECTS_CONFIG.PULSE_SPEED) * ctx.dpr;
     l.uIntro.value = fadeIn;
     l.uMouse.value.copy(u.uMouse.value);
     l.uMouseActive.value = mouseHeat;

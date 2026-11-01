@@ -157,6 +157,14 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
     step: 0.05,
     tooltip: "Share of connections carrying a travelling pulse (0 = none)",
   },
+
+  pulseSpeed: {
+    label: "Pulse Speed",
+    min: 10,
+    max: 200,
+    step: 5,
+    tooltip: "How fast pulses travel along the lines, in pixels per second",
+  },
 };
 
 // ============================================================================
@@ -244,6 +252,6 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   {
     title: "Effects",
     icon: <HiSparkles className="w-4 h-4 text-primary/70" />,
-    settings: ["glowIntensity", "pulseDensity"],
+    settings: ["glowIntensity", "pulseDensity", "pulseSpeed"],
   },
 ];

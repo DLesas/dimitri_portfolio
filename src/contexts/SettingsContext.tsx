@@ -48,6 +48,7 @@ export interface NetworkBackgroundSettings {
   // Effects (0 = the classic look)
   glowIntensity: number;
   pulseDensity: number;
+  pulseSpeed: number;
 }
 
 /**
@@ -133,6 +134,7 @@ function generateDefaultNetworkSettings(
     // Effects configuration
     glowIntensity: EFFECTS_CONFIG.GLOW_INTENSITY,
     pulseDensity: EFFECTS_CONFIG.PULSE_DENSITY,
+    pulseSpeed: EFFECTS_CONFIG.PULSE_SPEED,
   };
 }
 
