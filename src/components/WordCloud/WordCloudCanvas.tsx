@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { useTheme as useNextTheme } from "next-themes";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
+import { useThemeColors } from "@/contexts/ThemeColorsContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import DebugPerf from "@/components/three/DebugPerf";
 import { useSceneEngine } from "@/components/three/useSceneEngine";
@@ -158,8 +158,8 @@ interface WordCloudCanvasProps {
 export default function WordCloudCanvas({ skills, onHover }: WordCloudCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const { wordCloudSettings } = useSettings();
-  const { colors } = useTheme();
-  const { resolvedTheme } = useNextTheme();
+  const { colors } = useThemeColors();
+  const { resolvedTheme } = useTheme();
   const reduced = useReducedMotion();
   const onScreen = useOnScreen(hostRef, { rootMargin: "100px" });
   const [shown, setShown] = useState(false);

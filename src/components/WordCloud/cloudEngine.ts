@@ -9,7 +9,7 @@
 import * as THREE from "three";
 import { BatchedText, Text } from "troika-three-text";
 import { blendingFor } from "@/components/three/blending";
-import type { ThemeColors } from "@/contexts/ThemeContext";
+import type { ThemeColors } from "@/lib/theme/readThemeColors";
 import type { SkillRecord } from "@/types/skills";
 
 const RADIUS = 22;

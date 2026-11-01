@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useThemeColors } from "@/contexts/ThemeColorsContext";
 import { JOB_TITLE } from "@/lib/seo";
 
 // "D.LESAS" in block letters, one %c per letter (7 a line) so each takes its own colour
@@ -18,7 +18,7 @@ const letterStyle = (color: string) =>
 
 /** Prints the name and role in the browser console, in the theme's colours */
 export function ConsoleEasterEgg() {
-  const { colors, isInitialized } = useTheme();
+  const { colors, isInitialized } = useThemeColors();
 
   useEffect(() => {
     // Only once the theme's real colours are known

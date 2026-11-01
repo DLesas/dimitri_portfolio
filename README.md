@@ -27,7 +27,7 @@ The application dynamically adjusts its performance based on the user's hardware
 
 The entire visual theme of the site is generated on the fly and is fully customizable by the user.
 
-- **API-Driven Color Palettes**: The `ThemeContext` integrates with The Color API to generate harmonious and accessible color palettes (primary, secondary, accent) from a single user-selected primary color.
+- **API-Driven Color Palettes**: The `ThemeColorsContext` integrates with The Color API to generate harmonious and accessible color palettes (primary, secondary, accent) from a single user-selected primary color.
 - **Local Generation & Caching**: To minimize API calls, shades and tints are generated locally. The generated theme is persisted to `localStorage`, allowing user customizations to carry across sessions.
 - **Robust Error Handling**: The theme generation process is wrapped in a custom `retryWithBackoff` utility to handle transient network failures gracefully.
 
@@ -40,7 +40,7 @@ graph TB
     end
 
     subgraph "Global Theme Context"
-        B[ThemeContext<br/>- Manages theme generation<br/>- 350ms debounce<br/>- LocalStorage persistence]
+        B[ThemeColorsContext<br/>- Manages theme generation<br/>- 350ms debounce<br/>- LocalStorage persistence]
         C[Theme Generation<br/>- Runs independently<br/>- Continues after component unmount]
     end
 

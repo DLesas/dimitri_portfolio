@@ -1,7 +1,7 @@
 /*
  * HeroUI v2 palette, kept after the move to HeroUI v3.
  * The site's colour classes (text-default-600, bg-primary-50, ...) and the custom
- * theme engine (src/lib/colorApi.ts) are built on these --heroui-* HSL variables,
+ * theme engine (src/lib/theme/colorApi.ts) are built on these --heroui-* HSL variables,
  * which v3 no longer ships. Values are the v2 defaults; the theme engine overrides
  * the primary/secondary/accent scales at runtime.
  */

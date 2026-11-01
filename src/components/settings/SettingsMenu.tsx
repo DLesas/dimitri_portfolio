@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ComponentType } from "react";
 import dynamic from "next/dynamic";
 import { Popover, Button, Switch, Separator } from "@heroui/react";
+import type { IconType } from "react-icons";
 import {
   FaCog,
   FaDesktop,
@@ -38,8 +39,53 @@ const WordCloudSettingsPanel = dynamic(
 );
 
 // ============================================================================
-// Constants
+// Submenus
 // ============================================================================
+
+interface SubmenuConfig {
+  key: string;
+  /** The menu item's text */
+  label: string;
+  icon: IconType;
+  /** The panel's accessible name */
+  panelLabel: string;
+  Panel: ComponentType;
+}
+
+/** The submenus, in menu order */
+const SUBMENUS = [
+  {
+    key: "network",
+    label: "Network Background",
+    icon: FaDesktop,
+    panelLabel: "Network background settings",
+    Panel: NetworkBackgroundSettings,
+  },
+  {
+    key: "wordcloud",
+    label: "Word Cloud",
+    icon: FaCloud,
+    panelLabel: "Word cloud settings",
+    Panel: WordCloudSettingsPanel,
+  },
+  {
+    key: "color",
+    label: "Color Settings",
+    icon: FaPalette,
+    panelLabel: "Color settings",
+    Panel: ColorSettingsPanel,
+  },
+] as const satisfies readonly SubmenuConfig[];
+
+type SubmenuKey = (typeof SUBMENUS)[number]["key"];
+
+/**
+ * Whether each submenu is open. Kept apart: one closing after its delay can still be
+ * open while the next one opens.
+ */
+type OpenSubmenus = Record<SubmenuKey, boolean>;
+
+const ALL_CLOSED: OpenSubmenus = { network: false, wordcloud: false, color: false };
 
 /**
  * Delay before closing submenus when mouse leaves (in milliseconds)
@@ -47,35 +93,24 @@ const WordCloudSettingsPanel = dynamic(
  */
 const SUBMENU_CLOSE_DELAY = 250;
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type SubmenuKey = "network" | "color" | "wordcloud";
-
-interface SubmenuHandlers {
+interface SettingsSubmenuProps {
+  submenu: SubmenuConfig;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }
 
-interface SubmenuProps extends SubmenuHandlers {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-// ============================================================================
-// Submenu Components
-// ============================================================================
-
 /**
- * Network Background Settings Submenu Component
+ * A menu item that opens its panel to the left, on hover or press
  */
-function NetworkSettingsSubmenu({
+function SettingsSubmenu({
+  submenu: { label, icon: Icon, panelLabel, Panel },
   isOpen,
   onOpenChange,
   onMouseEnter,
   onMouseLeave,
-}: SubmenuProps) {
+}: SettingsSubmenuProps) {
   return (
     <div className="relative">
       <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -86,8 +121,8 @@ function NetworkSettingsSubmenu({
           onMouseLeave={onMouseLeave}
         >
           <FaChevronLeft className="w-3 h-3" />
-          <span>Network Background</span>
-          <FaDesktop className="w-4 h-4" />
+          <span>{label}</span>
+          <Icon className="w-4 h-4" />
         </Button>
         {/* Non-modal: a modal popover makes everything outside it inert, including the
             parent menu, so the hovered item would lose hover and the submenu would
@@ -100,8 +135,8 @@ function NetworkSettingsSubmenu({
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
         >
-          <Popover.Dialog aria-label="Network background settings">
-            <NetworkBackgroundSettings />
+          <Popover.Dialog aria-label={panelLabel}>
+            <Panel />
           </Popover.Dialog>
         </Popover.Content>
       </Popover>
@@ -109,83 +144,9 @@ function NetworkSettingsSubmenu({
   );
 }
 
-/**
- * Color Settings Submenu Component
- */
-function ColorSettingsSubmenu({
-  isOpen,
-  onOpenChange,
-  onMouseEnter,
-  onMouseLeave,
-}: SubmenuProps) {
-  return (
-    <div className="relative">
-      <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
-        <Button
-          variant="ghost"
-          className="w-full justify-between text-left h-auto p-2"
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
-          <FaChevronLeft className="w-3 h-3" />
-          <span>Color Settings</span>
-          <FaPalette className="w-4 h-4" />
-        </Button>
-        <Popover.Content
-          isNonModal
-          placement="left top"
-          offset={5}
-          className="p-0"
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
-          <Popover.Dialog aria-label="Color settings">
-            <ColorSettingsPanel />
-          </Popover.Dialog>
-        </Popover.Content>
-      </Popover>
-    </div>
-  );
-}
-
-/**
- * Word Cloud Settings Submenu Component
- */
-function WordCloudSettingsSubmenu({
-  isOpen,
-  onOpenChange,
-  onMouseEnter,
-  onMouseLeave,
-}: SubmenuProps) {
-  return (
-    <div className="relative">
-      <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
-        <Button
-          variant="ghost"
-          className="w-full justify-between text-left h-auto p-2"
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
-          <FaChevronLeft className="w-3 h-3" />
-          <span>Word Cloud</span>
-          <FaCloud className="w-4 h-4" />
-        </Button>
-        <Popover.Content
-          isNonModal
-          placement="left top"
-          offset={5}
-          className="p-0"
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
-          <Popover.Dialog aria-label="Word cloud settings">
-            <WordCloudSettingsPanel />
-          </Popover.Dialog>
-        </Popover.Content>
-      </Popover>
-    </div>
-  );
-}
+// ============================================================================
+// Debug Sections
+// ============================================================================
 
 /**
  * Debug Toggle Section Component
@@ -223,7 +184,7 @@ function DebugToggleSection() {
  * Hardware Info Section Component
  */
 function HardwareInfoSection() {
-  const { hardwareInfo, performanceSettings, isDetectionComplete } =
+  const { hardwareInfo, performanceLevel, isDetectionComplete } =
     useHardwarePerformance();
 
   return (
@@ -237,7 +198,7 @@ function HardwareInfoSection() {
       {isDetectionComplete ? (
         <div className="text-xs text-foreground/60 space-y-1">
           <div>
-            <strong>Inferred Perf. Level:</strong> {performanceSettings.level}
+            <strong>Inferred Perf. Level:</strong> {performanceLevel}
           </div>
           <div>
             <strong>Device:</strong>{" "}
@@ -293,8 +254,8 @@ function HardwareInfoSection() {
  * Menu Structure:
  * - Main Settings (gear icon)
  *   ├── Network Background Settings
- *   ├── Color Settings
- *   └── Word Cloud Settings
+ *   ├── Word Cloud Settings
+ *   └── Color Settings
  *
  * Hover Behavior:
  * Submenus open immediately on hover and close after a delay when the mouse
@@ -302,71 +263,38 @@ function HardwareInfoSection() {
  * menu dismissals during navigation.
  */
 export function SettingsMenu() {
-  // ========================================
-  // Context Hooks
-  // ========================================
-
   const { isDebugEnabled } = useDebug();
 
-  // ========================================
-  // State Management
-  // ========================================
-
   const [isMainOpen, setIsMainOpen] = useState(false);
-  const [isNetworkOpen, setIsNetworkOpen] = useState(false);
-  const [isColorOpen, setIsColorOpen] = useState(false);
-  const [isWordCloudOpen, setIsWordCloudOpen] = useState(false);
+  const [openSubmenus, setOpenSubmenus] = useState<OpenSubmenus>(ALL_CLOSED);
 
-  // ========================================
-  // Timeout Management
-  // ========================================
+  const setSubmenuOpen = (key: SubmenuKey, open: boolean) =>
+    setOpenSubmenus((prev) => (prev[key] === open ? prev : { ...prev, [key]: open }));
 
   /**
-   * Map of timeout references for delayed submenu closing
-   * Each submenu has its own timeout to allow independent hover behavior
+   * Timeouts for delayed submenu closing: each submenu has its own, so they open and
+   * close independently
    */
   const timeoutRefs = useRef<Map<SubmenuKey, NodeJS.Timeout>>(new Map());
 
-  const submenuSetters: Record<SubmenuKey, (open: boolean) => void> = {
-    network: setIsNetworkOpen,
-    color: setIsColorOpen,
-    wordcloud: setIsWordCloudOpen,
-  };
-
-  // ========================================
-  // Submenu Handlers
-  // ========================================
-
-  /**
-   * Open a submenu on hover, cancelling any pending delayed close
-   *
-   * @param menuKey - The submenu being hovered
-   */
-  const handleSubmenuEnter = (menuKey: SubmenuKey) => {
-    const existingTimeout = timeoutRefs.current.get(menuKey);
+  /** Open a submenu on hover, cancelling any pending delayed close */
+  const handleSubmenuEnter = (key: SubmenuKey) => {
+    const existingTimeout = timeoutRefs.current.get(key);
     if (existingTimeout) {
       clearTimeout(existingTimeout);
-      timeoutRefs.current.delete(menuKey);
+      timeoutRefs.current.delete(key);
     }
-    submenuSetters[menuKey](true);
+    setSubmenuOpen(key, true);
   };
 
-  /**
-   * Close a submenu after a delay when the mouse leaves it
-   *
-   * @param menuKey - The submenu being left
-   */
-  const handleSubmenuLeave = (menuKey: SubmenuKey) => {
+  /** Close a submenu after a delay when the mouse leaves it */
+  const handleSubmenuLeave = (key: SubmenuKey) => {
     const timeout = setTimeout(() => {
-      submenuSetters[menuKey](false);
-      timeoutRefs.current.delete(menuKey);
+      setSubmenuOpen(key, false);
+      timeoutRefs.current.delete(key);
     }, SUBMENU_CLOSE_DELAY);
-    timeoutRefs.current.set(menuKey, timeout);
+    timeoutRefs.current.set(key, timeout);
   };
-
-  // ========================================
-  // Main Menu Handlers
-  // ========================================
 
   /**
    * Handle main menu open/close state changes
@@ -376,20 +304,13 @@ export function SettingsMenu() {
     setIsMainOpen(open);
     if (open) void loadPanels();
     if (!open) {
-      // Close all submenus
-      setIsNetworkOpen(false);
-      setIsColorOpen(false);
-      setIsWordCloudOpen(false);
+      setOpenSubmenus(ALL_CLOSED);
 
       // Clear all pending timeouts
       timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
       timeoutRefs.current.clear();
     }
   };
-
-  // ========================================
-  // Cleanup Effect
-  // ========================================
 
   /**
    * Cleanup all timeouts on component unmount
@@ -402,10 +323,6 @@ export function SettingsMenu() {
       refs.clear();
     };
   }, []);
-
-  // ========================================
-  // Render
-  // ========================================
 
   return (
     <div className="relative">
@@ -427,29 +344,16 @@ export function SettingsMenu() {
           className="p-2 min-w-[200px]"
         >
           <Popover.Dialog aria-label="Site settings" className="space-y-1">
-            {/* Network Background Settings Submenu */}
-            <NetworkSettingsSubmenu
-              isOpen={isNetworkOpen}
-              onOpenChange={setIsNetworkOpen}
-              onMouseEnter={() => handleSubmenuEnter("network")}
-              onMouseLeave={() => handleSubmenuLeave("network")}
-            />
-
-            {/* Word Cloud Settings Submenu */}
-            <WordCloudSettingsSubmenu
-              isOpen={isWordCloudOpen}
-              onOpenChange={setIsWordCloudOpen}
-              onMouseEnter={() => handleSubmenuEnter("wordcloud")}
-              onMouseLeave={() => handleSubmenuLeave("wordcloud")}
-            />
-
-            {/* Color Settings Submenu */}
-            <ColorSettingsSubmenu
-              isOpen={isColorOpen}
-              onOpenChange={setIsColorOpen}
-              onMouseEnter={() => handleSubmenuEnter("color")}
-              onMouseLeave={() => handleSubmenuLeave("color")}
-            />
+            {SUBMENUS.map((submenu) => (
+              <SettingsSubmenu
+                key={submenu.key}
+                submenu={submenu}
+                isOpen={openSubmenus[submenu.key]}
+                onOpenChange={(open) => setSubmenuOpen(submenu.key, open)}
+                onMouseEnter={() => handleSubmenuEnter(submenu.key)}
+                onMouseLeave={() => handleSubmenuLeave(submenu.key)}
+              />
+            ))}
 
             {/* Debug Toggle Section */}
             <Separator className="my-2" />

@@ -1,7 +1,8 @@
 /**
  * localStorage, made safe: on the server, and where storage is blocked or full, reads
- * return null and writes do nothing (with a warning) rather than throwing.
+ * return null and writes do nothing (with a warning, in development) rather than throwing.
  */
+import { devLog } from "./devLog";
 
 /** Every key the site stores. Never rename one: visitors' saved data lives under it. */
 export const STORAGE_KEYS = {
@@ -24,7 +25,7 @@ export function readJSON<T>(key: StorageKey): T | null {
     const saved = localStorage.getItem(key);
     return saved ? (JSON.parse(saved) as T) : null;
   } catch (error) {
-    console.warn(`Failed to read "${key}" from localStorage:`, error);
+    devLog.warn(`Failed to read "${key}" from localStorage:`, error);
     return null;
   }
 }
@@ -36,7 +37,7 @@ export function writeJSON(key: StorageKey, value: unknown): boolean {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (error) {
-    console.warn(`Failed to save "${key}" to localStorage:`, error);
+    devLog.warn(`Failed to save "${key}" to localStorage:`, error);
     return false;
   }
 }

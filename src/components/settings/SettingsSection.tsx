@@ -2,8 +2,7 @@
 
 import type { ReactNode } from "react";
 import { SettingsSlider } from "./controls/SettingsSlider";
-import type { SettingsCategory as SettingsCategoryType } from "./types";
-import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
+import type { SettingsCategory as SettingsCategoryConfig, SliderConfig } from "./types";
 
 // ============================================================================
 // Types
@@ -12,15 +11,21 @@ import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 interface SettingsSectionProps {
   /** Section title displayed in the header */
   title: string;
-  /** Icon component displayed next to the title */
+  /** Icon displayed next to the title */
   icon: ReactNode;
   /** Content to render within the section */
   children: ReactNode;
 }
 
-interface SettingsCategoryProps {
-  /** Category configuration object */
-  category: SettingsCategoryType;
+interface SettingsCategoryProps<K extends string> {
+  /** The category: its title, icon and settings */
+  category: SettingsCategoryConfig<K>;
+  /** Every setting's slider configuration */
+  config: Record<K, SliderConfig>;
+  /** Every setting's current value */
+  values: Record<K, number>;
+  /** Saves a setting's new value */
+  onCommit: (key: K, value: number) => void;
 }
 
 // ============================================================================
@@ -35,14 +40,10 @@ interface SettingsCategoryProps {
  * - Padded content area for child components
  * - Consistent spacing and styling
  *
- * This component serves as a visual wrapper that groups related settings
- * together and provides clear section boundaries in the settings interface.
- *
  * @example
  * ```tsx
  * <SettingsSection title="Network" icon={<FaNetworkWired />}>
- *   <SettingsSlider setting="nodeCount" />
- *   <SettingsSlider setting="connectionDistance" />
+ *   <SettingsSlider config={...} value={...} onCommit={...} />
  * </SettingsSection>
  * ```
  */
@@ -62,36 +63,39 @@ export function SettingsSection({ title, icon, children }: SettingsSectionProps)
 }
 
 /**
- * Settings category component for grouping related settings
- *
- * This component takes a category configuration and automatically renders
- * all the settings sliders for that category, eliminating the need to
- * manually list each slider. It provides a clean, organized way to display
- * groups of related settings.
- *
- * Features:
- * - Automatic rendering of all settings in a category
- * - Configuration-driven approach eliminates repetitive code
- * - Consistent styling and organization via SettingsSection wrapper
- * - Type-safe setting key handling
+ * A category of settings: a section with a slider for each of its settings, from the
+ * configuration rather than listed by hand
  *
  * @example
  * ```tsx
- * <SettingsCategory category={SETTINGS_CATEGORIES[0]} />
+ * <SettingsCategory
+ *   category={NETWORK_SETTINGS_CATEGORIES[0]}
+ *   config={NETWORK_SETTINGS_CONFIG}
+ *   values={networkSettings}
+ *   onCommit={(key, value) => updateNetworkSettings({ [key]: value })}
+ * />
  * ```
  */
-export function SettingsCategory({ category }: SettingsCategoryProps) {
+export function SettingsCategory<K extends string>({
+  category,
+  config,
+  values,
+  onCommit,
+}: SettingsCategoryProps<K>) {
+  const { title, icon: Icon, settings } = category;
   return (
-    <SettingsSection title={category.title} icon={category.icon}>
-      {/* Render all sliders for this category */}
-      <div className="space-y-3">
-        {category.settings.map((settingKey) => (
-          <SettingsSlider
-            key={settingKey}
-            setting={settingKey as keyof NetworkBackgroundSettings}
-          />
-        ))}
-      </div>
+    <SettingsSection
+      title={title}
+      icon={Icon ? <Icon className="w-4 h-4 text-primary/70" /> : null}
+    >
+      {settings.map((key) => (
+        <SettingsSlider
+          key={key}
+          config={config[key]}
+          value={values[key]}
+          onCommit={(value) => onCommit(key, value)}
+        />
+      ))}
     </SettingsSection>
   );
 }
