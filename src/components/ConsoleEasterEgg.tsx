@@ -4,96 +4,40 @@ import { useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { JOB_TITLE } from "@/lib/seo";
 
+// "D.LESAS" in block letters, one %c per letter (7 a line) so each takes its own colour
+const NAME_ART = `%c██████╗ %c █ %c██╗     %c███████╗%c███████╗%c █████╗ %c███████╗
+%c██╔══██╗%c   %c██║     %c██╔════╝%c██╔════╝%c██╔══██╗%c██╔════╝
+%c██║  ██║%c   %c██║     %c█████╗  %c███████╗%c███████║%c███████╗
+%c██║  ██║%c   %c██║     %c██╔══╝  %c╚════██║%c██╔══██║%c╚════██║
+%c██████╔╝%c██╗%c███████╗%c███████╗%c███████║%c██║  ██║%c███████║
+%c╚═════╝ %c╚═╝%c╚══════╝%c╚══════╝%c╚══════╝%c╚═╝  ╚═╝%c╚══════╝`;
+const ART_LINES = 6;
+
+const letterStyle = (color: string) =>
+  `color: ${color}; font-weight: bold; font-size: 10px; font-family: monospace;`;
+
+/** Prints the name and role in the browser console, in the theme's colours */
 export function ConsoleEasterEgg() {
   const { colors, isInitialized } = useTheme();
 
   useEffect(() => {
     // Only once the theme's real colours are known
-    if (isInitialized) {
-      // Console Easter Egg Function that uses theme colors
-      const printConsoleEasterEgg = () => {
-        // Clear console first for a clean look
-        console.clear();
+    if (!isInitialized) return;
 
-        // Get color shades from the current theme (darkest to lightest)
-        const nameColors = [
-          colors.primary.shades[800].hex, // D - darkest
-          colors.primary.shades[700].hex, // . - very dark
-          colors.primary.shades[600].hex, // L - dark
-          colors.primary.shades[500].hex, // e - medium-dark
-          colors.primary.shades[400].hex, // s - medium
-          colors.primary.shades[300].hex, // s - lightest
-          colors.primary.shades[200].hex, // s - lightest
-          colors.primary.shades[100].hex, // s - lightest
-        ];
+    // The letters run from the theme's darkest primary shade to its lighter ones
+    const shades = colors.primary.shades;
+    const letterColors = ([800, 700, 600, 500, 400, 300, 200] as const).map(
+      (shade) => shades[shade].hex
+    );
+    const lineStyles = letterColors.map(letterStyle);
 
-        // ASCII Art Name arranged horizontally - each character gets different theme color
-        console.log(
-          `%c██████╗ %c █ %c██╗     %c███████╗%c███████╗%c █████╗ %c███████╗
-%c██╔══██╗%c   %c██║     %c██╔════╝%c██╔════╝%c██╔══██╗%c██╔════╝
-%c██║  ██║%c   %c██║     %c█████╗  %c███████╗%c███████║%c███████╗
-%c██║  ██║%c   %c██║     %c██╔══╝  %c╚════██║%c██╔══██║%c╚════██║
-%c██████╔╝%c██╗%c███████╗%c███████╗%c███████║%c██║  ██║%c███████║
-%c╚═════╝ %c╚═╝%c╚══════╝%c╚══════╝%c╚══════╝%c╚═╝  ╚═╝%c╚══════╝`,
-          // Line 1
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // D
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // .
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // L
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // e
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // s
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // a
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`, // s
-          // Line 2
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          // Line 3
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          // Line 4
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          // Line 5
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          // Line 6
-          `color: ${nameColors[0]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[1]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[2]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[3]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[4]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[5]}; font-weight: bold; font-size: 10px; font-family: monospace;`,
-          `color: ${nameColors[6]}; font-weight: bold; font-size: 10px; font-family: monospace;`
-        );
-
-        // Subtitle using secondary color
-        console.log(
-          `%c${JOB_TITLE}`,
-          `color: ${nameColors[7]}; font-size: 16px; font-weight: bold; font-style: italic;`
-        );
-      };
-
-      printConsoleEasterEgg();
-    }
+    // Clear console first for a clean look
+    console.clear();
+    console.log(NAME_ART, ...Array.from({ length: ART_LINES }, () => lineStyles).flat());
+    console.log(
+      `%c${JOB_TITLE}`,
+      `color: ${shades[100].hex}; font-size: 16px; font-weight: bold; font-style: italic;`
+    );
   }, [colors, isInitialized]); // Re-run when colors or initialization state changes
 
   // This component doesn't render anything visible

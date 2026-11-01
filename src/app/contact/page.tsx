@@ -9,6 +9,7 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
+import type { IconType } from "react-icons";
 import {
   FaEnvelope,
   FaMapMarkerAlt,
@@ -17,13 +18,15 @@ import {
 } from "react-icons/fa";
 import dynamic from "next/dynamic";
 import {
+  CONTACT_ERROR_FALLBACK,
   useContactFormMutation,
   type ContactFormData,
 } from "@/hooks/mutations/useContactFormMutation";
-import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
+import { PageShell } from "@/components/PageShell";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { afterEntrances } from "@/lib/afterEntrances";
 import { CONTACT_FIELD_MAX } from "@/lib/contactForm";
+import { CONTACT_EMAIL, LOCATION, SOCIAL_LINKS } from "@/lib/site";
 
 const MapPlaceholder = () => (
   <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -32,28 +35,33 @@ const MapPlaceholder = () => (
 );
 
 // Dynamically import the map component to avoid SSR issues
-const Map = dynamic(() => import("./Map"), {
+const Map = dynamic(() => import("./Map").then((m) => m.Map), {
   ssr: false,
   loading: MapPlaceholder,
 });
 
-// The columns fade and rise in one after the other (see `enter` in globals.css)
+const SOCIAL_ICONS: Record<(typeof SOCIAL_LINKS)[number]["label"], IconType> = {
+  LinkedIn: FaLinkedin,
+  GitHub: FaGithub,
+};
+
+const EMPTY_FORM: ContactFormData = { name: "", email: "", subject: "", message: "" };
+
+// The columns fade and rise in one after the other (see `enter` in src/styles/entrance.css)
 const entrance = "enter enter-spring [--enter-y:20px]";
 
+// One item in the row of contact details under the heading
+const contactItem = "flex items-center gap-2 text-gray-600 dark:text-gray-400";
+const contactLink = "hover:text-primary transition-colors text-sm";
+
 export default function ContactPage() {
-  const { getAvailableHeight } = useNavigationSpace();
   // Leaflet and the map tiles load after the page's entrance has played, once the
   // map is close to the screen (it sits below the form on phones)
   const mapRef = useRef<HTMLDivElement>(null);
   const mapNearby = useInViewOnce(mapRef, "200px");
   const [entered, setEntered] = useState(false);
   useEffect(() => afterEntrances(() => setEntered(true)), []);
-  const [formData, setFormData] = useState<ContactFormData>({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   const handleInputChange =
     (field: keyof ContactFormData) => (value: string) => {
@@ -63,46 +71,23 @@ export default function ContactPage() {
       }));
     };
 
-  const [submitStatus, setSubmitStatus] = useState<{
-    type: "success" | "error" | null;
-    message: string;
-  }>({ type: null, message: "" });
-
-  // React Query mutation for form submission
-  const { mutate: submitForm, isPending: isSubmitting } =
-    useContactFormMutation({
-      onSuccess: (data) => {
-        setSubmitStatus({
-          type: "success",
-          message: data.message,
-        });
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          subject: "",
-          message: "",
-        });
-      },
-      onError: (error) => {
-        setSubmitStatus({
-          type: "error",
-          message: error.message || "Something went wrong. Please try again.",
-        });
-      },
-    });
+  // The result of the latest send, until the next one starts
+  const {
+    mutate: submitForm,
+    isPending: isSubmitting,
+    isSuccess,
+    isError,
+    data,
+    error,
+  } = useContactFormMutation({ onSuccess: () => setFormData(EMPTY_FORM) });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitStatus({ type: null, message: "" });
     submitForm(formData);
   };
 
   return (
-    <div
-      className="px-6 flex items-center justify-center enter enter-duration-500 [--enter-y:20px]"
-      style={{ minHeight: getAvailableHeight() }}
-    >
+    <PageShell className="px-6">
       <div className="max-w-5xl mx-auto w-full">
         {/* Two Column Layout */}
         <div className="flex flex-col lg:flex-row gap-12">
@@ -121,44 +106,34 @@ export default function ContactPage() {
             <div
               className={`flex flex-wrap justify-between gap-4 mb-6 text-foreground/70 text-sm ${entrance} enter-delay-400`}
             >
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={contactItem}>
                 <FaEnvelope className="text-primary" />
-                <a
-                  href="mailto:dlesas@hotmail.com"
-                  className="hover:text-primary transition-colors text-sm"
-                >
-                  dlesas@hotmail.com
+                <a href={`mailto:${CONTACT_EMAIL}`} className={contactLink}>
+                  {CONTACT_EMAIL}
                 </a>
               </div>
 
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={contactItem}>
                 <FaMapMarkerAlt className="text-primary" />
-                <span className="text-sm">London, UK</span>
+                <span className="text-sm">{LOCATION.label}</span>
               </div>
 
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <FaLinkedin className="text-primary" />
-                <a
-                  href="https://www.linkedin.com/in/dimitri-lesas-analytics/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors text-sm"
-                >
-                  LinkedIn
-                </a>
-              </div>
-
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <FaGithub className="text-primary" />
-                <a
-                  href="https://github.com/DLesas"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors text-sm"
-                >
-                  GitHub
-                </a>
-              </div>
+              {SOCIAL_LINKS.map(({ label, href }) => {
+                const Icon = SOCIAL_ICONS[label];
+                return (
+                  <div key={label} className={contactItem}>
+                    <Icon className="text-primary" />
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={contactLink}
+                    >
+                      {label}
+                    </a>
+                  </div>
+                );
+              })}
             </div>
 
             <div className={`pt-0 ${entrance} enter-delay-500`}>
@@ -224,16 +199,16 @@ export default function ContactPage() {
                 </Button>
 
                 {/* Status Messages */}
-                {submitStatus.type && (
+                {(isSuccess || isError) && (
                   <div
                     className={`mt-4 p-4 rounded-lg ${
-                      submitStatus.type === "success"
+                      isSuccess
                         ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200"
                         : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
                     }`}
                   >
                     <p className="text-sm font-medium">
-                      {submitStatus.message}
+                      {isSuccess ? data.message : error.message || CONTACT_ERROR_FALLBACK}
                     </p>
                   </div>
                 )}
@@ -251,6 +226,6 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

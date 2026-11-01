@@ -5,9 +5,9 @@ import { useInViewOnce } from "@/hooks/useInViewOnce";
 
 /**
  * A section whose `enter` animations (its own and its children's) wait until it
- * scrolls into view, then play once. The pausing is `.reveal` in globals.css.
+ * scrolls into view, then play once. The pausing is `.reveal` in src/styles/entrance.css.
  */
-export default function Reveal({
+export function Reveal({
   className = "",
   ...props
 }: ComponentPropsWithoutRef<"section">) {

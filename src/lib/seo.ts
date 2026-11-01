@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { LOCATION, SITE_NAME, SITE_URL, SOCIAL_LINKS } from "./site";
 
-/** The production address: canonical URLs, the sitemap and link previews all point here */
-export const SITE_URL = "https://lesas.dev";
-export const SITE_NAME = "Dimitri Lesas";
-
-/** The role shown under the name: home page, share image, structured data, console */
+/**
+ * The role shown under the name: home page, share image, structured data, console.
+ * opengraph-image.tsx imports these from here and spells out the name and address
+ * itself: Next puts a hash of that file's source in the og:image URL it adds to the
+ * home page, so any edit to it changes the home page's link-preview tags.
+ */
 export const JOB_TITLE = "Founding Engineer";
 export const SPECIALISMS = "Full Stack, Data & AI";
 
@@ -12,11 +14,12 @@ export const DEFAULT_TITLE = `${SITE_NAME} – ${JOB_TITLE} | ${SPECIALISMS}`;
 export const DEFAULT_DESCRIPTION =
   "Dimitri Lesas is a London-based founding engineer who takes products from idea to production, leading teams and building across full-stack, data and AI.";
 
-export const LINKEDIN_URL = "https://www.linkedin.com/in/dimitri-lesas-analytics/";
-export const GITHUB_URL = "https://github.com/DLesas";
+/** The home page's title, and the "Page | Name" title every other page gets */
+export const TITLE = { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` };
 
-/** The CV, as linked from the CV page and listed in the sitemap */
-export const CV_PATH = "/Dimitri Lesas.pdf";
+/** The home page's link-preview description (pages set their own) */
+export const OG_DESCRIPTION =
+  "Taking products from idea to production across full-stack, data and AI.";
 
 /** The share image, drawn by src/app/opengraph-image.tsx */
 export const OG_IMAGE = {
@@ -51,3 +54,30 @@ export function pageMetadata(title: string, description: string): Metadata {
     openGraph: { ...sharedOpenGraph, title, description, images: [OG_IMAGE] },
   };
 }
+
+/** Who the site is about, for search engines (schema.org structured data) */
+export const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${SITE_URL}/#person`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      jobTitle: JOB_TITLE,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: LOCATION.city,
+        addressCountry: LOCATION.countryCode,
+      },
+      sameAs: SOCIAL_LINKS.map((link) => link.href),
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      author: { "@id": `${SITE_URL}/#person` },
+    },
+  ],
+};

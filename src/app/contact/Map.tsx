@@ -1,73 +1,64 @@
 "use client";
 
+import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { useTheme as useNextTheme } from "next-themes";
 import { useTheme } from "@/contexts/ThemeContext";
-import { renderToStaticMarkup } from "react-dom/server";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { LOCATION, SITE_NAME } from "@/lib/site";
 
-// Custom pin component
-const CustomPin = ({
-  color,
-  borderColor,
-  size = 32,
-}: {
-  color: string;
-  borderColor: string;
-  size?: number;
-}) => (
-  <div
-    className="relative rounded-tl-full rounded-tr-full rounded-bl-full shadow-lg"
-    style={{
-      width: `${size}px`,
-      height: `${size}px`,
-      background: color,
-      transform: "rotate(45deg)",
-      border: `3px solid ${borderColor}`,
-    }}
-  >
-    <div
-      className="absolute top-1/2 left-1/2 bg-white rounded-full"
-      style={{
-        width: `${size * 0.375}px`,
-        height: `${size * 0.375}px`,
-        transform: "translate(-50%, -50%)",
-      }}
-    />
-  </div>
-);
+const MAP_LOCATIONS: {
+  position: [number, number];
+  title: string;
+  place: string;
+  note: string;
+}[] = [
+  {
+    position: LOCATION.coordinates,
+    title: SITE_NAME,
+    place: LOCATION.label,
+    note: "Available for remote and on-site opportunities",
+  },
+  {
+    position: [50.9893, -1.4956],
+    title: "Home Base",
+    place: "Romsey, UK",
+    note: "Hampshire countryside",
+  },
+];
 
-export default function Map() {
+const PIN_SIZE = 32;
+
+/**
+ * The pin's markup for Leaflet's divIcon: a teardrop (a square, three corners rounded,
+ * turned 45deg) with a white dot. Written as HTML rather than rendered from JSX, so the
+ * map's chunk doesn't need react-dom/server.
+ */
+const pinHtml = (color: string, borderColor: string) =>
+  `<div class="relative rounded-tl-full rounded-tr-full rounded-bl-full shadow-lg" style="width:${PIN_SIZE}px;height:${PIN_SIZE}px;background:${color};transform:rotate(45deg);border:3px solid ${borderColor}">` +
+  `<div class="absolute top-1/2 left-1/2 bg-white rounded-full" style="width:${PIN_SIZE * 0.375}px;height:${PIN_SIZE * 0.375}px;transform:translate(-50%, -50%)"></div>` +
+  `</div>`;
+
+export function Map() {
   const { theme } = useNextTheme();
   const { colors } = useTheme();
   const isDark = theme === "dark";
 
-  // London coordinates
-  const londonPosition: [number, number] = [51.5074, -0.1278];
-
-  // Romsey coordinates
-  const romseyPosition: [number, number] = [50.9893, -1.4956];
-
-  // Create custom icon using theme colors (both pins use primary color)
-  const createCustomIcon = () => {
-    const pinColor = colors.secondary.shades[500].hex;
-    const borderColor = isDark
-      ? colors.background.base.hex
-      : colors.foreground.base.hex;
-
-    const pinHtml = renderToStaticMarkup(
-      <CustomPin color={pinColor} borderColor={borderColor} size={32} />
-    );
-
-    return L.divIcon({
-      html: pinHtml,
-      className: "custom-map-marker",
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    });
-  };
+  // Both pins in the theme's secondary colour, outlined to stand off the basemap
+  const pinColor = colors.secondary.shades[500].hex;
+  const borderColor = isDark ? colors.background.base.hex : colors.foreground.base.hex;
+  const icon = useMemo(
+    () =>
+      L.divIcon({
+        html: pinHtml(pinColor, borderColor),
+        className: "custom-map-marker",
+        iconSize: [PIN_SIZE, PIN_SIZE],
+        iconAnchor: [PIN_SIZE / 2, PIN_SIZE],
+        popupAnchor: [0, -PIN_SIZE],
+      }),
+    [pinColor, borderColor]
+  );
 
   // OpenStreetMap tiles for both themes: free and keyless. In dark mode the
   // .map-dark filter in globals.css turns them into a dark basemap (CARTO's dark
@@ -84,7 +75,7 @@ export default function Map() {
       style={{ height: "100%", width: "100%" }}
     >
       <MapContainer
-        center={londonPosition}
+        center={LOCATION.coordinates}
         zoom={6}
         scrollWheelZoom={true}
         style={{ height: "100%", width: "100%" }}
@@ -92,29 +83,17 @@ export default function Map() {
       >
         <TileLayer attribution={attribution} url={tileUrl} />
 
-        {/* London marker */}
-        <Marker position={londonPosition} icon={createCustomIcon()}>
-          <Popup>
-            <div className="text-center">
-              <h3 className="font-semibold mb-1">Dimitri Lesas</h3>
-              <p className="text-sm">London, UK</p>
-              <p className="text-xs text-gray-600 mt-2">
-                Available for remote and on-site opportunities
-              </p>
-            </div>
-          </Popup>
-        </Marker>
-
-        {/* Romsey marker */}
-        <Marker position={romseyPosition} icon={createCustomIcon()}>
-          <Popup>
-            <div className="text-center">
-              <h3 className="font-semibold mb-1">Home Base</h3>
-              <p className="text-sm">Romsey, UK</p>
-              <p className="text-xs text-gray-600 mt-2">Hampshire countryside</p>
-            </div>
-          </Popup>
-        </Marker>
+        {MAP_LOCATIONS.map(({ position, title, place, note }) => (
+          <Marker key={title} position={position} icon={icon}>
+            <Popup>
+              <div className="text-center">
+                <h3 className="font-semibold mb-1">{title}</h3>
+                <p className="text-sm">{place}</p>
+                <p className="text-xs text-gray-600 mt-2">{note}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "@heroui/react";
-import { FaDownload, FaCompress } from "react-icons/fa";
+import { FaCompress } from "react-icons/fa";
+import { CV_PATH } from "@/lib/site";
+import { CVDownloadLink } from "./CVActions";
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -12,13 +14,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 interface PDFViewerProps {
-  pdfFile: string;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
 }
 
-export default function PDFViewer({
-  pdfFile,
+export function PDFViewer({
   isFullscreen,
   onToggleFullscreen,
 }: PDFViewerProps) {
@@ -30,32 +30,17 @@ export default function PDFViewer({
     setNumPages(numPages);
   }
 
-  const downloadCV = () => {
-    const link = document.createElement("a");
-    link.href = pdfFile;
-    link.download = "Dimitri_Lesas_CV.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="relative enter enter-duration-500 [--enter-scale:0.95]">
       <div className="p-4 md:p-8">
         <div className="flex flex-col items-center">
           <Document
-            file={pdfFile}
+            file={CV_PATH}
             onLoadSuccess={onDocumentLoadSuccess}
             error={
               <div className="flex flex-col items-center justify-center h-[600px] enter enter-duration-500 [--enter-scale:0.9]">
                 <p className="text-red-500 mb-4">Failed to load CV</p>
-                <Button
-                  variant="primary"
-                  onPress={downloadCV}
-                >
-                  <FaDownload />
-                  Download CV Instead
-                </Button>
+                <CVDownloadLink>Download CV Instead</CVDownloadLink>
               </div>
             }
           >

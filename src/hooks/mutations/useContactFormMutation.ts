@@ -9,6 +9,9 @@ export interface ContactFormResponse {
   errors?: Array<{ field: string; message: string }>;
 }
 
+/** Shown when a failed send gives no message of its own */
+export const CONTACT_ERROR_FALLBACK = "Something went wrong. Please try again.";
+
 /**
  * React Query mutation hook for contact form submission
  *
@@ -58,9 +61,7 @@ export function useContactFormMutation(options?: {
 
       // If the API returns an error, throw it so React Query handles it
       if (!response.ok || !result.success) {
-        throw new Error(
-          result.message || "Something went wrong. Please try again."
-        );
+        throw new Error(result.message || CONTACT_ERROR_FALLBACK);
       }
 
       return result;
