@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import { Button } from "@heroui/react";
+import { buttonVariants as buttonStyles } from "@heroui/styles";
 import { FaDownload, FaExpand } from "react-icons/fa";
 import dynamic from "next/dynamic";
+import { CV_PATH } from "@/lib/seo";
 
 // Dynamically import PDF components to avoid SSR issues
 // @ts-ignore: dynamic import for PDFViewer, avoids SSR issues
@@ -30,16 +32,7 @@ const buttonEntrance = `enter enter-duration-300 [--enter-scale:0.9] ${buttonHov
 
 export default function CVPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const pdfFile = "/Dimitri Lesas.pdf";
-
-  const downloadCV = () => {
-    const link = document.createElement("a");
-    link.href = pdfFile;
-    link.download = "Dimitri_Lesas_CV.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const pdfFile = CV_PATH;
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -62,15 +55,19 @@ export default function CVPage() {
       {/* Floating Action Buttons - Desktop Only */}
       <div className="hidden lg:flex fixed right-8 top-1/2 transform -translate-y-1/2 z-30 flex-col gap-4 enter enter-delay-200 enter-duration-500">
         <div className={buttonHover}>
-          <Button
-            variant="primary"
-            size="lg"
-            onPress={downloadCV}
-            className="font-medium shadow-lg backdrop-blur-sm"
+          {/* A real link to the PDF, so search engines can find and index the CV */}
+          <a
+            href={encodeURI(pdfFile)}
+            download="Dimitri_Lesas_CV.pdf"
+            className={buttonStyles({
+              variant: "primary",
+              size: "lg",
+              className: "font-medium shadow-lg backdrop-blur-sm",
+            })}
           >
             <FaDownload />
             Download CV
-          </Button>
+          </a>
         </div>
         <div className={buttonHover}>
           <Button
@@ -99,15 +96,18 @@ export default function CVPage() {
         {/* Mobile Action Buttons - Above PDF */}
         <div className="lg:hidden mb-6 flex gap-4 justify-center flex-wrap enter">
           <div className={`${buttonEntrance} enter-delay-100`}>
-            <Button
-              variant="primary"
-              size="lg"
-              onPress={downloadCV}
-              className="font-medium"
+            <a
+              href={encodeURI(pdfFile)}
+              download="Dimitri_Lesas_CV.pdf"
+              className={buttonStyles({
+                variant: "primary",
+                size: "lg",
+                className: "font-medium",
+              })}
             >
               <FaDownload />
               Download CV
-            </Button>
+            </a>
           </div>
           <div className={`${buttonEntrance} enter-delay-200`}>
             <Button
