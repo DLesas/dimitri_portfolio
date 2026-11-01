@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { IconType } from "react-icons";
 import {
   GiBearFace,
@@ -36,7 +36,7 @@ import {
   GiTurtle,
   GiWolfHead,
 } from "react-icons/gi";
-import { ANIMALS, translucent, type Presence, type Visitor } from "./liveCursors";
+import { ANIMALS, highlightVisitor, translucent, type Presence, type Visitor } from "./liveCursors";
 
 const ANIMAL_ICONS: Record<(typeof ANIMALS)[number], IconType> = {
   Hedgehog: GiHedgehog,
@@ -95,14 +95,23 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
   const place = placeName(visitor);
 
   return (
-    <li className="group relative -ml-1.5 first:ml-0 hover:z-10 focus-within:z-10">
+    // Pointing at an avatar brings that visitor's cursor up to full strength
+    <li
+      className="group relative -ml-1.5 first:ml-0 hover:z-10 focus-within:z-10"
+      onMouseEnter={() => highlightVisitor(visitor.id)}
+      onMouseLeave={() => highlightVisitor(null)}
+    >
       <button
         type="button"
         aria-label={isSelf ? `${visitor.name} (you)` : visitor.name}
         aria-describedby={cardId}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        onBlur={() => setOpen(false)}
+        onFocus={() => highlightVisitor(visitor.id)}
+        onBlur={() => {
+          setOpen(false);
+          highlightVisitor(null);
+        }}
         className="flex size-8 items-center justify-center rounded-full border-[1.5px] bg-background transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/60"
         // An outline in their colour, like their cursor; the page-coloured fill keeps
         // overlapping rings from showing through each other
@@ -139,6 +148,8 @@ function Avatar({ visitor, isSelf }: { visitor: Visitor; isSelf: boolean }) {
  */
 export default function VisitorAvatars({ presence }: { presence: Presence }) {
   const { self, others } = presence;
+  // No cursor stays highlighted once the avatars are gone
+  useEffect(() => () => highlightVisitor(null), []);
   if (!self) return null;
   const shown = others.slice(0, MAX_SHOWN);
   const hidden = others.length - shown.length;
