@@ -86,8 +86,9 @@ new aws.iam.RolePolicy(
   { protect: true }
 );
 
-// The contact form (../email.ts): Vercel functions swap their OIDC token for this role,
-// which can only send as contact@lesas.dev
+// The contact form (../email.ts): production Vercel functions swap their OIDC token for
+// this role, which can only send as contact@lesas.dev, and only to the inbox. Previews
+// can be built from any branch, so they don't get it (their contact form can't send).
 const vercelIssuer = `oidc.vercel.com/${vercelTeam}`;
 const vercelOidc = new aws.iam.OpenIdConnectProvider(
   "vercel",
@@ -105,10 +106,10 @@ const contactRole = new aws.iam.Role(
         Principal: { Federated: vercelOidc.arn },
         Action: "sts:AssumeRoleWithWebIdentity",
         Condition: {
-          StringEquals: { [`${vercelIssuer}:aud`]: `https://vercel.com/${vercelTeam}` },
-          // Production and preview deployments of this project only
-          StringLike: {
-            [`${vercelIssuer}:sub`]: `owner:${vercelTeam}:project:${vercelProject}:environment:*`,
+          StringEquals: {
+            [`${vercelIssuer}:aud`]: `https://vercel.com/${vercelTeam}`,
+            // This project's production deployments only
+            [`${vercelIssuer}:sub`]: `owner:${vercelTeam}:project:${vercelProject}:environment:production`,
           },
         },
       },
@@ -127,7 +128,10 @@ new aws.iam.RolePolicy(
         Effect: "Allow",
         Action: ["ses:SendEmail", "ses:SendRawEmail"],
         Resource: [sesIdentity("lesas.dev"), sesIdentity("dlesas@hotmail.com")],
-        Condition: { StringEquals: { "ses:FromAddress": "contact@lesas.dev" } },
+        Condition: {
+          StringEquals: { "ses:FromAddress": "contact@lesas.dev" },
+          "ForAllValues:StringEquals": { "ses:Recipients": ["dlesas@hotmail.com"] },
+        },
       },
     ]),
   },

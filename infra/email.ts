@@ -4,7 +4,8 @@
  *
  * The site's Vercel functions get an OIDC token from Vercel and swap it for the contact
  * form role's credentials (see src/app/api/contact/route.ts), so no AWS access key is
- * stored anywhere. The role, made in access/index.ts, can only send as FROM_ADDRESS.
+ * stored anywhere. The role, made in access/index.ts, can only send as FROM_ADDRESS, to INBOX,
+ * and only production deployments can assume it.
  */
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";

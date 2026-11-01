@@ -63,7 +63,7 @@ new vercel.FirewallConfig("firewall", {
 });
 
 // Not secrets: the realtime values ship in the browser bundle, and the contact form's
-// role can only be assumed from this project's own deployments
+// role can only be assumed from this project's production deployments
 const siteEnv: Record<string, pulumi.Input<string>> = { ...realtimeEnv, ...contactEnv };
 for (const [key, value] of Object.entries(siteEnv)) {
   new vercel.ProjectEnvironmentVariable(key, {
