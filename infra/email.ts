@@ -22,6 +22,8 @@ const domain = new aws.sesv2.EmailIdentity(
   { emailIdentity: "lesas.dev", dkimSigningAttributes: { nextSigningKeyLength: "RSA_2048_BIT" } },
   { protect: true }
 );
+/** The names SES publishes the domain's DKIM keys under (dns.ts makes their records) */
+export const dkimTokens = domain.dkimSigningAttributes.apply((dkim) => dkim?.tokens ?? []);
 // Bounces go to mail.lesas.dev, so SPF aligns with the lesas.dev sender
 new aws.sesv2.EmailIdentityMailFromAttributes(
   "lesas-dev-mail-from",

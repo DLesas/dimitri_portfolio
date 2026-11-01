@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@pulumi/aws": "^7.52.1",
+    "@pulumi/cloudflare": "^6.23.2",
     "@pulumi/pulumi": "^3.273.0",
     "@pulumiverse/vercel": "^5.21.1"
   },
