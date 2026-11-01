@@ -87,8 +87,9 @@ new aws.iam.RolePolicy(
 );
 
 // The contact form (../email.ts): production Vercel functions swap their OIDC token for
-// this role, which can only send as contact@lesas.dev, and only to the inbox. Previews
-// can be built from any branch, so they don't get it (their contact form can't send).
+// this role, which can only send as contact@lesas.dev, only to the inbox, and count each
+// visitor's messages for the daily limit. Previews can be built from any branch, so they
+// don't get it (their contact form can't send).
 const vercelIssuer = `oidc.vercel.com/${vercelTeam}`;
 const vercelOidc = new aws.iam.OpenIdConnectProvider(
   "vercel",
@@ -133,6 +134,8 @@ new aws.iam.RolePolicy(
           "ForAllValues:StringEquals": { "ses:Recipients": ["dlesas@hotmail.com"] },
         },
       },
+      // Counting each visitor's messages for the daily limit
+      { Effect: "Allow", Action: "dynamodb:UpdateItem", Resource: arn("dynamodb", "table/lesas-contact-limits") },
     ]),
   },
   { protect: true }
@@ -202,6 +205,8 @@ new aws.iam.RolePolicy("ci-preview", {
         "cloudwatch:ListTagsForResource",
         "events:Describe*",
         "events:List*",
+        "dynamodb:Describe*",
+        "dynamodb:List*",
         "logs:Describe*",
         "logs:ListTagsForResource",
         "budgets:ViewBudget",
@@ -245,6 +250,7 @@ new aws.iam.RolePolicy("ci-deploy", {
     { Effect: "Allow", Action: "sns:*", Resource: arn("sns", "lesas-*") },
     { Effect: "Allow", Action: "cloudwatch:*", Resource: arn("cloudwatch", "alarm:lesas-*") },
     { Effect: "Allow", Action: "events:*", Resource: arn("events", "rule/lesas-*") },
+    { Effect: "Allow", Action: "dynamodb:*", Resource: arn("dynamodb", "table/lesas-*") },
     { Effect: "Allow", Action: "logs:*", Resource: arn("logs", "log-group:/aws/lambda/lesas-*") },
     {
       Effect: "Allow",

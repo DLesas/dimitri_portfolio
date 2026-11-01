@@ -12,13 +12,7 @@ import {
   Text,
   Tailwind,
 } from "react-email";
-
-interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
+import type { ContactFormData } from "@/lib/contactForm";
 
 export const ContactFormEmail = ({
   name,
@@ -79,8 +73,6 @@ export const ContactFormEmail = ({
 
             <Text className="text-xs text-gray-500 text-center mt-8">
               This email was sent from your portfolio contact form.
-              <br />
-              Sender IP and timestamp have been logged for security.
             </Text>
           </Section>
 
