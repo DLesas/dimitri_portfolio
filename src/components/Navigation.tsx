@@ -2,29 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ThemeSwitcher } from "./themeSwitcher";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { SettingsMenu } from "./settings/SettingsMenu";
 import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
 import { useRef, useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
-import Logo from "./Logo";
+import { Logo } from "./Logo";
+import { HelperPopover } from "./HelperPopover";
+import { NavIconButton } from "./NavIconButton";
+import { SITE_PAGES } from "@/lib/site";
 
-import HelperPopover from "./HelperPopover";
+/** A nav link's colours: the current page's stands out */
+const navLinkClass = (active: boolean) =>
+  active ? "text-primary font-medium" : "text-foreground/70 hover:text-foreground";
 
-export default function Navigation() {
+export function Navigation() {
   const pathname = usePathname();
   const { navigationRef } = useNavigationSpace();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const settingsAnchorRef = useRef<HTMLSpanElement>(null);
-
-  const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/about", label: "About" },
-    { href: "/cv", label: "CV" },
-    { href: "/contact", label: "Contact" },
-    { href: "/blog", label: "Blog" },
-  ];
 
   return (
     <nav
@@ -39,15 +36,11 @@ export default function Navigation() {
         <div className="flex items-center gap-8">
           {/* Desktop Navigation */}
           <div className="hidden md:flex gap-8 items-center">
-            {navItems.map((item) => (
+            {SITE_PAGES.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`transition-colors ${
-                  pathname === item.href
-                    ? "text-primary font-medium"
-                    : "text-foreground/70 hover:text-foreground"
-                }`}
+                className={`transition-colors ${navLinkClass(pathname === item.href)}`}
               >
                 {item.label}
               </Link>
@@ -63,11 +56,8 @@ export default function Navigation() {
             <HelperPopover triggerRef={settingsAnchorRef} />
 
             {/* Mobile Menu Button */}
-            <Button
-              isIconOnly
-              variant="ghost"
-              size="sm"
-              className="md:hidden text-foreground/70 hover:text-foreground transition-colors"
+            <NavIconButton
+              className="md:hidden"
               aria-label="Toggle menu"
               onPress={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
@@ -76,7 +66,7 @@ export default function Navigation() {
               ) : (
                 <HiMenu className="w-5 h-5" />
               )}
-            </Button>
+            </NavIconButton>
           </div>
         </div>
       </div>
@@ -96,13 +86,15 @@ export default function Navigation() {
           isMobileMenuOpen ? "opacity-100" : "invisible translate-x-[300px] opacity-0"
         }`}
       >
-        {/* Close button */}
+        {/* Close button: not a NavIconButton, as it keeps the button's own transitions
+            (transition-colors would replace its press animation) */}
         <div className="flex justify-end p-4">
           <Button
             isIconOnly
             variant="ghost"
             size="sm"
             className="text-foreground/70 hover:text-foreground"
+            aria-label="Close menu"
             onPress={() => setIsMobileMenuOpen(false)}
           >
             <HiX className="w-5 h-5" />
@@ -111,7 +103,7 @@ export default function Navigation() {
 
         {/* Navigation Items, staggered in as the panel opens */}
         <div className="px-6 py-4 space-y-6">
-          {navItems.map((item, index) => (
+          {SITE_PAGES.map((item, index) => (
             <div
               key={item.href}
               className={`transition-[translate,opacity] duration-300 ${
@@ -121,11 +113,7 @@ export default function Navigation() {
             >
               <Link
                 href={item.href}
-                className={`block text-right text-lg transition-colors ${
-                  pathname === item.href
-                    ? "text-primary font-medium"
-                    : "text-foreground/70 hover:text-foreground"
-                }`}
+                className={`block text-right text-lg transition-colors ${navLinkClass(pathname === item.href)}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.label}

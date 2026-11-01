@@ -1,6 +1,7 @@
 "use client";
 import { RefObject, useEffect, useState, useSyncExternalStore } from "react";
-import { Popover, Checkbox, popoverVariants } from "@heroui/react";
+import { Popover, Checkbox } from "@heroui/react";
+import { popoverVariants } from "@heroui/styles";
 import { STORAGE_KEYS, readJSON, remove, writeJSON } from "@/lib/storage";
 
 // Read once per page load, so ticking "Don't show this again" applies to the next
@@ -26,7 +27,7 @@ interface Props {
  * To reset for testing: run `localStorage.removeItem("lesas-helper-opted-out")` in the
  * browser console and refresh the page
  */
-export default function HelperPopover({ duration = 6000, triggerRef }: Props) {
+export function HelperPopover({ duration = 6000, triggerRef }: Props) {
   // Treated as opted out on the server, so the helper only ever appears client-side
   const hasOptedOut = useSyncExternalStore(subscribe, readOptedOut, () => true);
   const [dismissed, setDismissed] = useState(false);

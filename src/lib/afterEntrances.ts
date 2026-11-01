@@ -1,7 +1,7 @@
 import { whenIdle } from "./idle";
 
 /**
- * Runs `callback` once the page's entrance animations (`enter` in globals.css) have
+ * Runs `callback` once the page's entrance animations (`enter` in src/styles/entrance.css) have
  * finished and the browser is idle, so heavy embeds (the Contact map) load after the
  * page's text rather than competing with it. Entrances that are paused until scrolled
  * into view are not waited for.

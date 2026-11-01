@@ -12,7 +12,9 @@ import {
   Tailwind,
 } from "react-email";
 import type { ContactFormData } from "@/lib/contactForm";
+import { SITE_NAME } from "@/lib/site";
 
+/** The message as HTML, for clients that show it */
 export const ContactFormEmail = ({
   name,
   email,
@@ -76,10 +78,24 @@ export const ContactFormEmail = ({
           </Section>
 
           <Text className="text-xs text-gray-400 text-center mt-4">
-            © {new Date().getFullYear()} Dimitri Lesas. All rights reserved.
+            © {new Date().getFullYear()}
+            {` ${SITE_NAME}. All rights reserved.`}
           </Text>
         </Container>
       </Body>
     </Tailwind>
   </Html>
 );
+
+/** The same message as plain text, for clients that don't show HTML */
+export const contactFormText = ({ name, email, subject, message }: ContactFormData) =>
+  `New Contact Form Submission
+
+From: ${name} (${email})
+Subject: ${subject}
+
+Message:
+${message}
+
+---
+This email was sent from your portfolio contact form.`;

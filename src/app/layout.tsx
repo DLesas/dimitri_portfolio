@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
-import { Providers } from "./provider";
+import { Providers } from "./providers";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
+import { Navigation } from "@/components/Navigation";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import {
   DEFAULT_DESCRIPTION,
-  DEFAULT_TITLE,
-  GITHUB_URL,
-  JOB_TITLE,
-  LINKEDIN_URL,
-  SITE_NAME,
-  SITE_URL,
+  OG_DESCRIPTION,
+  TITLE,
   sharedOpenGraph,
+  structuredData,
 } from "@/lib/seo";
 
-// Pages set their own title and description (their layout.tsx, via pageMetadata)
+// Pages set their own title and description (via pageMetadata)
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
+  title: TITLE,
   description: DEFAULT_DESCRIPTION,
   keywords:
     "Founding Engineer, Full Stack Engineer, Technical Leadership, Data Engineering, Machine Learning, AI, React, TypeScript, Python, Next.js",
@@ -28,38 +26,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "./" },
   openGraph: {
     ...sharedOpenGraph,
-    title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
-    description: "Taking products from idea to production across full-stack, data and AI.",
+    title: TITLE,
+    description: OG_DESCRIPTION,
   },
   // Title, description and image are copied from openGraph, page by page
   twitter: { card: "summary_large_image" },
-};
-
-/** Who the site is about, for search engines (schema.org structured data) */
-const structuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Person",
-      "@id": `${SITE_URL}/#person`,
-      name: SITE_NAME,
-      url: SITE_URL,
-      jobTitle: JOB_TITLE,
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: "London",
-        addressCountry: "GB",
-      },
-      sameAs: [LINKEDIN_URL, GITHUB_URL],
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      url: SITE_URL,
-      name: SITE_NAME,
-      author: { "@id": `${SITE_URL}/#person` },
-    },
-  ],
 };
 
 export default function RootLayout({
@@ -79,9 +50,9 @@ export default function RootLayout({
           }}
         />
         <Providers>
-            <ConsoleEasterEgg />
-            <Navigation />
-            <main className="flex-1">{children}</main>
+          <ConsoleEasterEgg />
+          <Navigation />
+          <main className="flex-1">{children}</main>
         </Providers>
       </body>
     </html>

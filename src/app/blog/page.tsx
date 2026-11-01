@@ -1,16 +1,16 @@
-"use client";
-
+import type { Metadata } from "next";
 import { FaRss, FaCode, FaLightbulb, FaRocket } from "react-icons/fa";
-import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
+import { PageShell } from "@/components/PageShell";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata(
+  "Blog",
+  "Upcoming articles by Dimitri Lesas on web development, AI, performance optimization and full-stack engineering."
+);
 
 export default function BlogPage() {
-  const { getAvailableHeight } = useNavigationSpace();
-
   return (
-    <div
-      className="py-12 px-6 flex items-center justify-center enter enter-duration-500 [--enter-y:20px]"
-      style={{ minHeight: getAvailableHeight() }}
-    >
+    <PageShell className="py-12 px-6">
       <div className="max-w-6xl w-full mx-auto">
         {/* Hero Section */}
         <div className="text-center flex flex-col items-center justify-center mb-16">
@@ -23,7 +23,7 @@ export default function BlogPage() {
             </div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent enter enter-spring enter-delay-300 [--enter-y:20px]">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 text-gradient enter enter-spring enter-delay-300 [--enter-y:20px]">
             Blog Coming Soon
           </h1>
 
@@ -49,6 +49,6 @@ export default function BlogPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

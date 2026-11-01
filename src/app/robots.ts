@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
 
 /** robots.txt: everything but the API may be crawled, and where the sitemap is */
 export default function robots(): MetadataRoute.Robots {

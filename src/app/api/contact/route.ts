@@ -9,8 +9,9 @@ import {
 import { ipAddress } from "@vercel/functions";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
 import { render, pretty } from "react-email";
-import { ContactFormEmail } from "./emailTemplate";
+import { ContactFormEmail, contactFormText } from "./emailTemplate";
 import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX } from "@/lib/contactForm";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 // Validation schema
 const contactFormSchema = z.object({
@@ -38,7 +39,9 @@ const region = process.env.AWS_REGION;
 const credentials = process.env.AWS_ROLE_ARN
   ? awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN })
   : undefined;
-const sesClient = region ? new SESClient({ region, credentials }) : null;
+// Sending needs a verified sender as well as a region: SES rejects any other From address
+const fromEmail = process.env.SES_FROM_EMAIL;
+const sesClient = region && fromEmail ? new SESClient({ region, credentials }) : null;
 
 // How many messages each visitor sent today, one DynamoDB item per visitor per day. The
 // firewall (infra/site.ts) already stops bursts before they get here.
@@ -84,57 +87,57 @@ async function withinDailyLimit(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) {
+    return NextResponse.json({ success: false, message: "Invalid request" }, { status: 400 });
+  }
+
+  const parsed = contactFormSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Validation failed",
+        errors: parsed.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+  const validatedData = parsed.data;
+
+  // Without SES there's nothing to send with: fine while developing, an error otherwise
+  if (!sesClient || !fromEmail) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Contact form submission:", validatedData);
+      return NextResponse.json({
+        success: true,
+        message: "Form received (development mode - no email sent)",
+      });
+    }
+    console.error("Contact form error: AWS SES not configured");
+    return serverError();
+  }
+
   try {
-    // Parse request body
-    const body = await request.json().catch(() => undefined);
-    if (body === undefined) {
-      return NextResponse.json({ success: false, message: "Invalid request" }, { status: 400 });
+    if (!(await withinDailyLimit(request))) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `You've sent ${CONTACT_DAILY_LIMIT} messages today. Please try again tomorrow.`,
+        },
+        { status: 429 }
+      );
     }
 
-    // Validate the data
-    const validatedData = contactFormSchema.parse(body);
-
-    // Send email via AWS SES
-    if (sesClient) {
-      if (!(await withinDailyLimit(request))) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: `You've sent ${CONTACT_DAILY_LIMIT} messages today. Please try again tomorrow.`,
-          },
-          { status: 429 }
-        );
-      }
-
-      // Generate the email HTML using react-email
-      const emailComponent = ContactFormEmail({
-        name: validatedData.name,
-        email: validatedData.email,
-        subject: validatedData.subject,
-        message: validatedData.message,
-      });
-
-      const htmlBody = await pretty(await render(emailComponent));
-
-      // Create plain text version
-      const textBody = `
-New Contact Form Submission
-
-From: ${validatedData.name} (${validatedData.email})
-Subject: ${validatedData.subject}
-
-Message:
-${validatedData.message}
-
----
-This email was sent from your portfolio contact form.
-      `;
-
-      // Create the email command
-      const command = new SendEmailCommand({
-        Source: process.env.SES_FROM_EMAIL || "noreply@example.com",
+    const htmlBody = await pretty(await render(ContactFormEmail(validatedData)));
+    await sesClient.send(
+      new SendEmailCommand({
+        Source: fromEmail,
         Destination: {
-          ToAddresses: [process.env.CONTACT_EMAIL || "dlesas@hotmail.com"],
+          ToAddresses: [process.env.CONTACT_EMAIL || CONTACT_EMAIL],
         },
         Message: {
           Subject: {
@@ -142,65 +145,30 @@ This email was sent from your portfolio contact form.
             Charset: "UTF-8",
           },
           Body: {
-            Html: {
-              Data: htmlBody,
-              Charset: "UTF-8",
-            },
-            Text: {
-              Data: textBody,
-              Charset: "UTF-8",
-            },
+            Html: { Data: htmlBody, Charset: "UTF-8" },
+            Text: { Data: contactFormText(validatedData), Charset: "UTF-8" },
           },
         },
         ReplyToAddresses: [validatedData.email],
-      });
+      })
+    );
 
-      await sesClient.send(command);
-    } else {
-      // Fallback: Log the submission (for development)
-      console.log("Contact form submission:", validatedData);
-
-      if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
-        return NextResponse.json({
-          success: true,
-          message: "Form received (development mode - no email sent)",
-          data: validatedData,
-        });
-      } else {
-        throw new Error("AWS SES not configured");
-      }
-    }
-
-    // Return success response
     return NextResponse.json({
       success: true,
       message: "Thank you for your message! I'll get back to you soon.",
     });
   } catch (error) {
     console.error("Contact form error:", error);
-
-    // Handle validation errors
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: error.issues.map((err) => ({
-            field: err.path.join("."),
-            message: err.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
-
-    // Handle other errors
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+    return serverError();
   }
+}
+
+function serverError() {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    },
+    { status: 500 }
+  );
 }

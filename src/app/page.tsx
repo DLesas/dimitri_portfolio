@@ -1,34 +1,25 @@
-"use client";
-
-import { buttonVariants as buttonStyles } from "@heroui/styles";
+import { buttonVariants } from "@heroui/styles";
 import Link from "next/link";
 import NetworkBackground from "@/components/NetworkBackground";
-import { useNavigationSpace } from "@/contexts/NavigationSpaceContext";
+import { PageShell } from "@/components/PageShell";
 import { JOB_TITLE } from "@/lib/seo";
+import { SITE_NAME } from "@/lib/site";
 
 // Entrance timings (ms), staggered like the hero always was: the lines follow each
-// other 100ms apart after a 300ms lead-in (see `enter` in globals.css)
+// other 100ms apart after a 300ms lead-in (see `enter` in src/styles/entrance.css)
 const itemEntrance = "enter enter-duration-300 [--enter-y:30px]";
-const buttonEntrance =
-  "enter enter-delay-600 enter-duration-150 [--enter-scale:0.9] transition-transform duration-200 hover:scale-105";
+const buttonEntrance = "enter enter-delay-600 enter-duration-150 [--enter-scale:0.9] hover-lift";
 
 export default function HomePage() {
-  const { getAvailableHeight } = useNavigationSpace();
-
   return (
     <NetworkBackground className="w-full flex-1">
-      <div
-        className="relative z-10 flex items-center justify-center enter enter-duration-500 [--enter-y:20px]"
-        style={{ minHeight: getAvailableHeight() }}
-      >
+      <PageShell className="relative z-10">
         <div className="text-center max-w-4xl mx-auto px-6 enter">
           <h1
             className={`text-5xl md:text-7xl font-bold mb-8 leading-tight ${itemEntrance} enter-delay-300`}
             data-network-collider
           >
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Dimitri Lesas
-            </span>
+            <span className="text-gradient">{SITE_NAME}</span>
           </h1>
 
           <h2
@@ -54,7 +45,7 @@ export default function HomePage() {
             <div className={buttonEntrance}>
               <Link
                 href="/about"
-                className={buttonStyles({
+                className={buttonVariants({
                   variant: "primary",
                   size: "lg",
                   className: "font-medium px-8",
@@ -66,7 +57,7 @@ export default function HomePage() {
             <div className={buttonEntrance}>
               <Link
                 href="/cv"
-                className={buttonStyles({
+                className={buttonVariants({
                   variant: "outline",
                   size: "lg",
                   className: "font-medium px-8",
@@ -77,7 +68,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
+      </PageShell>
     </NetworkBackground>
   );
 }

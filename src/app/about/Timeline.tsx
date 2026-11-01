@@ -1,22 +1,15 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { Chip, cn } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { FaMapMarkerAlt } from "react-icons/fa";
-
-export interface WorkExperience {
-  title: string;
-  jobTitle: string;
-  company: string;
-  bullets: string[];
-  skills: string[];
-}
+import { WORK_EXPERIENCE } from "@/content/experience";
 
 interface TimelineEntry {
   title: string;
   content: React.ReactNode;
 }
 
-export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
+function Timeline({ data }: { data: TimelineEntry[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
@@ -64,9 +57,9 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
   return (
     <div className="w-full font-sans md:px-10" ref={containerRef}>
       <div ref={ref} className="relative max-w-7xl mx-auto pb-20">
-        {data.map((item, index) => (
+        {data.map((item) => (
           <div
-            key={index}
+            key={item.title}
             className="flex justify-start pt-10 md:pt-40 md:gap-10"
           >
             <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-full">
@@ -79,7 +72,7 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
             </div>
 
             <div className="relative pl-20 pr-4 md:pl-4 w-full">
-              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-foregroud">
+              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-foreground">
                 {item.title}
               </h3>
               {item.content}{" "}
@@ -101,24 +94,24 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
       </div>
     </div>
   );
-};
+}
 
-// New component for work experience timeline
-export const WorkExperienceTimeline = ({
-  experiences,
-}: {
-  experiences: WorkExperience[];
-}) => {
-  const timelineData = experiences.map((exp) => ({
-    title: exp.title,
+/**
+ * The About page's work experience, one entry per role along a scroll-drawn line. It
+ * imports the content itself: passed in from the server page, the keyless bullet
+ * elements would trip React's key check as they're serialised.
+ */
+export function WorkExperienceTimeline() {
+  const timelineData = WORK_EXPERIENCE.map((exp) => ({
+    title: exp.period,
     content: (
       <div>
         <div className="mb-4">
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-            {exp.jobTitle.includes("(SC Cleared)") ? (
+            {exp.clearance ? (
               <>
-                {exp.jobTitle.replace(" (SC Cleared)", "")}{" "}
-                <span className="whitespace-nowrap">(SC Cleared)</span>
+                {exp.jobTitle}{" "}
+                <span className="whitespace-nowrap">{`(${exp.clearance} Cleared)`}</span>
               </>
             ) : (
               exp.jobTitle
@@ -134,21 +127,17 @@ export const WorkExperienceTimeline = ({
           {exp.bullets.map((bullet, index) => (
             <li key={index} className="flex items-start">
               <span className="mr-2">•</span>
-              <span dangerouslySetInnerHTML={{ __html: bullet }} />
+              <span>{bullet}</span>
             </li>
           ))}
         </ul>
         <div className="mt-4 flex flex-wrap gap-2">
-          {exp.skills.map((skill, index) => (
+          {exp.skills.map((skill) => (
             <Chip
-              key={index}
+              key={skill}
               size="sm"
               variant="soft"
-              className={cn(
-                "bg-primary/35",
-                "text-foreground/70",
-                "border-primary/50 border-2"
-              )}
+              className="bg-primary/35 text-foreground/70 border-primary/50 border-2"
             >
               {skill}
             </Chip>
@@ -159,4 +148,4 @@ export const WorkExperienceTimeline = ({
   }));
 
   return <Timeline data={timelineData} />;
-};
+}

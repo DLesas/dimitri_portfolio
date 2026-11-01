@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@heroui/react";
-import { buttonVariants as buttonStyles } from "@heroui/styles";
-import { FaDownload, FaExpand } from "react-icons/fa";
 import dynamic from "next/dynamic";
-import { CV_PATH } from "@/lib/seo";
+import { CVActions } from "./CVActions";
 
 // Dynamically import PDF components to avoid SSR issues
-// @ts-ignore: dynamic import for PDFViewer, avoids SSR issues
-const PDFViewer = dynamic(() => import("./PDFViewer"), {
+const PDFViewer = dynamic(() => import("./PDFViewer").then((m) => m.PDFViewer), {
   ssr: false,
   loading: () => (
     <div className="flex flex-col items-center justify-center min-h-[600px]">
@@ -25,62 +21,21 @@ const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ),
 });
 
-// Hover lift for the action buttons
-const buttonHover = "transition-transform duration-200 hover:scale-105";
-// Mobile buttons scale in one after the other, after the header
-const buttonEntrance = `enter enter-duration-300 [--enter-scale:0.9] ${buttonHover}`;
-
 export default function CVPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const pdfFile = CV_PATH;
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
+  const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 bg-background overflow-auto enter">
-        <PDFViewer
-          pdfFile={pdfFile}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={toggleFullscreen}
-        />
+        <PDFViewer isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
       </div>
     );
   }
 
   return (
     <>
-      {/* Floating Action Buttons - Desktop Only */}
-      <div className="hidden lg:flex fixed right-8 top-1/2 transform -translate-y-1/2 z-30 flex-col gap-4 enter enter-delay-200 enter-duration-500">
-        <div className={buttonHover}>
-          {/* A real link to the PDF, so search engines can find and index the CV */}
-          <a
-            href={encodeURI(pdfFile)}
-            download="Dimitri_Lesas_CV.pdf"
-            className={buttonStyles({
-              variant: "primary",
-              size: "lg",
-              className: "font-medium shadow-lg backdrop-blur-sm",
-            })}
-          >
-            <FaDownload />
-            Download CV
-          </a>
-        </div>
-        <div className={buttonHover}>
-          <Button
-            variant="outline"
-            size="lg"
-            onPress={toggleFullscreen}
-            className="font-medium shadow-lg backdrop-blur-sm border-secondary text-secondary"
-          >
-            <FaExpand />
-            Fullscreen
-          </Button>
-        </div>
-      </div>
+      <CVActions variant="floating" onFullscreen={toggleFullscreen} />
 
       <div className="min-h-full max-w-6xl mx-auto py-12 px-6 lg:px-8 enter enter-duration-500 [--enter-y:20px]">
         {/* Header Section */}
@@ -93,41 +48,10 @@ export default function CVPage() {
           </p>
         </div>
 
-        {/* Mobile Action Buttons - Above PDF */}
-        <div className="lg:hidden mb-6 flex gap-4 justify-center flex-wrap enter">
-          <div className={`${buttonEntrance} enter-delay-100`}>
-            <a
-              href={encodeURI(pdfFile)}
-              download="Dimitri_Lesas_CV.pdf"
-              className={buttonStyles({
-                variant: "primary",
-                size: "lg",
-                className: "font-medium",
-              })}
-            >
-              <FaDownload />
-              Download CV
-            </a>
-          </div>
-          <div className={`${buttonEntrance} enter-delay-200`}>
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={toggleFullscreen}
-              className="font-medium border-secondary text-secondary"
-            >
-              <FaExpand />
-              Fullscreen
-            </Button>
-          </div>
-        </div>
+        <CVActions variant="inline" onFullscreen={toggleFullscreen} />
 
         {/* PDF Viewer - Centered */}
-        <PDFViewer
-          pdfFile={pdfFile}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={toggleFullscreen}
-        />
+        <PDFViewer isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
       </div>
     </>
   );
