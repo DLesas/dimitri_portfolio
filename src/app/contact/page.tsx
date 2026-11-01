@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
+  FieldError,
   Input,
   Label,
   Spinner,
@@ -25,7 +26,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { afterEntrances } from "@/lib/afterEntrances";
-import { CONTACT_FIELD_MAX } from "@/lib/contactForm";
+import { CONTACT_FIELD_MAX, CONTACT_FIELD_MIN } from "@/lib/contactForm";
 import { CONTACT_EMAIL, LOCATION, SOCIAL_LINKS } from "@/lib/site";
 
 const MapPlaceholder = () => (
@@ -141,6 +142,7 @@ export default function ContactPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <TextField
                     name="name"
+                    minLength={CONTACT_FIELD_MIN.name}
                     maxLength={CONTACT_FIELD_MAX.name}
                     value={formData.name}
                     onChange={handleInputChange("name")}
@@ -148,6 +150,7 @@ export default function ContactPage() {
                   >
                     <Label>Your Name</Label>
                     <Input placeholder="John Doe" />
+                    <FieldError />
                   </TextField>
                   <TextField
                     name="email"
@@ -159,11 +162,13 @@ export default function ContactPage() {
                   >
                     <Label>Your Email</Label>
                     <Input placeholder="john@example.com" />
+                    <FieldError />
                   </TextField>
                 </div>
 
                 <TextField
                   name="subject"
+                  minLength={CONTACT_FIELD_MIN.subject}
                   maxLength={CONTACT_FIELD_MAX.subject}
                   value={formData.subject}
                   onChange={handleInputChange("subject")}
@@ -171,10 +176,12 @@ export default function ContactPage() {
                 >
                   <Label>Subject</Label>
                   <Input placeholder="What's this about?" />
+                  <FieldError />
                 </TextField>
 
                 <TextField
                   name="message"
+                  minLength={CONTACT_FIELD_MIN.message}
                   maxLength={CONTACT_FIELD_MAX.message}
                   value={formData.message}
                   onChange={handleInputChange("message")}
@@ -185,6 +192,7 @@ export default function ContactPage() {
                     placeholder="Tell me about your project or idea..."
                     rows={6}
                   />
+                  <FieldError />
                 </TextField>
 
                 <Button

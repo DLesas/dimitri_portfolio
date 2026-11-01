@@ -57,11 +57,13 @@ export function useContactFormMutation(options?: {
         throw new Error(limited?.message ?? "Too many messages for now. Please try again in a few minutes.");
       }
 
-      const result = await response.json();
+      const result: ContactFormResponse = await response.json();
 
-      // If the API returns an error, throw it so React Query handles it
+      // If the API returns an error, throw it so React Query handles it. A validation
+      // failure lists what's wrong with each field: show that, not just "Validation failed".
       if (!response.ok || !result.success) {
-        throw new Error(result.message || CONTACT_ERROR_FALLBACK);
+        const problems = result.errors?.map((error) => error.message).join(". ");
+        throw new Error(problems ? `${problems}.` : result.message || CONTACT_ERROR_FALLBACK);
       }
 
       return result;

@@ -10,6 +10,9 @@ export interface ContactFormData {
   message: string;
 }
 
+/** The shortest each free-text field may be, in characters (the email is checked as an address) */
+export const CONTACT_FIELD_MIN = { name: 2, subject: 3, message: 10 } as const;
+
 /** The longest each field may be, in characters */
 export const CONTACT_FIELD_MAX: Record<keyof ContactFormData, number> = {
   name: 100,
