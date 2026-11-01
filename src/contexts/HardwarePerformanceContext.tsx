@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { PERFORMANCE_CONFIGS } from "@/components/NetworkBackground/constants";
+import { whenIdle } from "@/lib/idle";
 
 // ============================================================================
 // Types & Interfaces
@@ -261,15 +262,8 @@ export function HardwarePerformanceProvider({
       }
     };
 
-    // Use requestIdleCallback for non-blocking detection during idle time
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(() => detectHardware(), {
-        timeout: 3000, // Reasonable timeout for hardware detection
-      });
-    } else {
-      // Fallback for older browsers - use setTimeout with delay
-      setTimeout(() => detectHardware(), 100);
-    }
+    // Non-blocking detection during idle time, with a reasonable timeout
+    return whenIdle(detectHardware, { timeout: 3000, fallbackMs: 100 });
   }, []);
 
   // ========================================

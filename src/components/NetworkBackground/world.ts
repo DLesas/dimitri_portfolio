@@ -1,8 +1,14 @@
 import { VISUAL_CONFIG } from "./constants";
 
 /**
+ * CSS pixels per network world unit: the orthographic camera's zoom. Every conversion
+ * between pixels and world units uses this.
+ */
+export const PX_PER_UNIT = VISUAL_CONFIG.CAMERA_ZOOM;
+
+/**
  * Container pixels to network world units. The container's centre is the origin, y points
- * up, and a world unit is CAMERA_ZOOM pixels (the orthographic camera's zoom).
+ * up, and a world unit is PX_PER_UNIT pixels.
  */
 export function convertDOMToWorldCoordinates(
   relativeX: number,
@@ -11,8 +17,8 @@ export function convertDOMToWorldCoordinates(
   containerHeight: number
 ): { x: number; y: number } {
   return {
-    x: (relativeX - containerWidth / 2) / VISUAL_CONFIG.CAMERA_ZOOM,
-    y: -(relativeY - containerHeight / 2) / VISUAL_CONFIG.CAMERA_ZOOM,
+    x: (relativeX - containerWidth / 2) / PX_PER_UNIT,
+    y: -(relativeY - containerHeight / 2) / PX_PER_UNIT,
   };
 }
 

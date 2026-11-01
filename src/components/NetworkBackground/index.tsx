@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { whenIdle } from "@/lib/idle";
 
 // three.js and the scene load in their own chunk, after the page has painted
 const NetworkCanvas = dynamic(() => import("./NetworkCanvas"), { ssr: false });
@@ -28,13 +29,10 @@ export default function NetworkBackground({ children, className = "" }: NetworkB
       globalCanvasActive = owned = true;
       setCanRender(true);
     };
-    const idle = window.requestIdleCallback
-      ? window.requestIdleCallback(start, { timeout: 1200 })
-      : window.setTimeout(start, 150);
+    const cancelIdle = whenIdle(start, { timeout: 1200, fallbackMs: 150 });
 
     return () => {
-      if (window.cancelIdleCallback) window.cancelIdleCallback(idle);
-      else window.clearTimeout(idle);
+      cancelIdle();
       setCanRender(false);
       if (owned) globalCanvasActive = false;
     };

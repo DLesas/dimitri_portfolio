@@ -10,6 +10,7 @@
  */
 
 import { retryWithBackoff, RetryPresets } from "../utils/retry";
+import { SHADES, hexToHsl, hexToRgb, hslToHex, type Shade } from "./theme/color";
 
 // ============================================================================
 // Types & Interfaces
@@ -57,21 +58,9 @@ interface ColorSchemeResponse {
 }
 
 /**
- * Generated lightness scale for a color
+ * Generated lightness scale for a color: a hex colour (in capitals) per shade
  */
-interface ColorScale {
-  50: string; // Very light
-  100: string; // Light
-  200: string; // Light
-  300: string; // Light-medium
-  400: string; // Medium
-  500: string; // Base/default
-  600: string; // Medium-dark
-  700: string; // Dark
-  800: string; // Darker
-  900: string; // Very dark
-  950: string; // Darkest
-}
+type ColorScale = Record<Shade, string>;
 
 /**
  * Complete theme palette for one mode (light or dark)
@@ -119,7 +108,7 @@ const COLOR_API_BASE = "https://www.thecolorapi.com";
  * Default lightness values for generating color scales
  * Based on common design system patterns (Tailwind, Material, etc.)
  */
-const LIGHTNESS_SCALE = {
+const LIGHTNESS_SCALE: Record<Shade, number> = {
   50: 95, // Very light
   100: 90, // Light
   200: 80, // Light
@@ -131,13 +120,13 @@ const LIGHTNESS_SCALE = {
   800: 20, // Darker
   900: 10, // Very dark
   950: 5, // Darkest
-} as const;
+};
 
 /**
  * Dark mode adjustments - slightly different lightness distribution
  * for better contrast in dark themes
  */
-const DARK_MODE_LIGHTNESS_SCALE = {
+const DARK_MODE_LIGHTNESS_SCALE: Record<Shade, number> = {
   50: 5, // Darkest (inverted)
   100: 10, // Very dark
   200: 20, // Darker
@@ -149,7 +138,7 @@ const DARK_MODE_LIGHTNESS_SCALE = {
   800: 80, // Light
   900: 90, // Very light
   950: 95, // Very light (inverted)
-} as const;
+};
 
 /**
  * Default scheme modes for color generation
@@ -184,67 +173,12 @@ function generateColorScaleLocal(
   // Use the base color's hue and saturation, adjust lightness
   const { h, s } = baseColor.hsl;
 
-  // Generate each shade locally (no API calls needed)
-  Object.entries(scale).forEach(([shade, lightness]) => {
-    result[shade as unknown as keyof ColorScale] = hslToHex(h, s, lightness);
-  });
-
-  return result;
-}
-
-/**
- * Manual HSL to Hex conversion as fallback
- */
-function hslToHex(h: number, s: number, l: number): string {
-  const hNorm = h / 360;
-  const sNorm = s / 100;
-  const lNorm = l / 100;
-
-  const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;
-  const x = c * (1 - Math.abs(((hNorm * 6) % 2) - 1));
-  const m = lNorm - c / 2;
-
-  let r = 0,
-    g = 0,
-    b = 0;
-
-  if (0 <= hNorm && hNorm < 1 / 6) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (1 / 6 <= hNorm && hNorm < 2 / 6) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (2 / 6 <= hNorm && hNorm < 3 / 6) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (3 / 6 <= hNorm && hNorm < 4 / 6) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (4 / 6 <= hNorm && hNorm < 5 / 6) {
-    r = x;
-    g = 0;
-    b = c;
-  } else if (5 / 6 <= hNorm && hNorm < 1) {
-    r = c;
-    g = 0;
-    b = x;
+  // Generate each shade locally (no API calls needed), as hex in capitals
+  for (const shade of SHADES) {
+    result[shade] = hslToHex(h, s, scale[shade]).toUpperCase();
   }
 
-  const rHex = Math.round((r + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const gHex = Math.round((g + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const bHex = Math.round((b + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-
-  return `#${rHex}${gHex}${bHex}`.toUpperCase();
+  return result;
 }
 
 // ============================================================================
@@ -389,17 +323,6 @@ function calculateColorDistance(hex1: string, hex2: string): number {
 }
 
 /**
- * Convert hex to RGB
- */
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const cleanedHex = hex.replace("#", "");
-  const r = parseInt(cleanedHex.substr(0, 2), 16);
-  const g = parseInt(cleanedHex.substr(2, 2), 16);
-  const b = parseInt(cleanedHex.substr(4, 2), 16);
-  return { r, g, b };
-}
-
-/**
  * Generate complete theme palette for both light and dark modes
  *
  * This is the main function that creates a complete theme from a user-selected primary color.
@@ -526,21 +449,19 @@ export async function generateThemeFromPrimary(
  * ```
  */
 function convertThemeToHeroUIFormat(palette: ThemePalette): {
-  primary: Record<keyof ColorScale, string>;
-  secondary: Record<keyof ColorScale, string>;
-  accent: Record<keyof ColorScale, string>;
+  primary: ColorScale;
+  secondary: ColorScale;
+  accent: ColorScale;
   background: string;
   foreground: string;
 } {
   const convertScale = (scale: ColorScale) => {
-    const result: Record<keyof ColorScale, string> = {} as Record<
-      keyof ColorScale,
-      string
-    >;
+    const result = {} as ColorScale;
 
+    // The shades the (possibly saved) theme has, as they are
     for (const [shade, hex] of Object.entries(scale)) {
       // Convert hex to HSL format for HeroUI
-      result[shade as unknown as keyof ColorScale] = hexToHslString(hex);
+      result[shade as unknown as Shade] = hexToHslString(hex);
     }
 
     return result;
@@ -621,47 +542,9 @@ export function applyThemeToCSS(theme: GeneratedTheme): void {
 }
 
 /**
- * Simple hex to HSL conversion for HeroUI format
- * This is a basic implementation - for production, consider using The Color API
+ * Hex to HeroUI's HSL format, in whole degrees and percent (e.g. "220 14% 96%")
  */
 function hexToHslString(hex: string): string {
-  // Remove # if present
-  const cleanedHex = hex.replace("#", "");
-
-  // Convert to RGB
-  const r = parseInt(cleanedHex.substr(0, 2), 16) / 255;
-  const g = parseInt(cleanedHex.substr(2, 2), 16) / 255;
-  const b = parseInt(cleanedHex.substr(4, 2), 16) / 255;
-
-  // Convert RGB to HSL
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h = 0,
-    s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-    h /= 6;
-  }
-
-  // Convert to degrees and percentages
-  const hDeg = Math.round(h * 360);
-  const sPercent = Math.round(s * 100);
-  const lPercent = Math.round(l * 100);
-
-  return `${hDeg} ${sPercent}% ${lPercent}%`;
+  const { h, s, l } = hexToHsl(hex);
+  return `${Math.round(h)} ${Math.round(s)}% ${Math.round(l)}%`;
 }

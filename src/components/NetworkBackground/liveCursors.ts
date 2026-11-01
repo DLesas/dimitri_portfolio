@@ -12,8 +12,9 @@
  * browser. Once someone else is on the page, each tab also shares its approximate
  * location (city and country from /api/location) for the avatars' hover cards.
  */
-import { VISUAL_CONFIG } from "./constants";
+import { PX_PER_UNIT } from "./world";
 import type { MousePosition } from "./networkEngine";
+import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
 
 /** Visitors' anonymous names. Messages send the index, so only ever append to this. */
 export const ANIMALS = [
@@ -90,7 +91,6 @@ const PEER_TIMEOUT_MS = 25_000;
 const MOVE_INTERVAL_MS = 80;
 const MAX_PEERS = 16;
 const MAX_RECONNECT_DELAY_MS = 60_000;
-const ANIMAL_KEY = "lesas-visitor-animal";
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const CITY = /^[\p{L}\p{M}0-9 .,'’()-]{1,40}$/u;
 const COUNTRY = /^[A-Z]{2}$/;
@@ -123,19 +123,11 @@ function animalFromId(id: string) {
 
 /** This browser's animal: the same one on every visit */
 function ownAnimal() {
-  try {
-    const saved = localStorage.getItem(ANIMAL_KEY);
-    const animal = saved === null ? null : cleanAnimal(Number(saved));
-    if (animal !== null) return animal;
-  } catch {
-    // Storage unavailable: a new animal each visit
-  }
+  const saved = cleanAnimal(readJSON(STORAGE_KEYS.visitorAnimal));
+  if (saved !== null) return saved;
+  // Where storage is unavailable this is a new animal each visit, which is fine
   const animal = Math.floor(Math.random() * ANIMALS.length);
-  try {
-    localStorage.setItem(ANIMAL_KEY, String(animal));
-  } catch {
-    // Not remembered, which is fine
-  }
+  writeJSON(STORAGE_KEYS.visitorAnimal, animal);
   return animal;
 }
 
@@ -536,15 +528,16 @@ function createMark() {
 /**
  * Places each remote cursor's pointer and name in `layer`, which covers the same area
  * as the network canvas. World units convert to pixels as in the canvas: centred,
- * CAMERA_ZOOM pixels per unit.
+ * PX_PER_UNIT pixels per unit.
  */
 export function drawCursorMarks(layer: HTMLElement, cursors: RemoteCursor[], width: number, height: number) {
   let marks = marksByLayer.get(layer);
+  // Nobody else around, and nothing left to clear: the usual case, every frame
+  if (cursors.length === 0 && !marks?.size) return;
   if (!marks) {
     marks = new Map();
     marksByLayer.set(layer, marks);
   }
-  const zoom = VISUAL_CONFIG.CAMERA_ZOOM;
   const shown = new Set<string>();
   for (const cursor of cursors) {
     let mark = marks.get(cursor.id);
@@ -554,8 +547,8 @@ export function drawCursorMarks(layer: HTMLElement, cursors: RemoteCursor[], wid
       layer.appendChild(mark);
     }
     shown.add(cursor.id);
-    const px = cursor.x * zoom + width / 2;
-    const py = -cursor.y * zoom + height / 2;
+    const px = cursor.x * PX_PER_UNIT + width / 2;
+    const py = -cursor.y * PX_PER_UNIT + height / 2;
     mark.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
     const strength = cursor.id === highlighted ? 1 : MARK_OPACITY;
     mark.style.opacity = (cursor.weight * strength).toFixed(3);

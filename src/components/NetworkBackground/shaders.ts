@@ -191,12 +191,20 @@ export const LINK_FRAGMENT = /* glsl */ `
   }
 `;
 
+/** A cursor's soft glow across its point sprite (1 at the centre), shared by both cursor shaders */
+const CURSOR_GLOW_GLSL = /* glsl */ `
+  float cursorGlow() {
+    vec2 p = gl_PointCoord * 2.0 - 1.0;
+    return exp(-dot(p, p) * 3.5) * (1.0 - smoothstep(0.8, 1.0, length(p)));
+  }
+`;
+
 export const CURSOR_FRAGMENT = /* glsl */ `
   uniform vec3 uColor;
   uniform float uStrength;
+  ${CURSOR_GLOW_GLSL}
   void main() {
-    vec2 p = gl_PointCoord * 2.0 - 1.0;
-    float a = exp(-dot(p, p) * 3.5) * (1.0 - smoothstep(0.8, 1.0, length(p))) * uStrength;
+    float a = cursorGlow() * uStrength;
     if (a < 0.003) discard;
     gl_FragColor = vec4(uColor, a);
     #include <colorspace_fragment>
@@ -229,9 +237,9 @@ export const REMOTE_CURSOR_VERTEX = /* glsl */ `
 export const REMOTE_CURSOR_FRAGMENT = /* glsl */ `
   varying vec3 vColor;
   varying float vStrength;
+  ${CURSOR_GLOW_GLSL}
   void main() {
-    vec2 p = gl_PointCoord * 2.0 - 1.0;
-    float a = exp(-dot(p, p) * 3.5) * (1.0 - smoothstep(0.8, 1.0, length(p))) * vStrength;
+    float a = cursorGlow() * vStrength;
     if (a < 0.003) discard;
     gl_FragColor = vec4(vColor, a);
     #include <colorspace_fragment>

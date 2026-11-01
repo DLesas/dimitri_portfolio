@@ -1,21 +1,22 @@
 "use client";
 
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
-import * as THREE from "three";
 import { useTheme as useNextTheme } from "next-themes";
-import { useMouseTracking, useDOMColliders, useViewportVisibility } from "./hooks";
+import { useMouseTracking, useDOMColliders } from "./hooks";
 import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
+import { PX_PER_UNIT } from "./world";
 import NetworkScene from "./NetworkScene";
-import type { DOMCollider, NetworkPalette, PerformanceLevel } from "./networkEngine";
+import { networkPalette, type DOMCollider, type PerformanceLevel } from "./networkEngine";
 import { createLiveCursors, presenceStore, type LiveCursors } from "./liveCursors";
+import DebugPerf from "@/components/three/DebugPerf";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDebug } from "@/contexts/DebugContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useOnScreen } from "@/hooks/useOnScreen";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-// r3f-perf is debug-only, so it loads only when debug mode is switched on
-const Perf = lazy(() => import("r3f-perf").then((m) => ({ default: m.Perf })));
 // The avatars (and their animal icons) load only once someone else is on the page
 const VisitorAvatars = dynamic(() => import("./VisitorAvatars"), { ssr: false });
 
@@ -30,7 +31,8 @@ function LiveVisitors() {
   return <VisitorAvatars presence={presence} />;
 }
 
-// Debug component to visualize DOM colliders in 3D world coordinates
+// Debug component to visualize DOM colliders in 3D world coordinates: the boxes the
+// physics uses, padding included, and the threshold around them where repulsion starts
 function DebugColliders({
   domColliders,
   domCollisionThreshold,
@@ -124,18 +126,6 @@ const detectDevicePerformance = (): PerformanceLevel => {
   return "high";
 };
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return reduced;
-}
-
 export default function NetworkCanvas({
   containerRef,
 }: {
@@ -157,30 +147,17 @@ export default function NetworkCanvas({
 
   const mousePos = useMouseTracking(containerRef);
   const domColliders = useDOMColliders(containerRef, networkSettings.domCollisionPadding);
-  const { shouldAnimate } = useViewportVisibility(containerRef);
+  // Start animating just before it comes into view (when 10% of it is within 50px)
+  const shouldAnimate = useOnScreen(containerRef, { rootMargin: "50px", threshold: 0.1 });
 
   const dark = resolvedTheme !== "light";
-  const primary = colors.primary.shades;
-  const secondary = colors.secondary.shades;
-  const palette = useMemo<NetworkPalette>(() => {
-    const core = new THREE.Color(primary[500].hex).lerp(new THREE.Color(secondary[500].hex), 0.5);
-    if (!dark) core.copy(new THREE.Color(primary[600].hex));
-    return {
-      core: `#${core.getHexString()}`,
-      rim: `#${core.clone().multiplyScalar(dark ? 0.55 : 0.7).getHexString()}`,
-      halo: dark ? primary[400].hex : primary[500].hex,
-      lineA: dark ? primary[500].hex : primary[600].hex,
-      lineB: dark ? secondary[500].hex : secondary[600].hex,
-      packet: dark ? primary[100].hex : primary[500].hex,
-      additive: dark,
-    };
-  }, [dark, primary, secondary]);
+  const palette = useMemo(() => networkPalette(colors, dark), [colors, dark]);
 
   // Other visitors' cursors, shown in their own primary colour. Not with reduced motion:
   // this visitor neither sees moving cursors nor sends one.
   const liveCursorsRef = useRef<LiveCursors | null>(null);
   const cursorLayerRef = useRef<HTMLDivElement>(null);
-  const ownColor = primary[500].hex;
+  const ownColor = colors.primary.shades[500].hex;
   const ownColorRef = useRef(ownColor);
   useEffect(() => {
     ownColorRef.current = ownColor;
@@ -217,7 +194,7 @@ export default function NetworkCanvas({
       >
         <Canvas
           orthographic
-          camera={{ position: [...VISUAL_CONFIG.CAMERA_POSITION], zoom: VISUAL_CONFIG.CAMERA_ZOOM, near: 0.1, far: 100 }}
+          camera={{ position: [...VISUAL_CONFIG.CAMERA_POSITION], zoom: PX_PER_UNIT, near: 0.1, far: 100 }}
           dpr={performanceLevel === "low" ? [1, 1] : [1, 1.5]}
           // Edges are anti-aliased in the shaders, so MSAA is not needed
           gl={{
@@ -243,17 +220,12 @@ export default function NetworkCanvas({
             still={reducedMotion}
           />
 
+          <DebugPerf />
           {isDebugEnabled && (
-            <>
-              {/* Only the performance panel waits on its lazy chunk */}
-              <Suspense fallback={null}>
-                <Perf position="bottom-right" antialias={false} showGraph deepAnalyze={false} matrixUpdate={false} />
-              </Suspense>
-              <DebugColliders
-                domColliders={domColliders}
-                domCollisionThreshold={networkSettings.domCollisionThreshold}
-              />
-            </>
+            <DebugColliders
+              domColliders={domColliders}
+              domCollisionThreshold={networkSettings.domCollisionThreshold}
+            />
           )}
         </Canvas>
       </div>

@@ -1,25 +1,24 @@
 "use client";
 
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useTheme as useNextTheme } from "next-themes";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useDebug } from "@/contexts/DebugContext";
+import DebugPerf from "@/components/three/DebugPerf";
+import { useSceneEngine } from "@/components/three/useSceneEngine";
+import { useOnScreen } from "@/hooks/useOnScreen";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { SkillRecord } from "@/types/skills";
 import {
   BASE_DISTANCE,
   FOV,
+  cloudPalette,
   createCloudEngine,
-  type CloudEngine,
   type CloudInputs,
-  type CloudPalette,
 } from "./cloudEngine";
-
-// r3f-perf is debug-only, so it loads only when debug mode is switched on
-const Perf = lazy(() => import("r3f-perf").then((m) => ({ default: m.Perf })));
 
 const FOG_NEAR = 0;
 const FOG_FAR = 100;
@@ -43,32 +42,16 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
   const invalidate = useThree((state) => state.invalidate);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);
-  const engineRef = useRef<CloudEngine | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const inputsRef = useRef(inputs);
-  const onHoverRef = useRef(onHover);
 
-  // Latest props for the frame loop, without re-subscribing
-  useEffect(() => {
-    inputsRef.current = inputs;
-    onHoverRef.current = onHover;
-  });
-
-  useEffect(() => {
-    const engine = createCloudEngine(skills);
-    engineRef.current = engine;
-    const { scene } = getThreeState();
-    scene.add(engine.group);
-    return () => {
-      scene.remove(engine.group);
-      engine.dispose();
-      engineRef.current = null;
-    };
-  }, [skills, getThreeState, invalidate]);
+  // A new engine for new skills. The effects below that list `skills` without using it
+  // re-apply their settings to that new engine, so keep it in their dependencies.
+  const create = useCallback(() => createCloudEngine(skills), [skills]);
+  const engineRef = useSceneEngine(create);
 
   useEffect(() => {
     engineRef.current?.setFontSize(baseFontSize, () => invalidate());
-  }, [skills, baseFontSize, invalidate]);
+  }, [skills, baseFontSize, invalidate, engineRef]);
 
   // Theme: fog fades distant words into the background
   useEffect(() => {
@@ -78,14 +61,14 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
     else scene.fog = new THREE.Fog(inputs.palette.fog, FOG_NEAR, FOG_FAR);
     engineRef.current?.setPalette(inputs.palette);
     invalidate();
-  }, [skills, inputs.palette, getThreeState, invalidate]);
+  }, [skills, inputs.palette, getThreeState, invalidate, engineRef]);
 
   // Fit the sphere to the container
   useEffect(() => {
     const { camera } = getThreeState();
     engineRef.current?.fit(camera as THREE.PerspectiveCamera, width, height);
     invalidate();
-  }, [skills, width, height, getThreeState, invalidate]);
+  }, [skills, width, height, getThreeState, invalidate, engineRef]);
 
   // Orbit drag, hover and click
   useEffect(() => {
@@ -139,8 +122,9 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
       controlsRef.current = null;
       el.style.cursor = "";
     };
-  }, [getThreeState, invalidate]);
+  }, [getThreeState, invalidate, engineRef]);
 
+  // useFrame always calls the latest callback, so it sees the latest inputs and onHover
   useFrame((state, delta) => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -151,11 +135,11 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
       state.size.width,
       state.size.height,
       state.gl.getPixelRatio(),
-      inputsRef.current
+      inputs
     );
     if (hoverChange !== undefined) {
       state.gl.domElement.style.cursor = hovering ? "pointer" : "";
-      onHoverRef.current(hoverChange);
+      onHover(hoverChange);
     }
 
     // The canvas renders on demand: keep going while anything moves, stop once settled
@@ -166,37 +150,6 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
   return null;
 }
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return reduced;
-}
-
-/** Visible in the viewport and the tab is in front */
-function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
-  const [inView, setInView] = useState(true);
-  const [tabVisible, setTabVisible] = useState(true);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "100px" });
-    io.observe(el);
-    const onVis = () => setTabVisible(!document.hidden);
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      io.disconnect();
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [ref]);
-  return inView && tabVisible;
-}
-
 interface WordCloudCanvasProps {
   skills: SkillRecord[];
   onHover: (skill: SkillRecord | null) => void;
@@ -205,32 +158,14 @@ interface WordCloudCanvasProps {
 export default function WordCloudCanvas({ skills, onHover }: WordCloudCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const { wordCloudSettings } = useSettings();
-  const { isDebugEnabled } = useDebug();
   const { colors } = useTheme();
   const { resolvedTheme } = useNextTheme();
   const reduced = useReducedMotion();
-  const onScreen = useOnScreen(hostRef);
+  const onScreen = useOnScreen(hostRef, { rootMargin: "100px" });
   const [shown, setShown] = useState(false);
 
   const dark = resolvedTheme !== "light";
-  const palette = useMemo<CloudPalette>(() => {
-    const p = colors.primary.shades;
-    // Map skill types to theme colors
-    const byType: Record<string, string> = {
-      "Programming Language": p[500].hex,
-      Library: p[600].hex,
-      Software: p[500].hex,
-      Database: p[700].hex,
-      "Cloud Platform": p[600].hex,
-    };
-    return {
-      byType: (type: string) => byType[type] ?? p[500].hex,
-      hover: colors.accent.shades[500].hex,
-      fog: colors.background.base.hex,
-      shell: dark ? p[400].hex : p[600].hex,
-      additive: dark,
-    };
-  }, [colors, dark]);
+  const palette = useMemo(() => cloudPalette(colors, dark), [colors, dark]);
 
   const inputs = useMemo<CloudInputs>(
     () => ({
@@ -263,11 +198,7 @@ export default function WordCloudCanvas({ skills, onHover }: WordCloudCanvasProp
           onHover={onHover}
         />
         {/* Performance Monitor - Only visible in debug mode */}
-        {isDebugEnabled && (
-          <Suspense fallback={null}>
-            <Perf position="bottom-right" antialias={false} showGraph deepAnalyze={false} matrixUpdate={false} />
-          </Suspense>
-        )}
+        <DebugPerf />
       </Canvas>
     </div>
   );

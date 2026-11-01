@@ -1,3 +1,5 @@
+import { whenIdle } from "./idle";
+
 /**
  * Runs `callback` once the page's entrance animations (`enter` in globals.css) have
  * finished and the browser is idle, so heavy embeds (the Contact map) load after the
@@ -8,7 +10,7 @@
  */
 export function afterEntrances(callback: () => void): () => void {
   let cancelled = false;
-  let idle: number | undefined;
+  let cancelIdle: (() => void) | undefined;
 
   const entrances = document
     .getAnimations()
@@ -22,15 +24,11 @@ export function afterEntrances(callback: () => void): () => void {
   // allSettled: an animation is cancelled (rejecting `finished`) if its element goes away
   Promise.allSettled(entrances.map((animation) => animation.finished)).then(() => {
     if (cancelled) return;
-    idle = window.requestIdleCallback
-      ? window.requestIdleCallback(callback, { timeout: 1200 })
-      : window.setTimeout(callback, 150);
+    cancelIdle = whenIdle(callback, { timeout: 1200, fallbackMs: 150 });
   });
 
   return () => {
     cancelled = true;
-    if (idle === undefined) return;
-    if (window.cancelIdleCallback) window.cancelIdleCallback(idle);
-    else window.clearTimeout(idle);
+    cancelIdle?.();
   };
 }
