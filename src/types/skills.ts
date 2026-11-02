@@ -9,6 +9,8 @@ export interface SkillRecord {
   tags: string[];
   /** Its logo, an optimised SVG in public/images/skills (sources in LICENSES.txt there) */
   icon?: string;
+  /** For a logo too dark to see on black, a light version of it for dark mode */
+  dark?: string;
   /** The technology this skill is based on */
   parent?: string;
 }

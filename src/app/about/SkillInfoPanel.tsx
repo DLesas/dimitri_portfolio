@@ -78,17 +78,29 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
                 </div>
               </div>
               {shown.icon && (
-                // A light tile in dark mode, so dark logos stay legible
-                <div className="w-12 h-12 flex-shrink-0 rounded-lg dark:bg-white dark:p-1.5">
+                // White in light mode, black in dark mode. A logo too dark for black
+                // has a light version, swapped in by CSS so it follows the theme
+                // with no flash; the hidden one isn't fetched (it's lazy)
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg p-1.5 bg-white dark:bg-black">
                   <Image
                     src={shown.icon}
                     alt={`${shown.name} logo`}
-                    className="w-full h-full object-contain"
+                    className={`w-full h-full object-contain ${shown.dark ? "dark:hidden" : ""}`}
                     width={48}
                     height={48}
                     // SVGs scale as they are: the image optimiser has nothing to do
                     unoptimized
                   />
+                  {shown.dark && (
+                    <Image
+                      src={shown.dark}
+                      alt={`${shown.name} logo`}
+                      className="w-full h-full object-contain hidden dark:block"
+                      width={48}
+                      height={48}
+                      unoptimized
+                    />
+                  )}
                 </div>
               )}
             </div>
