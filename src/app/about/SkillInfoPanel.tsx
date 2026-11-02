@@ -78,10 +78,10 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
                 </div>
               </div>
               {shown.icon && (
-                // White in light mode, black in dark mode. A logo too dark for black
-                // has a light version, swapped in by CSS so it follows the theme
-                // with no flash; the hidden one isn't fetched (it's lazy)
-                <div className="w-12 h-12 flex-shrink-0 rounded-lg p-1.5 bg-white dark:bg-black">
+                // On the panel itself, no tile. A logo too dark for dark mode has a
+                // light version, swapped in by CSS so it follows the theme with no
+                // flash; the hidden one isn't fetched (it's lazy)
+                <div className="w-12 h-12 flex-shrink-0">
                   <Image
                     src={shown.icon}
                     alt={`${shown.name} logo`}

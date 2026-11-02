@@ -57,9 +57,8 @@ Recharts' own repository (MIT licence, notice below), its "</>" strokes set in a
 
 sql.svg: drawn for this site (a generic database; SQL is a language, not a brand).
 
-*-dark.svg: for dark mode, the logo of the same name with its dark ink made white so it
-shows on black (Next.js inverted: a white disc with a black N), as these brands do on dark
-backgrounds themselves.
+*-dark.svg: for dark mode, the logo of the same name with its dark ink made white (Next.js
+inverted: a white disc with a black N), as these brands do on dark backgrounds themselves.
 
 All files were optimised with SVGO 4 (multipass, 2 decimal places).
 
