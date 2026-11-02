@@ -1,0 +1,105 @@
+Logos of the technologies on the About page. Each is a trademark of its owner, shown to name the technology.
+
+Devicon (MIT licence, notice below):
+  apache-spark.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/apachespark/apachespark-original.svg
+  aws.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/amazonwebservices/amazonwebservices-original.svg
+  chartjs.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/chartjs/chartjs-original.svg
+  css3.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/css3/css3-original.svg
+  d3.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/d3js/d3js-original.svg
+  django.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/django/django-plain.svg
+  docker.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/docker/docker-original.svg
+  express.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/express/express-original.svg
+  flask.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/flask/flask-original.svg
+  git.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/git/git-original.svg
+  html5.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/html5/html5-original.svg
+  javascript.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/javascript/javascript-original.svg
+  jupyter.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/jupyter/jupyter-original.svg
+  keras.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/keras/keras-original.svg
+  linux.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/linux/linux-plain.svg
+  matplotlib.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/matplotlib/matplotlib-original.svg
+  nextjs.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/nextjs/nextjs-original.svg
+  nodejs.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/nodejs/nodejs-original.svg
+  numpy.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/numpy/numpy-original.svg
+  nuxt.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/nuxt/nuxt-original.svg
+  opencv.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/opencv/opencv-original.svg
+  pandas.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/pandas/pandas-original.svg
+  playwright.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/playwright/playwright-original.svg
+  plotly.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/plotly/plotly-original.svg
+  postgresql.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/postgresql/postgresql-original.svg
+  python.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/python/python-original.svg
+  pytorch.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/pytorch/pytorch-original.svg
+  react.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/react/react-original.svg
+  react-native.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/reactnative/reactnative-original.svg
+  redis.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/redis/redis-original.svg
+  scikit-learn.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/scikitlearn/scikitlearn-original.svg
+  seaborn.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/seaborn/seaborn-original.svg
+  selenium.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/selenium/selenium-original.svg
+  socketio.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/socketio/socketio-original.svg
+  sqlalchemy.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/sqlalchemy/sqlalchemy-original.svg
+  tailwindcss.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/tailwindcss/tailwindcss-original.svg
+  tensorflow.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/tensorflow/tensorflow-original.svg
+  threejs.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/threejs/threejs-original.svg
+  typescript.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/typescript/typescript-original.svg
+  vue.svg  https://cdn.jsdelivr.net/npm/devicon@2.18.0/icons/vuejs/vuejs-original.svg
+
+Simple Icons (CC0 1.0, public domain), coloured with each brand's own colour:
+  drizzle.svg  https://cdn.jsdelivr.net/npm/simple-icons@16.36.0/icons/drizzle.svg
+  framer-motion.svg  https://cdn.jsdelivr.net/npm/simple-icons@16.36.0/icons/framer.svg
+  micropython.svg  https://cdn.jsdelivr.net/npm/simple-icons@16.36.0/icons/micropython.svg
+  pydantic.svg  https://cdn.jsdelivr.net/npm/simple-icons@16.36.0/icons/pydantic.svg
+
+Wikimedia Commons (public domain):
+  excel.svg  https://upload.wikimedia.org/wikipedia/commons/6/60/Microsoft_Office_Excel_%282025%E2%80%93present%29.svg
+  power-bi.svg  https://upload.wikimedia.org/wikipedia/commons/c/cf/New_Power_BI_Logo.svg
+
+Recharts' own repository (MIT licence, notice below), its "</>" strokes set in a square:
+  recharts.svg  https://raw.githubusercontent.com/recharts/recharts/main/www/public/logo.svg
+
+sql.svg: drawn for this site (a generic database; SQL is a language, not a brand).
+
+All files were optimised with SVGO 4 (multipass, 2 decimal places).
+
+---- Devicon ----
+The MIT License (MIT)
+
+Copyright (c) 2015 konpa
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---- Recharts ----
+The MIT License (MIT)
+
+Copyright (c) 2015-present recharts
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

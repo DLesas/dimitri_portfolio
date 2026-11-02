@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Card, Chip, ProgressBar } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { FaArrowPointer } from "react-icons/fa6";
 import type { SkillRecord } from "@/types/skills";
 
@@ -77,14 +77,17 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
                   </Chip>
                 </div>
               </div>
-              {shown.icon && shown.icon !== "" && (
-                <div className="w-12 h-12 flex-shrink-0">
+              {shown.icon && (
+                // A light tile in dark mode, so dark logos stay legible
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg dark:bg-white dark:p-1.5">
                   <Image
                     src={shown.icon}
-                    alt={shown.name}
+                    alt={`${shown.name} logo`}
                     className="w-full h-full object-contain"
                     width={48}
                     height={48}
+                    // SVGs scale as they are: the image optimiser has nothing to do
+                    unoptimized
                   />
                 </div>
               )}
@@ -95,25 +98,6 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
               <p className="text-sm text-default-600 leading-relaxed">
                 {shown.brief}
               </p>
-            </div>
-
-            {/* Experience Level */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Proficiency</span>
-                <span className="text-sm text-default-500">
-                  {shown.value}%
-                </span>
-              </div>
-              <ProgressBar
-                value={shown.value}
-                color="accent"
-                aria-label="Proficiency level"
-              >
-                <ProgressBar.Track className="h-2">
-                  <ProgressBar.Fill />
-                </ProgressBar.Track>
-              </ProgressBar>
             </div>
 
             {/* Tags */}
@@ -152,8 +136,7 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
               Hover over any skill to explore
             </p>
             <p className="text-sm text-default-400">
-              View my proficiency levels, related technologies, and areas of
-              application
+              See what each one is, what it builds on, and where I use it
             </p>
           </div>
         )}
