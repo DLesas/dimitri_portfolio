@@ -94,13 +94,15 @@ const liveCursorsAvailable = Boolean(HTTP_HOST && WS_HOST && API_KEY);
 // radius or location changes), everyone already here answers straight away, and leaving
 // says goodbye. Heartbeats only cover what events can't:
 /** With others here, a "still here" this often, so one who vanishes without a goodbye
- * (lost connection, crashed tab) is noticed */
-const HEARTBEAT_MS = 30_000;
+ * (lost connection, crashed tab) is noticed. Under 25s, the timeout of tabs opened
+ * before presence went event-driven (they heartbeat every 10s), so those don't drop
+ * and re-add the visitors heartbeating at this pace. */
+const HEARTBEAT_MS = 20_000;
 /** Alone, only this often: nobody is listening, except a newcomer whose own announcement
  * was lost */
 const LONE_HEARTBEAT_MS = 120_000;
 /** A visitor who hasn't been heard from for this long has left (2.5 heartbeats) */
-const PEER_TIMEOUT_MS = 75_000;
+const PEER_TIMEOUT_MS = 50_000;
 /** A shown cursor that hasn't moved for this long has gone: a live one says "out" within
  * ~5s of its mouse going idle */
 const CURSOR_STALE_MS = 10_000;
