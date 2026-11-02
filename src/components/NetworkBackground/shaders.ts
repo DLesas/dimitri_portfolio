@@ -219,16 +219,16 @@ export const CURSOR_VERTEX = /* glsl */ `
   }
 `;
 
-/** Other visitors' cursor glows: the same glow, each in its visitor's colour */
+/** Other visitors' cursor glows: the same glow, each in its visitor's colour and size */
 export const REMOTE_CURSOR_VERTEX = /* glsl */ `
   attribute vec3 aColor;
   attribute float aStrength;
-  uniform float uSizePx;
+  attribute float aSizePx;
   varying vec3 vColor;
   varying float vStrength;
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = uSizePx;
+    gl_PointSize = aSizePx;
     vColor = aColor;
     vStrength = aStrength;
   }

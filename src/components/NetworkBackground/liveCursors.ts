@@ -12,6 +12,7 @@
  * browser. Once someone else is on the page, each tab also shares its approximate
  * location (city and country from /api/location) for the avatars' hover cards.
  */
+import { ANIMATION_CONFIG } from "./constants";
 import type { MousePosition } from "./networkEngine";
 import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
 
@@ -44,6 +45,8 @@ export interface RemoteCursor {
   x: number;
   y: number;
   color: string;
+  /** Their mouse repulsion radius, network world units: how far their glow and push reach */
+  radius: number;
   /** 0 hidden – 1 shown, eased */
   weight: number;
 }
@@ -54,12 +57,14 @@ export interface Presence {
   others: Visitor[];
 }
 
-// a: animal index; ci, co: city and country code (on "hi" once known)
+// a: animal index; r: mouse repulsion radius (on "hi" and "mv"); ci, co: city and
+// country code (on "hi" once known)
 interface BaseMessage {
   v: 1;
   id: string;
   c: string;
   a?: number;
+  r?: number;
 }
 type HelloMessage = BaseMessage & { t: "hi"; ci?: string; co?: string };
 type Message =
@@ -110,6 +115,12 @@ function isMessage(m: unknown): m is Message {
 // Optional fields are checked separately: a bad one is ignored rather than dropping the message
 const cleanCity = (value: unknown) => (typeof value === "string" && CITY.test(value) ? value : null);
 const cleanCountry = (value: unknown) => (typeof value === "string" && COUNTRY.test(value) ? value : null);
+const cleanRadius = (value: unknown) =>
+  typeof value === "number" &&
+  value >= ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS_MIN &&
+  value <= ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS_MAX
+    ? value
+    : null;
 const cleanAnimal = (value: unknown) =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) < ANIMALS.length ? (value as number) : null;
 
@@ -162,7 +173,7 @@ const toVisitor = ({ id, name, animal, color, city, country }: Visitor): Visitor
 });
 
 /** Connects to the channel; returns null when the site isn't configured for live cursors */
-export function createLiveCursors(initialColor: string) {
+export function createLiveCursors(initialColor: string, initialRadius: number) {
   if (!liveCursorsAvailable) return null;
 
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -172,6 +183,7 @@ export function createLiveCursors(initialColor: string) {
   const visible: RemoteCursor[] = [];
 
   let color = initialColor;
+  let radius = initialRadius;
   let location: { city: string | null; country: string | null } | null = null;
   let locating = false;
   let socket: WebSocket | null = null;
@@ -218,7 +230,7 @@ export function createLiveCursors(initialColor: string) {
   }
 
   function hello() {
-    const message: HelloMessage = { v: 1, id, t: "hi", c: color, a: animal };
+    const message: HelloMessage = { v: 1, id, t: "hi", c: color, a: animal, r: radius };
     if (location?.city) message.ci = location.city;
     if (location?.country) message.co = location.country;
     publish(message);
@@ -261,6 +273,8 @@ export function createLiveCursors(initialColor: string) {
         name: visitorName(peerAnimal),
         animal: peerAnimal,
         color: message.c,
+        // Visitors whose page predates the radius push and glow as at the default
+        radius: cleanRadius(message.r) ?? ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS,
         city: null,
         country: null,
         x: 0,
@@ -280,6 +294,7 @@ export function createLiveCursors(initialColor: string) {
       sentActive = false;
     }
     peer.lastSeen = now;
+    peer.radius = cleanRadius(message.r) ?? peer.radius;
     if (peer.color !== message.c || peer.animal !== peerAnimal) {
       peer.color = message.c;
       peer.animal = peerAnimal;
@@ -434,7 +449,7 @@ export function createLiveCursors(initialColor: string) {
         if ((moved || !sentActive) && now - lastMoveAt >= MOVE_INTERVAL_MS) {
           sentX = x;
           sentY = y;
-          publish({ v: 1, id, t: "mv", c: color, a: animal, x, y });
+          publish({ v: 1, id, t: "mv", c: color, a: animal, r: radius, x, y });
           sentActive = true;
           lastMoveAt = now;
         }
@@ -463,6 +478,13 @@ export function createLiveCursors(initialColor: string) {
     hello();
   }
 
+  /** This visitor's mouse repulsion radius changed: the others size their glow from it */
+  function setRadius(next: number) {
+    if (next === radius) return;
+    radius = next;
+    hello();
+  }
+
   function close() {
     closed = true;
     disconnect();
@@ -472,7 +494,7 @@ export function createLiveCursors(initialColor: string) {
   }
 
   syncPresence();
-  return { update, setColor, close };
+  return { update, setColor, setRadius, close };
 }
 
 export type LiveCursors = NonNullable<ReturnType<typeof createLiveCursors>>;

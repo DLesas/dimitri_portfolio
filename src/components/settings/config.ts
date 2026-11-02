@@ -4,6 +4,7 @@ import { TbCircleDashed } from "react-icons/tb";
 import { MdWeb } from "react-icons/md";
 import { HiSparkles } from "react-icons/hi";
 import type { NetworkBackgroundSettings, WordCloudSettings } from "@/contexts/SettingsContext";
+import { ANIMATION_CONFIG } from "@/components/NetworkBackground/constants";
 import type {
   NetworkSettingsConfig,
   WordCloudSettingsConfig,
@@ -95,8 +96,8 @@ export const NETWORK_SETTINGS_CONFIG: NetworkSettingsConfig = {
 
   mouseRepulsionRadius: {
     label: "Mouse Repulsion Radius",
-    min: 2,
-    max: 30,
+    min: ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS_MIN,
+    max: ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS_MAX,
     step: 0.1,
     tooltip: "Distance from mouse where nodes start being pushed away",
   },
