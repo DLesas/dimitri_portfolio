@@ -78,6 +78,8 @@ interface Peer extends RemoteCursor, Visitor {
   /** The cursor is on the page and moving */
   active: boolean;
   lastSeen: number;
+  /** When their cursor last moved */
+  lastMove: number;
 }
 
 const HTTP_HOST = process.env.NEXT_PUBLIC_REALTIME_HTTP_HOST;
@@ -88,9 +90,20 @@ const CHANNEL = `/cursors/${process.env.NEXT_PUBLIC_VERCEL_ENV ?? "development"}
 
 const liveCursorsAvailable = Boolean(HTTP_HOST && WS_HOST && API_KEY);
 
-const HEARTBEAT_MS = 10_000;
-/** A visitor who hasn't been heard from for this long has left */
-const PEER_TIMEOUT_MS = 25_000;
+// Presence is event-driven: a visitor announces itself on joining (and when its colour,
+// radius or location changes), everyone already here answers straight away, and leaving
+// says goodbye. Heartbeats only cover what events can't:
+/** With others here, a "still here" this often, so one who vanishes without a goodbye
+ * (lost connection, crashed tab) is noticed */
+const HEARTBEAT_MS = 30_000;
+/** Alone, only this often: nobody is listening, except a newcomer whose own announcement
+ * was lost */
+const LONE_HEARTBEAT_MS = 120_000;
+/** A visitor who hasn't been heard from for this long has left (2.5 heartbeats) */
+const PEER_TIMEOUT_MS = 75_000;
+/** A shown cursor that hasn't moved for this long has gone: a live one says "out" within
+ * ~5s of its mouse going idle */
+const CURSOR_STALE_MS = 10_000;
 /** At most ~12 position updates a second */
 const MOVE_INTERVAL_MS = 80;
 const MAX_PEERS = 16;
@@ -201,6 +214,7 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
   let sentX = NaN;
   let sentY = NaN;
   let lastMoveAt = 0;
+  let lastHelloAt = 0;
 
   function syncPresence() {
     setPresence({
@@ -230,10 +244,15 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
   }
 
   function hello() {
+    lastHelloAt = performance.now();
     const message: HelloMessage = { v: 1, id, t: "hi", c: color, a: animal, r: radius };
     if (location?.city) message.ci = location.city;
     if (location?.country) message.co = location.country;
     publish(message);
+  }
+
+  function heartbeat() {
+    if (peers.size > 0 || performance.now() - lastHelloAt >= LONE_HEARTBEAT_MS) hello();
   }
 
   /** Looks up this visitor's location, only once someone else is there to see it */
@@ -284,6 +303,7 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
         weight: 0,
         active: false,
         lastSeen: now,
+        lastMove: 0,
       };
       peers.set(message.id, peer);
       changed = true;
@@ -319,6 +339,7 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
       peer.targetX = message.x;
       peer.targetY = message.y;
       peer.active = true;
+      peer.lastMove = now;
     } else if (message.t === "out") {
       peer.active = false;
     }
@@ -348,7 +369,7 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
         sentX = NaN;
         hello();
         window.clearInterval(heartbeatTimer);
-        heartbeatTimer = window.setInterval(hello, HEARTBEAT_MS);
+        heartbeatTimer = window.setInterval(heartbeat, HEARTBEAT_MS);
         break;
       case "ka":
         resetKeepAlive();
@@ -463,6 +484,7 @@ export function createLiveCursors(initialColor: string, initialRadius: number) {
     const fade = Math.min(1, delta * 5);
     visible.length = 0;
     for (const peer of peers.values()) {
+      if (peer.active && now - peer.lastMove > CURSOR_STALE_MS) peer.active = false;
       peer.x += (peer.targetX - peer.x) * ease;
       peer.y += (peer.targetY - peer.y) * ease;
       peer.weight += ((peer.active ? 1 : 0) - peer.weight) * fade;
