@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import { useTheme } from "next-themes";
 import { useMouseTracking, useDOMColliders } from "./hooks";
-import { PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
+import { ANIMATION_CONFIG, PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constants";
 import { PX_PER_UNIT } from "./world";
 import NetworkScene from "./NetworkScene";
 import DebugColliders from "./DebugColliders";
@@ -62,8 +62,9 @@ export default function NetworkCanvas({
   const dark = resolvedTheme !== "light";
   const palette = useMemo(() => networkPalette(colors, dark), [colors, dark]);
 
-  // Other visitors' cursors, shown in their own primary colour. Not with reduced motion:
-  // this visitor neither sees moving cursors nor sends one.
+  // Other visitors' cursors, shown in their own primary colour, with a glow as wide as
+  // their own repulsion radius. Not with reduced motion: this visitor neither sees moving
+  // cursors nor sends one.
   const liveCursorsRef = useRef<LiveCursors | null>(null);
   const cursorLayerRef = useRef<HTMLDivElement>(null);
   const ownColor = colors.primary.shades[500].hex;
@@ -72,9 +73,15 @@ export default function NetworkCanvas({
     ownColorRef.current = ownColor;
     liveCursorsRef.current?.setColor(ownColor);
   }, [ownColor]);
+  const ownRadius = networkSettings.mouseRepulsionRadius ?? ANIMATION_CONFIG.MOUSE_REPULSION_RADIUS;
+  const ownRadiusRef = useRef(ownRadius);
+  useEffect(() => {
+    ownRadiusRef.current = ownRadius;
+    liveCursorsRef.current?.setRadius(ownRadius);
+  }, [ownRadius]);
   useEffect(() => {
     if (reducedMotion) return;
-    const live = createLiveCursors(ownColorRef.current);
+    const live = createLiveCursors(ownColorRef.current, ownRadiusRef.current);
     liveCursorsRef.current = live;
     return () => {
       live?.close();

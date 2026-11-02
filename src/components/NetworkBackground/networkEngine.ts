@@ -99,6 +99,13 @@ const SETTLE_STEPS = 180;
 
 const NO_MOUSE: MousePosition = { x: 0, y: 0, isActive: false };
 const MAX_REMOTE_CURSORS = 16;
+
+/**
+ * A cursor glow's sprite size in CSS pixels, from that visitor's mouse repulsion radius:
+ * it reaches as far as the nodes' mouse highlight (MOUSE_GLOW_REACH of the radius), so a
+ * wider push shows as a wider glow. 420px at the default radius.
+ */
+const glowSizePx = (repulsionRadius: number) => 2 * A.MOUSE_GLOW_REACH * repulsionRadius * PX_PER_UNIT;
 /** A packet starts just before its line and fades out just past the end (CSS pixels) */
 const PACKET_ENTRY_EXIT_PX = 40;
 
@@ -208,12 +215,12 @@ export function createNetworkEngine() {
   const remotePosition = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS * 3), 3);
   const remoteColor = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS * 3), 3);
   const remoteStrength = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS), 1);
+  const remoteSize = new THREE.BufferAttribute(new Float32Array(MAX_REMOTE_CURSORS), 1);
   remoteGeometry.setAttribute("position", remotePosition);
   remoteGeometry.setAttribute("aColor", remoteColor);
   remoteGeometry.setAttribute("aStrength", remoteStrength);
-  const remoteMaterial = shaderMaterial(REMOTE_CURSOR_VERTEX, REMOTE_CURSOR_FRAGMENT, {
-    uSizePx: { value: 0 }, // set every frame
-  });
+  remoteGeometry.setAttribute("aSizePx", remoteSize);
+  const remoteMaterial = shaderMaterial(REMOTE_CURSOR_VERTEX, REMOTE_CURSOR_FRAGMENT, {});
   const remoteCursors = new THREE.Points(remoteGeometry, remoteMaterial);
   remoteCursors.frustumCulled = false;
   const remoteRgb = new THREE.Color();
@@ -398,11 +405,10 @@ export function createNetworkEngine() {
   ) {
     const st = inputs.settings;
     const pos = position!.array as Float32Array;
-    const R = st.mouseRepulsionRadius;
     const threshold = st.domCollisionThreshold;
     const FTS = A.FIXED_TIME_STEP;
-    /** Velocity change per unit of offset (dx, dy) from a cursor */
-    const repel = (dx: number, dy: number) => {
+    /** Velocity change per unit of offset (dx, dy) from a cursor that pushes within R */
+    const repel = (dx: number, dy: number, R: number) => {
       const d = Math.sqrt(dx * dx + dy * dy);
       if (d >= R || d <= 0) return 0;
       const n = d / R;
@@ -417,15 +423,16 @@ export function createNetworkEngine() {
       // Mouse repulsion effect with velocity-based movement
       if (mouse.isActive) {
         const dx = x - mouse.x, dy = y - mouse.y;
-        const k = repel(dx, dy);
+        const k = repel(dx, dy, st.mouseRepulsionRadius);
         vx += dx * k;
         vy += dy * k;
       }
-      // Other visitors' cursors push the same way, fading with their cursor
+      // Other visitors' cursors push the same way, as far as their own radius reaches
+      // (the same reach as their glow), fading with their cursor
       for (let r = 0; r < remotes.length; r++) {
         const rc = remotes[r];
         const dx = x - rc.x, dy = y - rc.y;
-        const k = repel(dx, dy) * rc.weight;
+        const k = repel(dx, dy, rc.radius) * rc.weight;
         vx += dx * k;
         vy += dy * k;
       }
@@ -548,7 +555,7 @@ export function createNetworkEngine() {
     u.uIntro.value = fadeIn;
     u.uMouse.value.set(ctx.mouse.x, ctx.mouse.y);
     u.uMouseActive.value = mouseHeat;
-    u.uMouseRadius.value = st.mouseRepulsionRadius * 0.35;
+    u.uMouseRadius.value = st.mouseRepulsionRadius * A.MOUSE_GLOW_REACH;
 
     const l = linkMaterial.uniforms;
     l.uTime.value = time;
@@ -570,7 +577,7 @@ export function createNetworkEngine() {
     cursorPosition.needsUpdate = true;
     const cu = cursorMaterial.uniforms;
     cu.uStrength.value = mouseHeat * glow * (additive ? 0.16 : 0.1);
-    cu.uSizePx.value = 420 * ctx.dpr;
+    cu.uSizePx.value = glowSizePx(st.mouseRepulsionRadius) * ctx.dpr;
     cursor.visible = cu.uStrength.value > 0.002;
 
     const remoteCount = Math.min(ctx.remotes.length, MAX_REMOTE_CURSORS);
@@ -580,10 +587,11 @@ export function createNetworkEngine() {
       remoteRgb.set(rc.color);
       remoteColor.setXYZ(i, remoteRgb.r, remoteRgb.g, remoteRgb.b);
       remoteStrength.setX(i, rc.weight * glow * (additive ? 0.16 : 0.1));
+      remoteSize.setX(i, glowSizePx(rc.radius) * ctx.dpr);
     }
-    remotePosition.needsUpdate = remoteColor.needsUpdate = remoteStrength.needsUpdate = true;
+    remotePosition.needsUpdate = remoteColor.needsUpdate = true;
+    remoteStrength.needsUpdate = remoteSize.needsUpdate = true;
     remoteGeometry.setDrawRange(0, remoteCount);
-    remoteMaterial.uniforms.uSizePx.value = cu.uSizePx.value;
     remoteCursors.visible = remoteCount > 0;
   }
 

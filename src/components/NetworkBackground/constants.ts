@@ -10,6 +10,9 @@ export const ANIMATION_CONFIG = {
 
   // Mouse repulsion - How nodes react when mouse is nearby
   MOUSE_REPULSION_RADIUS: 30, // Distance from mouse where nodes start being pushed away
+  MOUSE_REPULSION_RADIUS_MIN: 2, // The settings slider's range; other visitors' radii are held to it too
+  MOUSE_REPULSION_RADIUS_MAX: 30,
+  MOUSE_GLOW_REACH: 0.35, // Share of the repulsion radius the cursor glow and the nodes' mouse highlight reach
   MOUSE_REPULSION_STRENGTH: 23, // Force strength of mouse repulsion (higher = stronger push)
   FIXED_TIME_STEP: 0.025, // Time step for physics calculations (smaller = more accurate)
 

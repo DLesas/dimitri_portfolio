@@ -5,10 +5,12 @@
  * Only well-formed cursor messages are broadcast, rebuilt from their known fields, so
  * the key can't be used to push other data through the channel.
  *
- * A message: { v: 1, id, t, c, a?, x?, y?, ci?, co? }
+ * A message: { v: 1, id, t, c, a?, r?, x?, y?, ci?, co? }
  *   id: the visitor's random id; t: "hi" (presence), "mv" (moved), "out" (cursor left
  *   or went idle), "bye" (left the page); c: their primary colour, "#rrggbb";
  *   a: their animal (an index, for "Anonymous Otter"-style names);
+ *   r: their mouse repulsion radius in world units, within the settings slider's range
+ *   (2-30), which sizes their cursor's glow and push for everyone (with "hi" and "mv");
  *   x, y: cursor position in the network's world units (only with "mv");
  *   ci, co: their approximate city and country code (only with "hi")
  * Optional fields that don't fit are dropped rather than rejecting the message.
@@ -35,6 +37,7 @@ function isCoordinate(n) {
 function clean(m) {
   const out = { v: 1, id: m.id, t: m.t, c: m.c };
   if (typeof m.a === "number" && m.a >= 0 && m.a < 256) out.a = m.a;
+  if ((m.t === "hi" || m.t === "mv") && typeof m.r === "number" && m.r >= 2 && m.r <= 30) out.r = m.r;
   if (m.t === "mv") {
     out.x = m.x;
     out.y = m.y;
