@@ -82,7 +82,14 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
 
     const onMove = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
-      engineRef.current?.pointerMove(e.clientX - r.left, e.clientY - r.top, e.clientX, e.clientY, e.buttons);
+      engineRef.current?.pointerMove(
+        e.clientX - r.left,
+        e.clientY - r.top,
+        e.clientX,
+        e.clientY,
+        e.buttons,
+        e.pointerType === "touch"
+      );
       invalidate();
     };
     const onLeave = () => {
@@ -91,7 +98,13 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
     };
     const onDown = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
-      engineRef.current?.pointerDown(e.clientX - r.left, e.clientY - r.top, e.clientX, e.clientY);
+      engineRef.current?.pointerDown(
+        e.clientX - r.left,
+        e.clientY - r.top,
+        e.clientX,
+        e.clientY,
+        e.pointerType === "touch"
+      );
       invalidate();
     };
     const onUp = (e: PointerEvent) => {
@@ -105,6 +118,8 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
         size.height
       );
       if (link) window.open(link, "_blank", "noopener,noreferrer");
+      // A tap may have pinned a word: draw a frame to show it
+      invalidate();
     };
     const onChange = () => invalidate();
     el.addEventListener("pointermove", onMove);
