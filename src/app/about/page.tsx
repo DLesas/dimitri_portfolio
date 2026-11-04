@@ -14,7 +14,7 @@ export default function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
       {/* Hero Section */}
-      <section className="pb-16 enter instant-on-phones">
+      <section className="pb-16 enter">
         <h1 className={`text-5xl font-bold mb-6 leading-tight ${fadeInUp} enter-delay-200`}>
           Hello, I&apos;m{" "}
           <span className="text-gradient">Dimitri</span>
