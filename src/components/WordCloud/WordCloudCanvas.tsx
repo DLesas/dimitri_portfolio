@@ -78,6 +78,10 @@ function CloudScene({ skills, inputs, baseFontSize, onHover }: CloudSceneProps) 
     controls.enableDamping = true;
     controls.dampingFactor = DAMPING_FACTOR;
     controls.enableZoom = false;
+    // On a touch screen, a vertical swipe scrolls the page and a sideways one spins the
+    // cloud, as Google's <model-viewer> does: the controls' own `none` would take every
+    // swipe that starts on the cloud, trapping the page. A mouse is unaffected.
+    el.style.touchAction = "pan-y";
     controlsRef.current = controls;
 
     const onMove = (e: PointerEvent) => {
