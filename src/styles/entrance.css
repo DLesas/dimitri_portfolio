@@ -93,3 +93,16 @@
 .reveal:not([data-shown]) {
   --enter-play: paused;
 }
+
+/*
+ * A page's opening text: on phones (below md) it's drawn in place from the first frame,
+ * on bigger screens it enters as usual. It's the largest text on the page, which LCP
+ * times, and text that starts invisible only counts once it fades in, after a phone has
+ * started on the page's JavaScript. Unlayered, so it beats the `enter` utility.
+ */
+@media (width < 48rem) {
+  .instant-on-phones,
+  .instant-on-phones .enter {
+    animation: none;
+  }
+}

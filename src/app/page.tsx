@@ -13,7 +13,7 @@ const buttonEntrance = "enter enter-delay-600 enter-duration-150 [--enter-scale:
 export default function HomePage() {
   return (
     <NetworkBackground className="w-full flex-1">
-      <PageShell className="relative z-10">
+      <PageShell className="relative z-10 instant-on-phones">
         <div className="text-center max-w-4xl mx-auto px-6 enter">
           <h1
             className={`text-5xl md:text-7xl font-bold mb-8 leading-tight ${itemEntrance} enter-delay-300`}

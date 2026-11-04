@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Card, Chip } from "@heroui/react";
-import { FaArrowPointer } from "react-icons/fa6";
+import { FaArrowPointer, FaHandPointer } from "react-icons/fa6";
 import type { SkillRecord } from "@/types/skills";
 
 // How long the panel's content takes to leave before the next one enters
@@ -35,7 +35,7 @@ function useExitBeforeEnter(next: SkillRecord | null) {
   return { shown, leaving };
 }
 
-/** The details of the skill hovered in the word cloud, or a prompt to hover one */
+/** The details of the skill hovered (or tapped) in the word cloud, or a prompt to pick one */
 export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | null }) {
   const { shown, leaving } = useExitBeforeEnter(hoveredSkill);
 
@@ -138,14 +138,17 @@ export function SkillInfoPanel({ hoveredSkill }: { hoveredSkill: SkillRecord | n
               leaving ? "exit" : "enter"
             }`}
           >
+            {/* A finger can't hover: on a touch screen, a tap pins the skill instead.
+                Chosen in CSS, so the right words are there from the first paint */}
             <div className="w-16 h-16 mb-4 rounded-full bg-default-100 flex items-center justify-center">
               <span className="text-2xl">
-                {" "}
-                <FaArrowPointer className="pl-1 text-secondary-300" />{" "}
+                <FaArrowPointer className="pl-1 text-secondary-300 pointer-coarse:hidden" />
+                <FaHandPointer className="hidden text-secondary-300 pointer-coarse:block" />
               </span>
             </div>
             <p className="text-default-600 mb-2">
-              Hover over any skill to explore
+              <span className="pointer-coarse:hidden">Hover over any skill to explore</span>
+              <span className="hidden pointer-coarse:inline">Tap any skill to explore</span>
             </p>
             <p className="text-sm text-default-400">
               See what each one is, what it builds on, and where I use it

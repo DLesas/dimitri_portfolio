@@ -4,11 +4,15 @@ import { Popover, Checkbox } from "@heroui/react";
 import { popoverVariants } from "@heroui/styles";
 import { STORAGE_KEYS, readJSON, remove, writeJSON } from "@/lib/storage";
 
+// Only on screens wide enough for the desktop nav: on a phone it would cover the heading
+const WIDE_ENOUGH = "(min-width: 768px)";
+
 // Read once per page load, so ticking "Don't show this again" applies to the next
 // visit rather than closing the helper that is already showing
-let optedOutAtLoad: boolean | undefined;
-const readOptedOut = () =>
-  (optedOutAtLoad ??= readJSON(STORAGE_KEYS.helperOptedOut) === true);
+let hiddenAtLoad: boolean | undefined;
+const readHidden = () =>
+  (hiddenAtLoad ??=
+    readJSON(STORAGE_KEYS.helperOptedOut) === true || !window.matchMedia(WIDE_ENOUGH).matches);
 const subscribe = () => () => {};
 
 // Standalone popover (no trigger of its own), so HeroUI's slot classes are applied directly
@@ -28,11 +32,11 @@ interface Props {
  * browser console and refresh the page
  */
 export function HelperPopover({ duration = 6000, triggerRef }: Props) {
-  // Treated as opted out on the server, so the helper only ever appears client-side
-  const hasOptedOut = useSyncExternalStore(subscribe, readOptedOut, () => true);
+  // Treated as hidden on the server, so the helper only ever appears client-side
+  const hidden = useSyncExternalStore(subscribe, readHidden, () => true);
   const [dismissed, setDismissed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const open = !hasOptedOut && !dismissed;
+  const open = !hidden && !dismissed;
 
   // Auto-close timer
   useEffect(() => {

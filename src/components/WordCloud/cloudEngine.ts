@@ -175,8 +175,11 @@ export function createCloudEngine(skills: SkillRecord[]) {
   root.add(shell);
 
   // ---- interaction and animation state ----
-  const pointer = { x: 0, y: 0, inside: false, downX: 0, downY: 0, dragging: false };
+  // `touch`: the pointer is a finger, which can't hover, so a tap pins its word instead
+  const pointer = { x: 0, y: 0, inside: false, downX: 0, downY: 0, dragging: false, touch: false };
   let hovered = -1;
+  /** The word a finger last tapped, shown until the next tap */
+  let pinned = -1;
   let speedX = 0;
   let speedY = 0;
   let time = 0;
@@ -219,25 +222,41 @@ export function createCloudEngine(skills: SkillRecord[]) {
     shellMaterial.uniforms.uNear.value = distance - RADIUS;
   }
 
-  // ---- pointer: hover is resolved in the frame loop, clicks open the skill's link ----
-  function pointerMove(x: number, y: number, clientX: number, clientY: number, buttons: number) {
+  // ---- pointer: hover is resolved in the frame loop, clicks open the skill's link,
+  // taps pin the word ----
+  function pointerMove(
+    x: number,
+    y: number,
+    clientX: number,
+    clientY: number,
+    buttons: number,
+    touch: boolean
+  ) {
     pointer.x = x;
     pointer.y = y;
     pointer.inside = true;
+    // A mouse after a tap (on a laptop with a touch screen) goes back to hovering
+    if (!touch) pinned = -1;
+    pointer.touch = touch;
     if (buttons && Math.hypot(clientX - pointer.downX, clientY - pointer.downY) > 5) pointer.dragging = true;
   }
   function pointerLeave() {
     pointer.inside = false;
   }
-  function pointerDown(x: number, y: number, clientX: number, clientY: number) {
+  function pointerDown(x: number, y: number, clientX: number, clientY: number, touch: boolean) {
     pointer.x = x;
     pointer.y = y;
     pointer.inside = true;
+    pointer.touch = touch;
     pointer.downX = clientX;
     pointer.downY = clientY;
     pointer.dragging = false;
   }
-  /** Returns the link to open when this was a click or tap on a word */
+  /**
+   * Returns the link to open when this was a click on a word. A tap instead pins the
+   * word it lands on (or unpins, off the words), so a phone shows its details rather
+   * than leaving the site.
+   */
   function pointerUp(
     x: number,
     y: number,
@@ -248,9 +267,13 @@ export function createCloudEngine(skills: SkillRecord[]) {
     const wasDrag = pointer.dragging;
     pointer.dragging = false;
     if (wasDrag) return null;
-    // A tap on a touch screen arrives without a preceding move, so resolve the word here
-    // rather than relying on the hover state
+    // A tap arrives without a preceding move, so resolve the word here rather than
+    // relying on the hover state
     const i = pick(camera, width, height, x, y);
+    if (pointer.touch) {
+      pinned = i;
+      return null;
+    }
     return i >= 0 ? (words[i].skill.link ?? null) : null;
   }
 
@@ -301,9 +324,10 @@ export function createCloudEngine(skills: SkillRecord[]) {
     const { palette, still } = inputs;
     let busy = false;
 
-    // Auto-rotation eases to a stop while the pointer is over the cloud
+    // Auto-rotation eases to a stop while the pointer is over the cloud, or a tapped
+    // word is pinned (so it stays in front)
     const k = rate(ROTATION_LERP, dt);
-    const stop = pointer.inside || still;
+    const stop = pointer.inside || pinned >= 0 || still;
     speedY += ((stop ? 0 : inputs.rotationSpeedY) - speedY) * k;
     speedX += ((stop ? 0 : inputs.rotationSpeedX) - speedX) * k;
     root.rotation.y += speedY * dt * 60;
@@ -325,8 +349,12 @@ export function createCloudEngine(skills: SkillRecord[]) {
       w.front = camDir.dot(d.copy(v).sub(camera.position).normalize());
     }
 
-    // Hover: the front-most word under the pointer
-    const hit = pointer.inside && !pointer.dragging ? pick(camera, width, height, pointer.x, pointer.y) : -1;
+    // Hover: the front-most word under the pointer, or for a finger, the word it tapped
+    const hit = pointer.touch
+      ? pinned
+      : pointer.inside && !pointer.dragging
+        ? pick(camera, width, height, pointer.x, pointer.y)
+        : -1;
     let hoverChange: SkillRecord | null | undefined;
     if (hit !== hovered) {
       hovered = hit;
