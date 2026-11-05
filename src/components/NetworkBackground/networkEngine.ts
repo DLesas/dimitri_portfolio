@@ -2,13 +2,12 @@
  * The network background's simulation and GPU resources, kept outside React.
  *
  * Nodes follow the original rules (mouse repulsion, DOM collider repulsion, return force,
- * damping), except that each wanders on a drift path of its own, and a cursor's push
- * lasts: when it lets go, the node's home is where it was left, easing back from there.
- * They live in typed arrays and are stepped at a fixed 60 Hz. Connections follow the
- * original rules too (dynamic distance, early-terminated candidate search, closest
- * first, lifetimes with fade in / fade out). Everything is drawn
- * with four draw calls: other visitors' cursor glows, the cursor glow, all connections,
- * all nodes. Other visitors' cursors (liveCursors.ts) push nodes like this visitor's does.
+ * damping), except that each wanders on a drift path of its own. They live in typed
+ * arrays and are stepped at a fixed 60 Hz. Connections follow the original rules too
+ * (dynamic distance, early-terminated candidate search, closest first, lifetimes with
+ * fade in / fade out). Everything is drawn with four draw calls: other visitors' cursor
+ * glows, the cursor glow, all connections, all nodes. Other visitors' cursors
+ * (liveCursors.ts) push nodes like this visitor's does.
  */
 import * as THREE from "three";
 import {
@@ -93,8 +92,6 @@ export interface FrameContext {
 // feel identical on 120 Hz screens and when the browser drops frames.
 const STEP = 1 / 60;
 const MAX_STEPS_PER_FRAME = 4;
-// How much of a push is left after each step, for PUSH_HALF_LIFE
-const PUSH_KEEP = Math.pow(0.5, STEP / A.PUSH_HALF_LIFE);
 // Each node's drift: per axis, two waves with their own rates (radians per second at
 // speed 1) and phases. Rates that never line up keep the path from closing into a loop.
 const WANDER_PER_NODE = 12; // 3 axes x (rate 1, phase 1, rate 2, phase 2)
@@ -241,10 +238,6 @@ export function createNetworkEngine() {
   let base = new Float32Array(0);
   let vel = new Float32Array(0);
   let wander = new Float32Array(0);
-  /** How far cursors have pushed each node off its drift path (x, y), easing back to 0 */
-  let push = new Float32Array(0);
-  /** Whether a cursor was pushing each node on the last step */
-  let held = new Uint8Array(0);
   let position: THREE.BufferAttribute | null = null;
   let time = 0;
   let acc = 0;
@@ -308,15 +301,9 @@ export function createNetworkEngine() {
       newVel.set(vel);
       const newWander = new Float32Array(newCap * WANDER_PER_NODE);
       newWander.set(wander);
-      const newPush = new Float32Array(newCap * 2);
-      newPush.set(push);
-      const newHeld = new Uint8Array(newCap);
-      newHeld.set(held);
       base = newBase;
       vel = newVel;
       wander = newWander;
-      push = newPush;
-      held = newHeld;
       cap = newCap;
       position = new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage);
       nodeGeometry.setAttribute("position", position);
@@ -334,8 +321,6 @@ export function createNetworkEngine() {
       driftTarget(i, time, inputs.settings.organicMovementSpeed);
       pos.set(target, i * 3);
       vel[i * 2] = vel[i * 2 + 1] = 0;
-      push[i * 2] = push[i * 2 + 1] = 0;
-      held[i] = 0;
     }
     if (wanted < count) {
       // Drop connections that point at removed nodes
@@ -468,7 +453,6 @@ export function createNetworkEngine() {
       driftTarget(i, time, st.organicMovementSpeed);
       let x = pos[i * 3], y = pos[i * 3 + 1];
       let vx = vel[i * 2], vy = vel[i * 2 + 1];
-      let pushed = false;
 
       // Mouse repulsion effect with velocity-based movement
       if (mouse.isActive) {
@@ -476,7 +460,6 @@ export function createNetworkEngine() {
         const k = repel(dx, dy, st.mouseRepulsionRadius);
         vx += dx * k;
         vy += dy * k;
-        if (k > 0) pushed = true;
       }
       // Other visitors' cursors push the same way, as far as their own radius reaches
       // (the same reach as their glow), fading with their cursor
@@ -486,21 +469,6 @@ export function createNetworkEngine() {
         const k = repel(dx, dy, rc.radius) * rc.weight;
         vx += dx * k;
         vy += dy * k;
-        if (k > 0) pushed = true;
-      }
-
-      // A push moves a node as far as it always has (against the pull home). When the
-      // cursor lets go, the node's home becomes where it was left, so it stays there rather
-      // than springing straight back, then eases back onto its drift path.
-      if (pushed) {
-        held[i] = 1;
-      } else if (held[i]) {
-        held[i] = 0;
-        push[i * 2] = x - target[0];
-        push[i * 2 + 1] = y - target[1];
-      } else {
-        push[i * 2] *= PUSH_KEEP;
-        push[i * 2 + 1] *= PUSH_KEEP;
       }
 
       // DOM element collision avoidance (the colliders already include their padding)
@@ -520,9 +488,9 @@ export function createNetworkEngine() {
         }
       }
 
-      // Return towards the drift target (less any push still easing off), with damping
-      vx += (target[0] + push[i * 2] - x) * A.RETURN_FORCE;
-      vy += (target[1] + push[i * 2 + 1] - y) * A.RETURN_FORCE;
+      // Return towards the drift target, with damping
+      vx += (target[0] - x) * A.RETURN_FORCE;
+      vy += (target[1] - y) * A.RETURN_FORCE;
       vx *= A.VELOCITY_DAMPING;
       vy *= A.VELOCITY_DAMPING;
       x += vx * FTS;
