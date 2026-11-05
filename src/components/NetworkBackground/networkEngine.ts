@@ -3,9 +3,10 @@
  *
  * Nodes follow the original rules (mouse repulsion, DOM collider repulsion, return force,
  * damping), except that each wanders on a drift path of its own. They live in typed
- * arrays and are stepped at a fixed 60 Hz. Connections follow the original rules too
- * (dynamic distance, early-terminated candidate search, closest first, lifetimes with
- * fade in / fade out). Everything is drawn with four draw calls: other visitors' cursor
+ * arrays and are stepped at a fixed 60 Hz. Connections keep the original rules (dynamic
+ * distance, closest first, lifetimes with fade in / fade out), but every pair is
+ * considered and each node has at most a few, so they spread evenly rather than gathering
+ * around some nodes. Everything is drawn with four draw calls: other visitors' cursor
  * glows, the cursor glow, all connections, all nodes. Other visitors' cursors
  * (liveCursors.ts) push nodes like this visitor's does.
  */
@@ -248,11 +249,18 @@ export function createNetworkEngine() {
   let conn = connectionBuffers();
   let next = connectionBuffers();
   const slotByKey = new Map<number, number>();
-  const candI = new Int32Array(MAX_CONNECTIONS * 2);
-  const candJ = new Int32Array(MAX_CONNECTIONS * 2);
-  const candD2 = new Float32Array(MAX_CONNECTIONS * 2);
+  // Every pair close enough to link, grown as needed
+  let candI = new Int32Array(MAX_CONNECTIONS * 2);
+  let candJ = new Int32Array(MAX_CONNECTIONS * 2);
+  let candD2 = new Float32Array(MAX_CONNECTIONS * 2);
+  /** Whether each candidate is a link that already exists */
+  let candOld = new Uint8Array(MAX_CONNECTIONS * 2);
+  /** Links each node has so far in a recalculation */
+  let degree = new Uint8Array(0);
   const order: number[] = [];
-  const byDistance = (x: number, y: number) => candD2[x] - candD2[y];
+  // Existing links first (so they live out their lifetime rather than being swapped for a
+  // slightly closer pair), then the closest
+  const byPriority = (x: number, y: number) => candOld[y] - candOld[x] || candD2[x] - candD2[y];
   const target = [0, 0, 0];
 
   const amplitude = [
@@ -369,7 +377,23 @@ export function createNetworkEngine() {
     }
   }
 
-  /** Connections: same rules as before, minus the per-line objects and React state */
+  /** Room for twice as many candidate pairs */
+  function growCandidates() {
+    const grow = <T extends Int32Array | Float32Array | Uint8Array>(from: T, to: T) => (to.set(from), to);
+    const size = candI.length * 2;
+    candI = grow(candI, new Int32Array(size));
+    candJ = grow(candJ, new Int32Array(size));
+    candD2 = grow(candD2, new Float32Array(size));
+    candOld = grow(candOld, new Uint8Array(size));
+  }
+
+  /**
+   * Connections. Every pair within the (gently breathing) distance is a candidate; links
+   * that already exist keep their place until they expire, then the closest pairs fill the
+   * rest, each node taking at most CONNECTIONS_PER_NODE. Scanning every pair (rather than
+   * stopping once enough were found, which handed most links to the first nodes) and the
+   * per-node cap spread the lines across the network instead of fanning out of hubs.
+   */
   function recalcConnections(inputs: NetworkInputs) {
     const { settings, connectionDistance: maxDistance, performanceLevel } = inputs;
     const pos = position!.array as Float32Array;
@@ -379,33 +403,35 @@ export function createNetworkEngine() {
       settings.maxConnections ?? PERFORMANCE_CONFIGS[performanceLevel].MAX_CONNECTIONS,
       MAX_CONNECTIONS
     );
-    const limit = Math.min(max * 2, MAX_CONNECTIONS * 2);
 
     let found = 0;
-    outer: for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
       const ax = pos[i * 3], ay = pos[i * 3 + 1], az = pos[i * 3 + 2];
       for (let j = i + 1; j < count; j++) {
         const dx = ax - pos[j * 3], dy = ay - pos[j * 3 + 1], dz = az - pos[j * 3 + 2];
         const d2 = dx * dx + dy * dy + dz * dz;
         if (d2 < maxD2) {
+          if (found === candI.length) growCandidates();
           candI[found] = i;
           candJ[found] = j;
           candD2[found] = d2;
-          // Early termination once there are enough candidates (as before)
-          if (++found >= limit) break outer;
+          candOld[found] = slotByKey.has(i * PAIR_KEY_STRIDE + j) ? 1 : 0;
+          found++;
         }
       }
     }
 
     order.length = found;
     for (let k = 0; k < found; k++) order[k] = k;
-    order.sort(byDistance);
+    order.sort(byPriority);
+    if (degree.length < count) degree = new Uint8Array(cap);
+    degree.fill(0, 0, count);
 
     let n = 0;
-    const take = Math.min(found, max);
-    for (let k = 0; k < take; k++) {
+    for (let k = 0; k < found && n < max; k++) {
       const c = order[k];
       const i = candI[c], j = candJ[c];
+      if (degree[i] >= A.CONNECTIONS_PER_NODE || degree[j] >= A.CONNECTIONS_PER_NODE) continue;
       const slot = slotByKey.get(i * PAIR_KEY_STRIDE + j);
       let birth: number, life: number, seed: number;
       if (slot !== undefined) {
@@ -418,6 +444,8 @@ export function createNetworkEngine() {
         seed = Math.random();
       }
       if (time - birth >= life) continue; // expired: dropped, and may be reborn next time
+      degree[i]++;
+      degree[j]++;
       next.a[n] = i;
       next.b[n] = j;
       next.dist[n] = Math.sqrt(candD2[c]);

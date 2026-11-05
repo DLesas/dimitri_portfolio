@@ -26,6 +26,7 @@ export const ANIMATION_CONFIG = {
   DOM_REPULSION_FORCE: 1.0, // Force strength pushing nodes away from DOM elements
 
   // Connections - Visual behavior of lines between nodes
+  CONNECTIONS_PER_NODE: 3, // Most lines one node can have, so they spread across the network rather than fanning out of a few hubs
   CONNECTION_LIFETIME_BASE: 8, // Base time (seconds) a connection stays visible
   CONNECTION_LIFETIME_RANDOM: 3, // Random additional time (0-3 seconds) added to lifetime
   CONNECTION_FADE_IN_TIME: 1.0, // Time (seconds) for connection to fade in when created
