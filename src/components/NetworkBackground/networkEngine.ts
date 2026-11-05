@@ -1,12 +1,13 @@
 /**
  * The network background's simulation and GPU resources, kept outside React.
  *
- * Nodes follow the original rules exactly (organic drift, mouse repulsion, DOM collider
- * repulsion, return force, damping) but live in typed arrays and are stepped at a fixed
- * 60 Hz. Connections follow the original rules too (dynamic distance, early-terminated
- * candidate search, closest first, lifetimes with fade in / fade out). Everything is drawn
- * with four draw calls: other visitors' cursor glows, the cursor glow, all connections,
- * all nodes. Other visitors' cursors (liveCursors.ts) push nodes like this visitor's does.
+ * Nodes follow the original rules (mouse repulsion, DOM collider repulsion, return force,
+ * damping), except that each wanders on a drift path of its own. They live in typed
+ * arrays and are stepped at a fixed 60 Hz. Connections follow the original rules too
+ * (dynamic distance, early-terminated candidate search, closest first, lifetimes with
+ * fade in / fade out). Everything is drawn with four draw calls: other visitors' cursor
+ * glows, the cursor glow, all connections, all nodes. Other visitors' cursors
+ * (liveCursors.ts) push nodes like this visitor's does.
  */
 import * as THREE from "three";
 import {
@@ -91,6 +92,9 @@ export interface FrameContext {
 // feel identical on 120 Hz screens and when the browser drops frames.
 const STEP = 1 / 60;
 const MAX_STEPS_PER_FRAME = 4;
+// Each node's drift: per axis, two waves with their own rates (radians per second at
+// speed 1) and phases. Rates that never line up keep the path from closing into a loop.
+const WANDER_PER_NODE = 12; // 3 axes x (rate 1, phase 1, rate 2, phase 2)
 // Sliders top out at 300 nodes / 300 connections
 const MAX_CONNECTIONS = 512;
 const PAIR_KEY_STRIDE = 4096;
@@ -233,6 +237,7 @@ export function createNetworkEngine() {
   let count = 0;
   let base = new Float32Array(0);
   let vel = new Float32Array(0);
+  let wander = new Float32Array(0);
   let position: THREE.BufferAttribute | null = null;
   let time = 0;
   let acc = 0;
@@ -250,12 +255,37 @@ export function createNetworkEngine() {
   const byDistance = (x: number, y: number) => candD2[x] - candD2[y];
   const target = [0, 0, 0];
 
-  /** Where a node sits on its organic drift path at simulation time t */
+  const amplitude = [
+    A.ORGANIC_MOVEMENT_AMPLITUDE_X,
+    A.ORGANIC_MOVEMENT_AMPLITUDE_Y,
+    A.ORGANIC_MOVEMENT_AMPLITUDE_Z,
+  ];
+
+  /** Give node i a drift of its own: random rates and phases on each axis */
+  function seedWander(i: number) {
+    for (let axis = 0; axis < 3; axis++) {
+      const o = i * WANDER_PER_NODE + axis * 4;
+      const rate = 0.45 + Math.random() * 0.45;
+      wander[o] = rate;
+      wander[o + 1] = Math.random() * Math.PI * 2;
+      wander[o + 2] = rate * (1.5 + Math.random() * 0.8);
+      wander[o + 3] = Math.random() * Math.PI * 2;
+    }
+  }
+
+  /**
+   * Where a node sits on its drift path at simulation time t: on each axis, a slow wave
+   * plus a faster, smaller one, so it wanders within the axis's amplitude of home
+   * without ever retracing a loop, and out of step with its neighbours
+   */
   function driftTarget(i: number, t: number, speed: number) {
-    const phase = t * speed + i * 0.2;
-    target[0] = base[i * 3] + Math.sin(phase) * A.ORGANIC_MOVEMENT_AMPLITUDE_X;
-    target[1] = base[i * 3 + 1] + Math.cos(phase * 0.8) * A.ORGANIC_MOVEMENT_AMPLITUDE_Y;
-    target[2] = base[i * 3 + 2] + Math.sin(phase * 0.6) * A.ORGANIC_MOVEMENT_AMPLITUDE_Z;
+    const s = t * speed;
+    for (let axis = 0; axis < 3; axis++) {
+      const o = i * WANDER_PER_NODE + axis * 4;
+      const wave =
+        0.7 * Math.sin(s * wander[o] + wander[o + 1]) + 0.3 * Math.sin(s * wander[o + 2] + wander[o + 3]);
+      target[axis] = base[i * 3 + axis] + wave * amplitude[axis];
+    }
   }
 
   /** Keep existing nodes, append or trim (same as the original) */
@@ -269,8 +299,11 @@ export function createNetworkEngine() {
       newBase.set(base);
       const newVel = new Float32Array(newCap * 2);
       newVel.set(vel);
+      const newWander = new Float32Array(newCap * WANDER_PER_NODE);
+      newWander.set(wander);
       base = newBase;
       vel = newVel;
+      wander = newWander;
       cap = newCap;
       position = new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage);
       nodeGeometry.setAttribute("position", position);
@@ -284,6 +317,7 @@ export function createNetworkEngine() {
       base[i * 3] = (Math.random() - 0.5) * width;
       base[i * 3 + 1] = (Math.random() - 0.5) * height;
       base[i * 3 + 2] = (Math.random() - 0.5) * WORLD_CONFIG.DEPTH;
+      seedWander(i);
       driftTarget(i, time, inputs.settings.organicMovementSpeed);
       pos.set(target, i * 3);
       vel[i * 2] = vel[i * 2 + 1] = 0;
