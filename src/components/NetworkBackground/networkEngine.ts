@@ -4,9 +4,10 @@
  * Nodes follow the original rules (mouse repulsion, DOM collider repulsion, return force,
  * damping), except that each wanders on a drift path of its own. They live in typed
  * arrays and are stepped at a fixed 60 Hz. Connections keep the original rules (dynamic
- * distance, closest first, lifetimes with fade in / fade out), but every pair is
- * considered and each node has at most a few, so they spread evenly rather than gathering
- * around some nodes. Everything is drawn with four draw calls: other visitors' cursor
+ * distance, closest first, lifetimes with fade in / fade out), but every pair in reach is
+ * considered, found through a grid so only nearby nodes are compared, so links spread
+ * across the network rather than going to the first nodes found. Everything is drawn
+ * with four draw calls: other visitors' cursor
  * glows, the cursor glow, all connections, all nodes. Other visitors' cursors
  * (liveCursors.ts) push nodes like this visitor's does.
  */
@@ -98,11 +99,35 @@ const MAX_STEPS_PER_FRAME = 4;
 const WANDER_PER_NODE = 12; // 3 axes x (rate 1, phase 1, rate 2, phase 2)
 // Sliders top out at 300 nodes / 300 connections
 const MAX_CONNECTIONS = 512;
-const PAIR_KEY_STRIDE = 4096;
 /** Simulated time a reduced-motion network runs before freezing, so nodes clear the text */
 const SETTLE_STEPS = 180;
 
 const NO_MOUSE: MousePosition = { x: 0, y: 0, isActive: false };
+
+/** Moves the k smallest of a[0, n) to the front, in no particular order (quickselect) */
+function selectSmallest(a: Float64Array, n: number, k: number) {
+  let lo = 0, hi = n - 1;
+  while (hi > lo) {
+    // Median of three as the pivot, then Hoare partitioning
+    const x = a[lo], y = a[(lo + hi) >> 1], z = a[hi];
+    const pivot = x < y ? (y < z ? y : x < z ? z : x) : x < z ? x : y < z ? z : y;
+    let i = lo, j = hi;
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        const t = a[i];
+        a[i] = a[j];
+        a[j] = t;
+        i++;
+        j--;
+      }
+    }
+    if (k - 1 <= j) hi = j;
+    else if (k - 1 >= i) lo = i;
+    else break;
+  }
+}
 const MAX_REMOTE_CURSORS = 16;
 
 /**
@@ -248,19 +273,20 @@ export function createNetworkEngine() {
   let additive = true;
   let conn = connectionBuffers();
   let next = connectionBuffers();
-  const slotByKey = new Map<number, number>();
-  // Every pair close enough to link, grown as needed
-  let candI = new Int32Array(MAX_CONNECTIONS * 2);
-  let candJ = new Int32Array(MAX_CONNECTIONS * 2);
-  let candD2 = new Float32Array(MAX_CONNECTIONS * 2);
-  /** Whether each candidate is a link that already exists */
-  let candOld = new Uint8Array(MAX_CONNECTIONS * 2);
-  /** Links each node has so far in a recalculation */
-  let degree = new Uint8Array(0);
-  const order: number[] = [];
-  // Existing links first (so they live out their lifetime rather than being swapped for a
-  // slightly closer pair), then the closest
-  const byPriority = (x: number, y: number) => candOld[y] - candOld[x] || candD2[x] - candD2[y];
+  /** Each pair's link slot + 1 (0 for none), the pair (i, j), i < j, at i * cap + j */
+  let slotOf = new Int16Array(0);
+  /** Where in slotOf the current links are written, to clear them before the next update */
+  const slotAt = new Int32Array(MAX_CONNECTIONS);
+  let slotsSet = 0;
+  // A grid of cells one link-distance wide: a node is only compared with nodes in its own
+  // and the eight cells around it. cellStart[c] .. cellStart[c + 1] index cell c in cellNodes.
+  let cellStart = new Int32Array(0);
+  let cellNodes = new Int32Array(0);
+  let cellOf = new Int32Array(0);
+  // Candidate pairs as numbers that order by distance: squared distance in 1/1024ths, times
+  // the number of pairs, plus the pair's index. Links that exist go in `kept`, others in `fresh`.
+  const kept = new Float64Array(MAX_CONNECTIONS);
+  let fresh = new Float64Array(MAX_CONNECTIONS * 2);
   const target = [0, 0, 0];
 
   const amplitude = [
@@ -313,6 +339,9 @@ export function createNetworkEngine() {
       vel = newVel;
       wander = newWander;
       cap = newCap;
+      slotOf = new Int16Array(newCap * newCap);
+      slotsSet = 0;
+      rebuildSlots();
       position = new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage);
       nodeGeometry.setAttribute("position", position);
       nodeGeometry.setAttribute("aIndex", new THREE.BufferAttribute(new Float32Array(newCap).map((_, i) => i), 1));
@@ -352,8 +381,13 @@ export function createNetworkEngine() {
   }
 
   function rebuildSlots() {
-    slotByKey.clear();
-    for (let k = 0; k < conn.count; k++) slotByKey.set(conn.a[k] * PAIR_KEY_STRIDE + conn.b[k], k);
+    for (let k = 0; k < slotsSet; k++) slotOf[slotAt[k]] = 0;
+    for (let k = 0; k < conn.count; k++) {
+      const at = conn.a[k] * cap + conn.b[k];
+      slotOf[at] = k + 1;
+      slotAt[k] = at;
+    }
+    slotsSet = conn.count;
   }
 
   /** Colours and blending follow the theme */
@@ -377,22 +411,41 @@ export function createNetworkEngine() {
     }
   }
 
-  /** Room for twice as many candidate pairs */
-  function growCandidates() {
-    const grow = <T extends Int32Array | Float32Array | Uint8Array>(from: T, to: T) => (to.set(from), to);
-    const size = candI.length * 2;
-    candI = grow(candI, new Int32Array(size));
-    candJ = grow(candJ, new Int32Array(size));
-    candD2 = grow(candD2, new Float32Array(size));
-    candOld = grow(candOld, new Uint8Array(size));
+  /** Puts every node in its grid cell; returns the number of columns */
+  function fillGrid(pos: Float32Array, cell: number) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < count; i++) {
+      const x = pos[i * 3], y = pos[i * 3 + 1];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const cols = Math.floor((maxX - minX) / cell) + 1;
+    const cells = cols * (Math.floor((maxY - minY) / cell) + 1);
+    if (cellStart.length < cells + 2) cellStart = new Int32Array(cells + 2);
+    else cellStart.fill(0, 0, cells + 2);
+    if (cellNodes.length < count) {
+      cellNodes = new Int32Array(cap);
+      cellOf = new Int32Array(cap);
+    }
+    // Count each cell's nodes (one along), sum into starts, then place each node
+    for (let i = 0; i < count; i++) {
+      const c =
+        Math.floor((pos[i * 3] - minX) / cell) + Math.floor((pos[i * 3 + 1] - minY) / cell) * cols;
+      cellOf[i] = c;
+      cellStart[c + 2]++;
+    }
+    for (let c = 0; c < cells; c++) cellStart[c + 2] += cellStart[c + 1];
+    for (let i = 0; i < count; i++) cellNodes[cellStart[cellOf[i] + 1]++] = i;
+    return { cols, rows: cells / cols };
   }
 
   /**
-   * Connections. Every pair within the (gently breathing) distance is a candidate; links
-   * that already exist keep their place until they expire, then the closest pairs fill the
-   * rest, each node taking at most CONNECTIONS_PER_NODE. Scanning every pair (rather than
-   * stopping once enough were found, which handed most links to the first nodes) and the
-   * per-node cap spread the lines across the network instead of fanning out of hubs.
+   * Connections. Every pair within the (gently breathing) distance is a candidate. Links
+   * that already exist keep their place until they expire (so they fade out as designed
+   * rather than being swapped for a slightly closer pair), then the closest other pairs
+   * fill the rest. Only the nearest are picked out, not sorted.
    */
   function recalcConnections(inputs: NetworkInputs) {
     const { settings, connectionDistance: maxDistance, performanceLevel } = inputs;
@@ -403,55 +456,71 @@ export function createNetworkEngine() {
       settings.maxConnections ?? PERFORMANCE_CONFIGS[performanceLevel].MAX_CONNECTIONS,
       MAX_CONNECTIONS
     );
+    const pairs = cap * cap;
 
-    let found = 0;
-    for (let i = 0; i < count; i++) {
-      const ax = pos[i * 3], ay = pos[i * 3 + 1], az = pos[i * 3 + 2];
-      for (let j = i + 1; j < count; j++) {
-        const dx = ax - pos[j * 3], dy = ay - pos[j * 3 + 1], dz = az - pos[j * 3 + 2];
-        const d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 < maxD2) {
-          if (found === candI.length) growCandidates();
-          candI[found] = i;
-          candJ[found] = j;
-          candD2[found] = d2;
-          candOld[found] = slotByKey.has(i * PAIR_KEY_STRIDE + j) ? 1 : 0;
-          found++;
+    let nKept = 0, nFresh = 0;
+    if (count > 1 && dynamicDistance > 0) {
+      // Cells at least a link-distance wide, so every pair in reach is in neighbouring cells
+      const { cols, rows } = fillGrid(pos, Math.max(dynamicDistance, 1));
+      for (let i = 0; i < count; i++) {
+        const ax = pos[i * 3], ay = pos[i * 3 + 1], az = pos[i * 3 + 2];
+        const c = cellOf[i], cx = c % cols, cy = (c - cx) / cols;
+        const x0 = cx > 0 ? cx - 1 : 0, x1 = cx < cols - 1 ? cx + 1 : cols - 1;
+        for (let y = cy > 0 ? cy - 1 : 0, y1 = cy < rows - 1 ? cy + 1 : rows - 1; y <= y1; y++) {
+          // A row of neighbouring cells is one run of cellNodes
+          for (let s = cellStart[x0 + y * cols], end = cellStart[x1 + y * cols + 1]; s < end; s++) {
+            const j = cellNodes[s];
+            if (j <= i) continue;
+            const dx = ax - pos[j * 3], dy = ay - pos[j * 3 + 1], dz = az - pos[j * 3 + 2];
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 >= maxD2) continue;
+            const pair = i * cap + j;
+            const key = Math.floor(d2 * 1024) * pairs + pair;
+            const slot = slotOf[pair] - 1;
+            if (slot < 0) {
+              if (nFresh === fresh.length) {
+                const grown = new Float64Array(fresh.length * 2);
+                grown.set(fresh);
+                fresh = grown;
+              }
+              fresh[nFresh++] = key;
+            } else if (time - conn.birth[slot] < conn.life[slot]) {
+              kept[nKept++] = key;
+            } // else expired: dropped, and may be reborn next time
+          }
         }
       }
     }
-
-    order.length = found;
-    for (let k = 0; k < found; k++) order[k] = k;
-    order.sort(byPriority);
-    if (degree.length < count) degree = new Uint8Array(cap);
-    degree.fill(0, 0, count);
+    // Fewer allowed than exist (the setting was lowered): keep the closest
+    if (nKept > max) {
+      selectSmallest(kept, nKept, max);
+      nKept = max;
+    }
+    const room = max - nKept;
+    if (nFresh > room) {
+      selectSmallest(fresh, nFresh, room);
+      nFresh = room;
+    }
 
     let n = 0;
-    for (let k = 0; k < found && n < max; k++) {
-      const c = order[k];
-      const i = candI[c], j = candJ[c];
-      if (degree[i] >= A.CONNECTIONS_PER_NODE || degree[j] >= A.CONNECTIONS_PER_NODE) continue;
-      const slot = slotByKey.get(i * PAIR_KEY_STRIDE + j);
-      let birth: number, life: number, seed: number;
-      if (slot !== undefined) {
-        birth = conn.birth[slot];
-        life = conn.life[slot];
-        seed = conn.seed[slot];
-      } else {
-        birth = time;
-        life = A.CONNECTION_LIFETIME_BASE + Math.random() * A.CONNECTION_LIFETIME_RANDOM;
-        seed = Math.random();
-      }
-      if (time - birth >= life) continue; // expired: dropped, and may be reborn next time
-      degree[i]++;
-      degree[j]++;
+    for (let k = 0; k < nKept + nFresh; k++) {
+      const key = k < nKept ? kept[k] : fresh[k - nKept];
+      const pair = key % pairs;
+      const i = Math.floor(pair / cap), j = pair - i * cap;
+      const dx = pos[i * 3] - pos[j * 3], dy = pos[i * 3 + 1] - pos[j * 3 + 1], dz = pos[i * 3 + 2] - pos[j * 3 + 2];
       next.a[n] = i;
       next.b[n] = j;
-      next.dist[n] = Math.sqrt(candD2[c]);
-      next.birth[n] = birth;
-      next.life[n] = life;
-      next.seed[n] = seed;
+      next.dist[n] = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (k < nKept) {
+        const slot = slotOf[pair] - 1;
+        next.birth[n] = conn.birth[slot];
+        next.life[n] = conn.life[slot];
+        next.seed[n] = conn.seed[slot];
+      } else {
+        next.birth[n] = time;
+        next.life[n] = A.CONNECTION_LIFETIME_BASE + Math.random() * A.CONNECTION_LIFETIME_RANDOM;
+        next.seed[n] = Math.random();
+      }
       n++;
     }
     next.count = n;
