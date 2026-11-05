@@ -14,11 +14,12 @@ export const ANIMATION_CONFIG = {
   MOUSE_REPULSION_RADIUS_MAX: 30,
   MOUSE_GLOW_REACH: 0.35, // Share of the repulsion radius the cursor glow and the nodes' mouse highlight reach
   MOUSE_REPULSION_STRENGTH: 23, // Force strength of mouse repulsion (higher = stronger push)
+  PUSH_HALF_LIFE: 12, // Seconds a pushed node takes to drift halfway back once a cursor lets go (it stays where it was left, then eases back)
   FIXED_TIME_STEP: 0.025, // Time step for physics calculations (smaller = more accurate)
 
   // Physics - Controls how nodes move and settle
   VELOCITY_DAMPING: 0.95, // Friction applied to node movement (0.95 = 5% speed loss per frame)
-  RETURN_FORCE: 0.06, // Force pulling nodes back to their original positions
+  RETURN_FORCE: 0.06, // Force pulling nodes towards where they're meant to be (their drifting home)
 
   // DOM collision - How nodes avoid overlapping with HTML text elements
   DOM_COLLISION_PADDING: 0, // Extra space around DOM elements for collision detection
