@@ -17,6 +17,10 @@ import { SITE_PAGES } from "@/lib/site";
 const navLinkClass = (active: boolean) =>
   active ? "text-primary font-medium" : "text-foreground/70 hover:text-foreground";
 
+/** Whether a nav link is for the page shown, or the section it's in (Blog, on a post) */
+const isCurrent = (pathname: string, href: string) =>
+  pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+
 export function Navigation() {
   const pathname = usePathname();
   const { navigationRef } = useNavigationSpace();
@@ -40,7 +44,7 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`transition-colors ${navLinkClass(pathname === item.href)}`}
+                className={`transition-colors ${navLinkClass(isCurrent(pathname, item.href))}`}
               >
                 {item.label}
               </Link>
@@ -113,7 +117,7 @@ export function Navigation() {
             >
               <Link
                 href={item.href}
-                className={`block text-right text-lg transition-colors ${navLinkClass(pathname === item.href)}`}
+                className={`block text-right text-lg transition-colors ${navLinkClass(isCurrent(pathname, item.href))}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.label}

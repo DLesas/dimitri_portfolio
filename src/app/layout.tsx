@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
+import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -42,13 +43,7 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       {/* Text uses the system font stack (HeroUI's --font-sans) */}
       <body className="antialiased min-h-screen flex flex-col">
-        <script
-          type="application/ld+json"
-          // Escaping "<" keeps the JSON from closing the script tag early
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
-          }}
-        />
+        <JsonLd data={structuredData} />
         <Providers>
           <ConsoleEasterEgg />
           <Navigation />
