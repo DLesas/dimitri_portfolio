@@ -60,3 +60,27 @@
     transform: scaleX(0);
   }
 }
+
+/* Blog post titles and section titles: Playfair Display italic, loaded by src/app/blog/layout.tsx */
+@utility font-display {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Code blocks in blog posts (rehype-pretty-code): every token carries both themes' colours */
+[data-rehype-pretty-code-figure] code[data-theme*=" "] span {
+  color: var(--shiki-light);
+}
+.dark [data-rehype-pretty-code-figure] code[data-theme*=" "] span {
+  color: var(--shiki-dark);
+}
+
+/* The section rail's current star */
+@keyframes rail-pulse {
+  50% {
+    transform: scale(1.45);
+    opacity: 0.08;
+  }
+}
