@@ -38,6 +38,8 @@ const store =
     : null;
 
 const DAILY_READS_PER_IP = 30;
+/** Tries at counting a read that keeps colliding with others' (see POST) */
+const COUNT_ATTEMPTS = 4;
 const MAX_SLUGS = 50;
 const DAY = 24 * 60 * 60;
 // The CDN keeps counts for a minute, then serves them while it fetches new ones
@@ -89,52 +91,67 @@ export async function POST(request: NextRequest) {
   // The IP isn't kept, only a hash of it, in items deleted within a day or two
   const ip = createHash("sha256").update(visitorKey(ipAddress(request))).digest("base64url").slice(0, 22);
 
-  try {
-    // All three, or none
-    await dynamo.send(
-      new TransactWriteItemsCommand({
-        TransactItems: [
-          // This IP's read of this post: once a day
-          {
-            Put: {
-              TableName: table,
-              Item: { id: { S: `seen#${slug}#${ip}` }, expires: { N: String(now + DAY) } },
-              ConditionExpression: "attribute_not_exists(#id) OR #expires < :now",
-              ExpressionAttributeNames: { "#id": "id", "#expires": "expires" },
-              ExpressionAttributeValues: { ":now": { N: String(now) } },
+  // All three, or none
+  const countIt = () =>
+    new TransactWriteItemsCommand({
+      TransactItems: [
+        // This IP's read of this post: once a day
+        {
+          Put: {
+            TableName: table,
+            Item: { id: { S: `seen#${slug}#${ip}` }, expires: { N: String(now + DAY) } },
+            ConditionExpression: "attribute_not_exists(#id) OR #expires < :now",
+            ExpressionAttributeNames: { "#id": "id", "#expires": "expires" },
+            ExpressionAttributeValues: { ":now": { N: String(now) } },
+          },
+        },
+        // This IP's reads today, of any post
+        {
+          Update: {
+            TableName: table,
+            Key: { id: { S: `ip#${ip}#${day}` } },
+            UpdateExpression: "ADD #count :one SET #expires = if_not_exists(#expires, :expires)",
+            ConditionExpression: "attribute_not_exists(#count) OR #count < :limit",
+            ExpressionAttributeNames: { "#count": "count", "#expires": "expires" },
+            ExpressionAttributeValues: {
+              ":one": { N: "1" },
+              ":limit": { N: String(DAILY_READS_PER_IP) },
+              ":expires": { N: String(now + 2 * DAY) },
             },
           },
-          // This IP's reads today, of any post
-          {
-            Update: {
-              TableName: table,
-              Key: { id: { S: `ip#${ip}#${day}` } },
-              UpdateExpression: "ADD #count :one SET #expires = if_not_exists(#expires, :expires)",
-              ConditionExpression: "attribute_not_exists(#count) OR #count < :limit",
-              ExpressionAttributeNames: { "#count": "count", "#expires": "expires" },
-              ExpressionAttributeValues: {
-                ":one": { N: "1" },
-                ":limit": { N: String(DAILY_READS_PER_IP) },
-                ":expires": { N: String(now + 2 * DAY) },
-              },
-            },
+        },
+        // The post's count
+        {
+          Update: {
+            TableName: table,
+            Key: countKey(slug),
+            UpdateExpression: "ADD #reads :one",
+            ExpressionAttributeNames: { "#reads": "reads" },
+            ExpressionAttributeValues: { ":one": { N: "1" } },
           },
-          // The post's count
-          {
-            Update: {
-              TableName: table,
-              Key: countKey(slug),
-              UpdateExpression: "ADD #reads :one",
-              ExpressionAttributeNames: { "#reads": "reads" },
-              ExpressionAttributeValues: { ":one": { N: "1" } },
-            },
-          },
-        ],
-      })
-    );
-  } catch (error) {
-    // Already counted today, or past the day's limit: not counted, but still answered
-    if (!(error instanceof TransactionCanceledException)) return failed(error);
+        },
+      ],
+    });
+
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await dynamo.send(countIt());
+      break;
+    } catch (error) {
+      if (error instanceof TransactionCanceledException) {
+        const reasons = (error.CancellationReasons ?? []).map((reason) => reason.Code ?? "None");
+        // Already counted today, or past the day's limit: not counted, but still answered
+        if (reasons.includes("ConditionalCheckFailed") && reasons.every((code) => code === "None" || code === "ConditionalCheckFailed")) break;
+        // Another reader counted the post at the same moment: try again shortly (DynamoDB
+        // cancels conflicting transactions, and the SDK doesn't retry them)
+        if (reasons.includes("TransactionConflict") && attempt < COUNT_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, 25 * attempt + Math.random() * 50));
+          continue;
+        }
+      }
+      // Anything else isn't answered as counted, so the browser tries again next visit
+      return failed(error);
+    }
   }
 
   try {
