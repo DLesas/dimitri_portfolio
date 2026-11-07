@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTheme } from "next-themes";
 import { ANIMATION_CONFIG as A, EFFECTS_CONFIG, VISUAL_CONFIG } from "@/components/NetworkBackground/constants";
+import type { RemoteCursor } from "@/components/NetworkBackground/liveCursors";
 import { createNetworkEngine, type FrameContext, type NetworkInputs } from "@/components/NetworkBackground/networkEngine";
 import { PX_PER_UNIT } from "@/components/NetworkBackground/world";
 import DebugPerf from "@/components/three/DebugPerf";
@@ -19,6 +20,7 @@ import {
   drawGrid,
   drawPointer,
   drawSprings,
+  drawVisitor,
   inReach,
   neighboursOf,
   sortIntoGrid,
@@ -78,10 +80,13 @@ const FOCUS_SECONDS = 2.4;
 const GLOW_BOOST = 3;
 const DIMMED_LINKS = 0.35;
 const READOUT_SECONDS = 0.25;
+/** The draws view's other visitor, in a colour of their own, as on the home page */
+const VISITOR = { id: "visitor", name: "Anonymous Fox", color: "#f5a524" };
+const NO_REMOTES: RemoteCursor[] = [];
 
 interface SceneProps {
   view: FigureView;
-  /** The draws view: draw calls shown so far (0: the glow, 1: + connections, 2: + nodes) */
+  /** The draws view: draw calls shown so far (0: visitors' glows, 1: + yours, 2: + connections, 3: + nodes) */
   step: number;
   palette: NetworkPalette;
   style: OverlayStyle;
@@ -117,8 +122,10 @@ function FigureScene({ view, step, palette, style, still, overlay, onReadout, on
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const loop = useRef({
     demoTime: 0,
-    // Each draw call's share shown, eased: the glow, connections, nodes
-    shown: [0, 0, 0],
+    // Each draw call's share shown, eased: visitors' glows, yours, connections, nodes
+    shown: [0, 0, 0, 0],
+    visitorTime: 0,
+    visitors: [{ ...VISITOR, x: 0, y: 0, radius: SETTINGS.mouseRepulsionRadius, weight: 1 }] as RemoteCursor[],
     focus: -1,
     focusFor: 0,
     homes: new Float32Array(0),
@@ -222,19 +229,32 @@ function FigureScene({ view, step, palette, style, still, overlay, onReadout, on
     mouse.y += (target.y - mouse.y) * ease;
     mouse.isActive = view !== "grid" && !still;
 
+    // The draws view has another visitor, wandering a path of their own, who pushes too
+    const [visitor] = l.visitors;
+    if (view === "draws") {
+      if (!still) l.visitorTime += delta;
+      const vt = l.visitorTime + 4;
+      visitor.x = (-0.3 * w * Math.sin(vt * 0.38)) / stage.zoom;
+      visitor.y = (0.26 * h * Math.cos(vt * 0.57)) / stage.zoom;
+    }
+    ctx.remotes = view === "draws" ? l.visitors : NO_REMOTES;
+
     engine.frame(delta, inputs.current, ctx);
     const { positions, count, links, time, steps } = engine.inspect();
 
-    // The cursor's glow, stronger than on the home page so it reads on its own
-    const { cursor, links: linkMesh, nodes } = engine.parts;
+    // Cursor glows, stronger than on the home page so they read on their own
+    const { otherCursors, cursor, links: linkMesh, nodes } = engine.parts;
+    const visitorGlow = otherCursors.geometry.getAttribute("aStrength");
     cursor.material.uniforms.uStrength.value *= GLOW_BOOST;
     // The draws view: each draw call fades in as its turn comes, and out when it starts over
     if (view === "draws") {
       const ease = still ? 1 : Math.min(1, delta * 6);
-      for (let k = 0; k < 3; k++) l.shown[k] += ((k <= step ? 1 : 0) - l.shown[k]) * ease;
-      cursor.material.uniforms.uStrength.value *= l.shown[0];
-      linkMesh.material.uniforms.uIntro.value *= l.shown[1];
-      nodes.material.uniforms.uIntro.value *= l.shown[2];
+      for (let k = 0; k < l.shown.length; k++) l.shown[k] += ((k <= step ? 1 : 0) - l.shown[k]) * ease;
+      visitorGlow.setX(0, visitorGlow.getX(0) * GLOW_BOOST * l.shown[0]);
+      visitorGlow.needsUpdate = true;
+      cursor.material.uniforms.uStrength.value *= l.shown[1];
+      linkMesh.material.uniforms.uIntro.value *= l.shown[2];
+      nodes.material.uniforms.uIntro.value *= l.shown[3];
     } else {
       // Under the lines the other views draw, connections step back
       linkMesh.material.uniforms.uIntro.value *= DIMMED_LINKS;
@@ -306,6 +326,7 @@ function FigureScene({ view, step, palette, style, still, overlay, onReadout, on
       }
 
       if (view !== "grid" && demo && !still) drawPointer(draw, stage, mouse.x, mouse.y, style);
+      if (view === "draws") drawVisitor(draw, stage, visitor, style);
     }
 
     if ((l.readoutIn -= delta) <= 0) {

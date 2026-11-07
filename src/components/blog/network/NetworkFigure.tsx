@@ -18,24 +18,41 @@ const TITLES: Record<FigureView, string> = {
 };
 
 /** The draws view's draw calls, in the order they're drawn */
-const DRAW_CALLS = ["Your cursor's glow", "Connections", "Nodes"];
+const DRAW_CALLS = ["Visitors' glows", "Your glow", "Connections", "Nodes"];
 /** Its frame, built up a draw call at a time, then held */
-const PLAY = [0, 1, 2, 2];
+const PLAY = [0, 1, 2, 3, 3];
 const PLAY_MS = 1600;
+
+/** No box around the network: it fades out at the stage's edges instead */
+const FADE_EDGES = {
+  maskImage:
+    "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent)",
+  maskComposite: "intersect",
+} as const;
 
 /** A live number, or "…" until there is one */
 const count = (n: number | undefined) => (n === undefined ? "…" : n.toLocaleString("en-GB"));
 
 /** What the draws view's caption says while each draw call is shown */
 function drawCallCaption(step: number, r: Readout | null): ReactNode {
-  const n = <strong>Draw call {step + 1} of 3.</strong>;
+  const n = (
+    <strong>
+      Draw call {step + 1} of {DRAW_CALLS.length}.
+    </strong>
+  );
   if (step === 0)
     return (
       <>
-        {n} Your cursor&apos;s glow, one sprite. On the home page, other visitors&apos; glows come first, in one more.
+        {n} Other visitors&apos; cursor glows, each in their own colour: one sprite each, all in one call.
       </>
     );
   if (step === 1)
+    return (
+      <>
+        {n} Your cursor&apos;s glow, one sprite.
+      </>
+    );
+  if (step === 2)
     return (
       <>
         {n} Every connection, {count(r?.links)} right now, in one batch of instanced quads.
@@ -50,7 +67,7 @@ function drawCallCaption(step: number, r: Readout | null): ReactNode {
 
 function caption(view: FigureView, step: number, r: Readout | null, still: boolean): ReactNode {
   if (view === "draws") {
-    // All three share one space, so the caption never changes height as they play
+    // All of them share one space, so the caption never changes height as they play
     return (
       <span className="grid">
         {DRAW_CALLS.map((_, i) => (
@@ -111,14 +128,11 @@ export function NetworkFigure({ show }: { show: FigureView }) {
     const id = window.setInterval(() => setBeat((b) => (b + 1) % PLAY.length), PLAY_MS);
     return () => window.clearInterval(id);
   }, [playing]);
-  const step = pinned ?? (still ? 2 : PLAY[beat]);
+  const step = pinned ?? (still ? DRAW_CALLS.length - 1 : PLAY[beat]);
 
   return (
-    <figure
-      aria-label={TITLES[show]}
-      className="my-10 overflow-hidden rounded-2xl border border-default-200 bg-default-50/60 dark:bg-white/[0.02]"
-    >
-      <div ref={stageRef} className="relative h-[240px] select-none overflow-hidden sm:h-[280px]">
+    <figure aria-label={TITLES[show]} className="my-10">
+      <div ref={stageRef} className="relative h-[240px] select-none overflow-hidden sm:h-[280px]" style={FADE_EDGES}>
         {near && (
           <SceneBoundary onError={() => setFailed(true)}>
             <div className="absolute inset-0 transition-opacity duration-500" style={{ opacity: live ? 1 : 0 }}>
@@ -134,7 +148,7 @@ export function NetworkFigure({ show }: { show: FigureView }) {
       </div>
 
       {show === "draws" && (
-        <div role="group" aria-label="Draw calls" className="flex flex-wrap gap-2 border-t border-default-200 px-4 pb-1 pt-3">
+        <div role="group" aria-label="Draw calls" className="flex flex-wrap gap-2 pt-2">
           {DRAW_CALLS.map((label, i) => (
             <button
               key={label}
@@ -154,11 +168,7 @@ export function NetworkFigure({ show }: { show: FigureView }) {
         </div>
       )}
 
-      <figcaption
-        className={`px-4 pb-4 text-[0.9rem] leading-relaxed text-default-500 tabular-nums ${
-          show === "draws" ? "pt-2" : "border-t border-default-200 pt-3"
-        }`}
-      >
+      <figcaption className="pt-3 text-[0.9rem] leading-relaxed text-default-500 tabular-nums">
         {caption(show, step, readout, still)}
       </figcaption>
     </figure>

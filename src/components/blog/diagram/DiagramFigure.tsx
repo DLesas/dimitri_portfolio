@@ -45,10 +45,7 @@ export function DiagramFigure({ title, nodes, flows, graph, picture }: DiagramFi
   const caption = focus >= 0 ? flows.length + focus : flow;
 
   return (
-    <figure
-      aria-label={title}
-      className="my-10 overflow-hidden rounded-2xl border border-default-200 bg-default-50/60 dark:bg-white/[0.02]"
-    >
+    <figure aria-label={title} className="my-10">
       <div ref={stageRef} className="relative h-[340px] select-none overflow-hidden [container-type:size] sm:h-[400px]">
         <div className="absolute inset-0" style={fitStyle}>
           {/* The still picture, drawn in the HTML: until the 3D scene has drawn, or without it */}
@@ -141,7 +138,7 @@ export function DiagramFigure({ title, nodes, flows, graph, picture }: DiagramFi
         </div>
       </div>
 
-      <div role="group" aria-label="Follow a flow" className="flex flex-wrap gap-2 border-t border-default-200 px-4 pb-1 pt-3">
+      <div role="group" aria-label="Follow a flow" className="flex flex-wrap gap-2 pt-2">
         {flows.map((f, i) => (
           <button
             key={i}
@@ -162,7 +159,7 @@ export function DiagramFigure({ title, nodes, flows, graph, picture }: DiagramFi
         ))}
       </div>
 
-      <figcaption aria-live="polite" className="grid px-4 pb-4 pt-2 text-[0.9rem] leading-relaxed text-default-500">
+      <figcaption aria-live="polite" className="grid pt-3 text-[0.9rem] leading-relaxed text-default-500">
         {captions.map((item, i) => (
           <p key={i} className={`[grid-area:1/1] ${i === caption ? "" : "invisible"}`}>
             <strong className="font-semibold text-foreground">{item.label}.</strong> {item.description}

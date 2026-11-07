@@ -205,3 +205,39 @@ export function drawPointer(ctx: CanvasRenderingContext2D, stage: Stage, x: numb
   ctx.fill(POINTER);
   ctx.restore();
 }
+
+/**
+ * Another visitor's pointer and name, as the home page shows them (cursorMarks.ts): an
+ * outline pointer in their colour, and a name flag tinted with it
+ */
+export function drawVisitor(
+  ctx: CanvasRenderingContext2D,
+  stage: Stage,
+  { x, y, color, name }: { x: number; y: number; color: string; name: string },
+  { ink }: OverlayStyle
+) {
+  if (!POINTER) return;
+  const tipX = px(x, stage);
+  ctx.save();
+  ctx.translate(tipX, py(y, stage));
+  ctx.save();
+  ctx.translate(-3, -2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  ctx.lineJoin = "round";
+  ctx.stroke(POINTER);
+  ctx.restore();
+
+  ctx.font = "600 11px system-ui, sans-serif";
+  const width = ctx.measureText(name).width + 12;
+  // Right of the pointer, or left of it where it would run off the stage
+  const left = tipX + 13 + width > stage.w - 12 ? -width - 2 : 13;
+  ctx.fillStyle = `${color}4d`; // 30%
+  ctx.beginPath();
+  ctx.roundRect(left, 17, width, 19, 6);
+  ctx.fill();
+  ctx.fillStyle = `rgb(${ink})`;
+  ctx.textBaseline = "middle";
+  ctx.fillText(name, left + 6, 27);
+  ctx.restore();
+}
