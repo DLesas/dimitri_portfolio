@@ -61,6 +61,17 @@
   }
 }
 
+/* NetworkFigure's playing draw call: its button fills in from the left */
+@keyframes fill-x {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  /* Stated, as an inset() can't ease into the default (none) */
+  to {
+    clip-path: inset(0);
+  }
+}
+
 /* Blog post titles and section titles: Playfair Display italic, loaded by src/app/blog/layout.tsx */
 @utility font-display {
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
