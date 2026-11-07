@@ -14,6 +14,8 @@ export const STORAGE_KEYS = {
   helperOptedOut: "lesas-helper-opted-out",
   /** This browser's anonymous animal for live cursors */
   visitorAnimal: "lesas-visitor-animal",
+  /** The blog posts this browser has been counted as reading */
+  readPosts: "lesas-read-posts",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

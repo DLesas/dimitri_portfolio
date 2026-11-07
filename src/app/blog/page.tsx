@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
+import { ListedPostReads } from "@/components/blog/ReadCount";
 import { formatPostDate, postPath } from "@/lib/blog/format";
 import { getPosts } from "@/lib/blog/posts";
 import { BLOG_DESCRIPTION, blogJsonLd, blogMetadata } from "@/lib/blog/seo";
@@ -20,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BlogPage() {
   const posts = await getPosts();
   if (!posts.length) return <ComingSoon />;
+  const slugs = posts.map((post) => post.slug);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 pb-24 pt-12">
@@ -41,6 +43,7 @@ export default async function BlogPage() {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm tabular-nums text-default-500">
                 <time dateTime={post.metadata.published}>{formatPostDate(post.metadata.published)}</time>
                 <span>{post.readingMinutes} min read</span>
+                <ListedPostReads slug={post.slug} slugs={slugs} />
                 {post.metadata.draft && <span className="rounded-full bg-warning/15 px-2.5 py-0.5 text-xs text-warning">Draft</span>}
                 <ul className="flex flex-wrap gap-2" aria-label="Tags">
                   {post.metadata.tags.map((tag) => (

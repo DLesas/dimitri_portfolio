@@ -4,7 +4,8 @@
  *
  * - The S3 bucket holding Pulumi's state, for this stack and the main one (../), and when
  *   its old object versions expire
- * - The roles the main stack's resources run as: the cutoff Lambda and the contact form
+ * - The roles the main stack's resources run as: the cutoff Lambda, the contact form and
+ *   the blog's read counts
  * - Sign-in trust (OIDC) for Vercel and GitHub Actions, and the roles GitHub Actions
  *   assumes to preview and deploy the main stack. The deploy role can't change IAM, so
  *   CI can't grant itself more than it has.
@@ -13,7 +14,16 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 // Names shared with the main stack. It imports nothing from @pulumi, so this stack still
 // loads only its own copy (from this folder's node_modules).
-import { BUDGETS, CONTACT_LIMITS_TABLE, CUTOFF, EMAIL_DOMAIN, FROM_ADDRESS, INBOX, PROJECT } from "../names";
+import {
+  BLOG_READS_TABLE,
+  BUDGETS,
+  CONTACT_LIMITS_TABLE,
+  CUTOFF,
+  EMAIL_DOMAIN,
+  FROM_ADDRESS,
+  INBOX,
+  PROJECT,
+} from "../names";
 
 const config = new pulumi.Config();
 const githubRepo = config.require("githubRepo");
@@ -139,18 +149,19 @@ const vercelOidc = new aws.iam.OpenIdConnectProvider(
   { url: `https://${vercelIssuer}`, clientIdLists: [vercelAudience] },
   { protect: true }
 );
+/** Trust for this project's production deployments only */
+const vercelProductionTrust = webIdentityTrust(
+  vercelOidc,
+  vercelIssuer,
+  vercelAudience,
+  `owner:${vercelTeam}:project:${vercelProject}:environment:production`
+);
 const contactRole = new aws.iam.Role(
   "contact-form",
   {
     name: "lesas-contact-form",
     description: "Assumed by the site's Vercel functions (OIDC) to send contact form emails",
-    // This project's production deployments only
-    assumeRolePolicy: webIdentityTrust(
-      vercelOidc,
-      vercelIssuer,
-      vercelAudience,
-      `owner:${vercelTeam}:project:${vercelProject}:environment:production`
-    ),
+    assumeRolePolicy: vercelProductionTrust,
   },
   { protect: true }
 );
@@ -174,6 +185,33 @@ new aws.iam.RolePolicy(
         Effect: "Allow",
         Action: "dynamodb:UpdateItem",
         Resource: arn("dynamodb", `table/${CONTACT_LIMITS_TABLE}`),
+      },
+    ]),
+  },
+  { protect: true }
+);
+
+// Blog read counts (../blog.ts): production Vercel functions swap their OIDC token for
+// this role, which can only count reads and read the counts, in that one table
+const readsRole = new aws.iam.Role(
+  "blog-reads",
+  {
+    name: "lesas-blog-reads",
+    description: "Assumed by the site's Vercel functions (OIDC) to count blog post reads",
+    assumeRolePolicy: vercelProductionTrust,
+  },
+  { protect: true }
+);
+new aws.iam.RolePolicy(
+  "blog-reads-table",
+  {
+    role: readsRole.id,
+    policy: policy([
+      {
+        Effect: "Allow",
+        // A read is counted in one transaction of a put and two updates
+        Action: ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:BatchGetItem"],
+        Resource: arn("dynamodb", `table/${BLOG_READS_TABLE}`),
       },
     ]),
   },
@@ -301,5 +339,6 @@ new aws.iam.RolePolicy("ci-deploy", {
 
 export const cutoffRoleArn = cutoffRole.arn;
 export const contactRoleArn = contactRole.arn;
+export const readsRoleArn = readsRole.arn;
 export const ciPreviewRoleArn = previewRole.arn;
 export const ciDeployRoleArn = deployRole.arn;

@@ -22,6 +22,11 @@ export const INBOX = "dlesas@hotmail.com";
 /** The DynamoDB table counting each visitor's messages for the daily limit */
 export const CONTACT_LIMITS_TABLE = "lesas-contact-limits";
 
+// ---- Blog read counts (blog.ts) ----
+
+/** The DynamoDB table counting each blog post's reads */
+export const BLOG_READS_TABLE = "lesas-blog-reads";
+
 // ---- The live cursors (realtime.ts) and costs (budget.ts) ----
 
 /** The cutoff's SNS topic and Lambda function (and its log group, /aws/lambda/<this>) */

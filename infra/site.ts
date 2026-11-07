@@ -7,6 +7,7 @@ import * as vercel from "@pulumiverse/vercel";
 import { githubRepo, vercelProject } from "./config";
 import { realtimeEnv } from "./realtime";
 import { contactEnv } from "./email";
+import { readsEnv } from "./blog";
 
 export const site = new vercel.Project(
   "site",
@@ -62,15 +63,15 @@ new vercel.FirewallConfig("firewall", {
   },
 });
 
-// Not secrets: the realtime values ship in the browser bundle, and the contact form's
-// role can only be assumed from this project's production deployments
-const siteEnv: Record<string, pulumi.Input<string>> = { ...realtimeEnv, ...contactEnv };
-for (const [key, value] of Object.entries(siteEnv)) {
-  new vercel.ProjectEnvironmentVariable(key, {
-    projectId: site.id,
-    key,
-    value,
-    sensitive: false,
-    targets: ["production", "preview", "development"],
-  });
+// Not secrets: the realtime values ship in the browser bundle, and the roles can only be
+// assumed from this project's production deployments. Read counts are for production
+// only, so previews and local development don't count their own visits.
+const siteEnv: [Record<string, pulumi.Input<string>>, vercel.ProjectEnvironmentVariableArgs["targets"]][] = [
+  [{ ...realtimeEnv, ...contactEnv }, ["production", "preview", "development"]],
+  [readsEnv, ["production"]],
+];
+for (const [env, targets] of siteEnv) {
+  for (const [key, value] of Object.entries(env)) {
+    new vercel.ProjectEnvironmentVariable(key, { projectId: site.id, key, value, sensitive: false, targets });
+  }
 }

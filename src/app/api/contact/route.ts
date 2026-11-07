@@ -12,6 +12,7 @@ import { render, pretty } from "react-email";
 import { ContactFormEmail, contactFormText } from "./emailTemplate";
 import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX, CONTACT_FIELD_MIN } from "@/lib/contactForm";
 import { CONTACT_EMAIL } from "@/lib/site";
+import { visitorKey } from "@/lib/visitorKey";
 
 // Validation schema
 const contactFormSchema = z.object({
@@ -47,17 +48,6 @@ const sesClient = region && fromEmail ? new SESClient({ region, credentials }) :
 // firewall (infra/site.ts) already stops bursts before they get here.
 const limitsTable = process.env.CONTACT_LIMITS_TABLE;
 const dynamo = region && limitsTable ? new DynamoDBClient({ region, credentials }) : null;
-
-/** Who's sending, for the daily limit: their IP, or for IPv6 its /64, which one device can roam within */
-function visitorKey(ip: string | undefined) {
-  if (!ip) return "unknown";
-  if (ip.includes(".")) return ip.slice(ip.lastIndexOf(":") + 1); // IPv4, or IPv4-mapped IPv6
-  const [head, tail = ""] = ip.toLowerCase().split("::");
-  const left = head ? head.split(":") : [];
-  const right = tail ? tail.split(":") : [];
-  const groups = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
-  return `${groups.slice(0, 4).map((group) => group.replace(/^0+(?=.)/, "")).join(":")}::/64`;
-}
 
 /** Counts this message against the visitor's day: false once they've sent the day's limit */
 async function withinDailyLimit(request: NextRequest) {

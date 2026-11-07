@@ -15,8 +15,17 @@ export const WORDS_PER_MINUTE = 225;
 export const minutesLeft = (words: number, progress: number) =>
   Math.max(0, Math.ceil((words * (1 - progress)) / WORDS_PER_MINUTE));
 
+/** A post's slug, its file name: lowercase words joined by hyphens */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 /** The path a post lives at */
 export const postPath = (slug: string) => `/blog/${slug}`;
+
+/** Where posts' read counts are counted and read (src/app/api/reads/route.ts) */
+export const READS_PATH = "/api/reads";
+
+/** A read count as the blog shows it: "1 read", "1,204 reads" */
+export const formatReads = (reads: number) => `${reads.toLocaleString("en-GB")} ${reads === 1 ? "read" : "reads"}`;
 
 /** The blog's RSS feed */
 export const FEED_PATH = "/blog/feed.xml";
