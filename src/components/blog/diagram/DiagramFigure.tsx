@@ -135,9 +135,11 @@ export function DiagramFigure({ title, nodes, flows, graph, picture }: DiagramFi
                 onFocus={() => setPointed(i)}
                 onBlur={() => setPointed(-1)}
                 onClick={() => setPicked((current) => (current === i ? -1 : i))}
+                // On a narrow stage, labels outside the flow are hidden, so they mustn't catch
+                // taps or drags meant for the scene; a keyboard can still reach them
                 className={`pointer-events-auto absolute whitespace-nowrap rounded-md border bg-background/75 px-2 py-0.5 text-[0.74rem] font-medium leading-tight text-foreground transition-[opacity,border-color] duration-200 @max-[480px]:px-1.5 @max-[480px]:text-[0.68rem] ${
                   focus === i ? "border-primary" : "border-default-200"
-                } ${inFlow[i] || focus === i ? "" : "opacity-40 @max-[480px]:opacity-0 focus-visible:opacity-100"}`}
+                } ${inFlow[i] || focus === i ? "" : "opacity-40 @max-[480px]:pointer-events-none @max-[480px]:opacity-0 focus-visible:opacity-100"}`}
                 style={{
                   left: `calc(50cqw + ${picture.points[i].x} * var(--scale))`,
                   top: `calc(var(--middle-y) - ${picture.points[i].y} * var(--scale))`,
