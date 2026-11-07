@@ -117,7 +117,7 @@ export const architecture = /** @satisfies {import("@/components/blog/diagram/sc
     { id: "others", label: "Other visitors", position: [-14, -8, -2], description: "Anyone else reading right now, on the same channel." },
     { id: "vercel", label: "Vercel · Next.js", position: [-4, 7, 0], description: "Serves the pages and runs the contact form's API route." },
     { id: "appsync", label: "AppSync Events", position: [-3, -4, 3], description: "One real-time channel. Its handler rebuilds every message." },
-    { id: "dynamo", label: "DynamoDB", position: [5, 10, -3], description: "Counts contact messages: five per visitor per day." },
+    { id: "dynamo", label: "DynamoDB", position: [5, 10, -3], description: "Two tables: contact messages, five per visitor per day, and each post's reads." },
     { id: "ses", label: "Amazon SES", position: [7, 4, 1], description: "Sends the contact email, through a role Vercel assumes over OIDC." },
     { id: "inbox", label: "My inbox", position: [15, 6, 0], description: "The only address the sending role is allowed to email." },
     { id: "alarms", label: "CloudWatch alarms", position: [6, -6, -2], description: "Per-minute alarms on messages, connections and subscriptions." },
@@ -129,6 +129,7 @@ export const architecture = /** @satisfies {import("@/components/blog/diagram/sc
   flows: [
     { id: "cursors", label: "Cursor moves", description: "Your browser publishes a move to the channel, the handler rebuilds it from known fields, and every other visitor receives it.", path: [["you", "appsync"], ["appsync", "others"]] },
     { id: "contact", label: "Contact form", description: "The API route checks the daily limit in DynamoDB, then sends through SES using a short-lived role, never a stored key.", path: [["you", "vercel"], ["vercel", "dynamo"], ["vercel", "ses"], ["ses", "inbox"]] },
+    { id: "reads", label: "Read counts", description: "A post page asks the API route to count you, once per browser. It counts each IP once per post a day, in a table with fixed capacity, so a flood is slowed down, not billed.", path: [["you", "vercel"], ["vercel", "dynamo"]] },
     { id: "cost-cutoff", label: "Cost cutoff", description: "Alarms watch the channel minute by minute. If one trips, or the month passes $2, the cutoff function deletes the keys.", path: [["appsync", "alarms"], ["alarms", "cutoff"], ["budget", "cutoff"], ["cutoff", "appsync"]] },
     { id: "deploys", label: "Deploys", description: "A merged pull request runs Pulumi from GitHub Actions, which updates the AWS side to match the code.", path: [["actions", "pulumi"], ["pulumi", "appsync"], ["pulumi", "ses"], ["pulumi", "alarms"]] },
   ],
