@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html suppressHydrationWarning lang="en-GB">
       {/* Text uses the system font stack (HeroUI's --font-sans) */}
       <body className="antialiased min-h-screen flex flex-col">
         <JsonLd data={structuredData} />

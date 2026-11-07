@@ -10,9 +10,9 @@ const WORD_STAGGER_MS = 70;
 /** When the post's text rises in: just after its header */
 export const textDelayMs = (title: string) => title.split(" ").length * WORD_STAGGER_MS + 300;
 
-/** A post's title, summary and details: date, reading time, reads and tags */
+/** A post's title, summary and details: date, reading time and reads (its tags are on the blog's list) */
 export function PostHeader({ post }: { post: Post }) {
-  const { title, description, published, updated, tags } = post.metadata;
+  const { title, description, published, updated } = post.metadata;
   const words = title.split(" ");
 
   return (
@@ -51,14 +51,6 @@ export function PostHeader({ post }: { post: Post }) {
         )}
         <span>{post.readingMinutes} min read</span>
         <PostReads slug={post.slug} />
-        {post.metadata.draft && <span className="rounded-full bg-warning/15 px-2.5 py-0.5 text-xs text-warning">Draft</span>}
-        <ul className="flex flex-wrap gap-2" aria-label="Tags">
-          {tags.map((tag) => (
-            <li key={tag} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-primary">
-              {tag}
-            </li>
-          ))}
-        </ul>
       </div>
     </header>
   );

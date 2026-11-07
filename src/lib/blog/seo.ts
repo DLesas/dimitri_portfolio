@@ -15,7 +15,11 @@ export const BLOG_TITLE = "Blog";
 export const BLOG_DESCRIPTION =
   "Articles by Dimitri Lesas on engineering, data and AI: how things are built, and the decisions behind them.";
 
-const PERSON = { "@id": `${SITE_URL}/#person` };
+/**
+ * The author: the root layout's Person, named here too, as Google's article results
+ * read the author's name and URL from the article itself
+ */
+const PERSON = { "@type": "Person", "@id": `${SITE_URL}/#person`, name: SITE_NAME, url: SITE_URL };
 const BLOG_ID = `${SITE_URL}/blog#blog`;
 const RSS = { "application/rss+xml": FEED_PATH };
 
