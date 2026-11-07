@@ -3,29 +3,29 @@ export const metadata = /** @satisfies {import("@/lib/blog/metadata").PostMetada
   description:
     "A Next.js site with a live 3D network, other visitors' cursors in real time and a hard $2 spending cap: the choices behind lesas.dev, and what each costs.",
   published: "2026-11-06",
-  tags: ["Next.js", "three.js", "AWS", "Pulumi"],
+  tags: ["Next.js", "three.js", "AWS"],
   draft: true,
 });
 
 ## What I wanted from it
 
-I rebuilt this site with four goals, in this order. It had to be **fast on any device**, including a mid-range phone on a train. It had to be **cheap enough to forget about**: the AWS side averages around twenty cents a month. It had to be **safe to leave running**, with no keys stored anywhere and hard caps on anything that costs money. And it needed one thing that is simply fun to play with: the network of nodes behind every page, which you can push around with your cursor, along with everyone else who happens to be reading.
+I rebuilt this site with three goals, in this order. It had to be **fast on any device**, including a mid-range phone on a train. It had to be **cheap enough to forget about**: the AWS side averages around twenty cents a month. And it had to be **safe to leave running**, with no keys stored anywhere and hard caps on anything that costs money.
 
-Each goal ended up deciding something concrete. This post walks through those decisions, roughly from the browser outwards. Here is the whole of it: pick a flow to follow it through, point at a part to see what it does, or drag to turn it.
-
-<Diagram3D {...architecture} />
+Each goal ended up deciding something concrete. This post walks through those decisions, roughly from the browser outwards.
 
 ## Server first, 3D after
 
-Pages are React Server Components on Next.js 16, so the text you are reading arrived as plain HTML. The entrance animations are CSS rather than JavaScript, which means they start playing before React has even loaded. The 3D network loads in its own chunk, once the browser is idle after the first paint, so it never competes with the text for the network or the main thread.
+Pages are React Server Components on Next.js 16, so the text you're reading arrived as plain HTML. Entrance animations are CSS, so they play before React has loaded. The home page's 3D network loads in its own chunk once the browser is idle after the first paint, so it never competes with the text.
 
 ### The network in four draw calls
 
-However many nodes are on screen, the background is drawn in four draw calls: other visitors' cursor glows, your own cursor glow, every connection, and every node. Nodes live in typed arrays rather than as objects, and connections are drawn as instanced quads whose width and opacity fade with distance. Nothing in the render loop allocates memory, so there are no garbage-collection pauses mid-animation.
+However many nodes there are, the network takes four draw calls: other visitors' cursor glows, your cursor's glow, every connection, and every node. Nodes live in typed arrays and nothing in the render loop allocates memory, so there are no garbage-collection pauses mid-animation.
+
+<NetworkFigure show="draws" />
 
 ### Physics at a fixed 60 Hz
 
-The movement constants were tuned per 60 Hz frame. On a 120 Hz screen, or when the browser drops frames, stepping once per animation frame would change how the whole thing feels. So the simulation keeps its own clock and steps in fixed increments:
+The physics steps a fixed 60 times a second, whatever the screen's refresh rate. On a 120 Hz screen that's half the work of stepping every frame, and the movement, tuned at 60 Hz, feels the same everywhere. After a stall it catches up at most four steps a frame, rather than freezing the page to replay everything it missed.
 
 ```ts
 // Catch up in fixed 1/60 s steps, at most four per frame
@@ -36,35 +36,17 @@ while (acc >= STEP) {
 }
 ```
 
-Each node wanders on a path of its own, made from two slow waves per axis at rates that never line up, so no node ever traces a loop or moves in step with its neighbours.
+<NetworkFigure show="physics" />
 
 ### Finding connections with a grid
 
-Every update, each node needs to know which others are close enough to link to. Comparing every pair is 19,900 checks for 200 nodes. Instead, nodes are dropped into a grid of cells one link-distance wide, and each node is only compared with its own cell and the eight around it: about 1,600 checks. Links that already exist keep their place until they fade out, and the closest remaining pairs fill the rest.
+Checking every pair of 200 nodes takes 19,900 comparisons. Instead, nodes are sorted into cells one link-distance wide, and each is compared only with its own cell and the eight around it: about 1,600 comparisons.
 
-## Live cursors
-
-If someone else is reading this page right now, their cursor shows up as a soft glow, labelled with an animal name and their rough location, and it pushes the network around exactly like yours does.
-
-### One channel, mostly quiet
-
-Cursors travel over a single AWS AppSync Events channel, using four message types: `hi`, `mv`, `out` and `bye`. A visitor announces itself on arrival, sends moves while its cursor is over the page and says goodbye on the way out. While other people are around, a heartbeat every 20 seconds keeps you listed; alone, it drops to every two minutes, which cut presence traffic by about 92% for the most common case: one person reading on their own.
-
-### Every message is rebuilt
-
-The browser publishes with a public API key, so anyone could try to push anything through the channel. The channel's handler only rebroadcasts well-formed cursor messages, and it rebuilds each one from the fields it knows rather than passing the original along:
-
-```js
-function clean(m) {
-  const out = { v: 1, id: m.id, t: m.t, c: m.c };
-  if (m.t === "mv") { out.x = m.x; out.y = m.y; }
-  return out; // anything else in m is dropped
-}
-```
+<NetworkFigure show="grid" />
 
 ## Keeping the bill near zero
 
-Real-time features are the part of a hobby site most likely to produce a surprise bill, so the cursors are built to switch themselves off before that can happen.
+The home page shows other visitors' cursors live, over AWS AppSync. Real-time traffic is the likeliest way for a hobby site to run up a surprise bill, so the cursors switch themselves off before that can happen.
 
 ### A hard spending cutoff
 
@@ -78,14 +60,6 @@ The worst realistic case is a slow drain that stays under every per-minute alarm
 
 Messages go out through Amazon SES using a role that Vercel assumes over OIDC, so there is no AWS key stored anywhere. That role only works from production, and it can only send email to my own inbox. Each visitor can send five messages a day, counted in DynamoDB, and a firewall rule allows five requests per IP every ten minutes on top of that.
 
-## Infrastructure as code
-
-Everything outside Vercel is described in Pulumi, in TypeScript: the AppSync API and its handler, the alarms and the cutoff function, SES and its DNS records, and the DNS zone itself on Cloudflare. Nothing is configured by hand in a console, so the whole setup can be read, reviewed and rebuilt.
-
-### Previews on every pull request
-
-GitHub Actions runs a Pulumi preview on every pull request, so the infrastructure diff sits next to the code diff, and deploys when the change merges to `main`. Actions are pinned to full commit SHAs, and secrets are scoped to the single step that needs each one.
-
 ## Measuring it
 
 Two sets of numbers I keep an eye on. Lighthouse on the home page, on desktop:
@@ -97,7 +71,7 @@ Two sets of numbers I keep an eye on. Lighthouse on the home page, on desktop:
 | Best practices | 100   |
 | SEO            | 100   |
 
-And what the background network costs per frame, physics and connections included, out of the 16,667 µs a 60 fps frame allows:
+And what the home page's network costs per frame, physics and connections included, out of the 16,667 µs a 60 fps frame allows:
 
 | Device tier | Nodes | Per frame |
 | ----------- | ----- | --------- |
@@ -108,29 +82,3 @@ And what the background network costs per frame, physics and connections include
 ## What's next
 
 Case studies of the systems I've built at work, written up with the sensitive parts taken out, and more posts like this one on the decisions behind them. If there's something here you'd like me to go deeper on, the [contact form](/contact) works, within its five-a-day limit.
-
-export const architecture = /** @satisfies {import("@/components/blog/diagram/schema").DiagramData} */ ({
-  // The diagram in "What I wanted from it". No blank lines in here: in MDX they end the export
-  title: "How the services behind this site connect",
-  nodes: [
-    { id: "you", label: "Your browser", position: [-14, 1, 2], description: "This page. It publishes your cursor and listens for everyone else's." },
-    { id: "others", label: "Other visitors", position: [-14, -8, -2], description: "Anyone else reading right now, on the same channel." },
-    { id: "vercel", label: "Vercel · Next.js", position: [-4, 7, 0], description: "Serves the pages and runs the contact form's API route." },
-    { id: "appsync", label: "AppSync Events", position: [-3, -4, 3], description: "One real-time channel. Its handler rebuilds every message." },
-    { id: "dynamo", label: "DynamoDB", position: [5, 10, -3], description: "Two tables: contact messages, five per visitor per day, and each post's reads." },
-    { id: "ses", label: "Amazon SES", position: [7, 4, 1], description: "Sends the contact email, through a role Vercel assumes over OIDC." },
-    { id: "inbox", label: "My inbox", position: [15, 6, 0], description: "The only address the sending role is allowed to email." },
-    { id: "alarms", label: "CloudWatch alarms", position: [6, -6, -2], description: "Per-minute alarms on messages, connections and subscriptions." },
-    { id: "cutoff", label: "Cutoff function", position: [15, -4, 2], description: "Deletes the API keys, switching cursors off, when an alarm or the $2 check trips." },
-    { id: "budget", label: "AWS Budgets", position: [14, -12, -2], description: "A last backstop on the month's spend." },
-    { id: "actions", label: "GitHub Actions", position: [-12, 12, -4], description: "Previews infrastructure changes on every pull request, deploys on merge." },
-    { id: "pulumi", label: "Pulumi", position: [-3, 15, -5], description: "Describes all of the AWS and DNS setup in TypeScript." },
-  ],
-  flows: [
-    { id: "cursors", label: "Cursor moves", description: "Your browser publishes a move to the channel, the handler rebuilds it from known fields, and every other visitor receives it.", path: [["you", "appsync"], ["appsync", "others"]] },
-    { id: "contact", label: "Contact form", description: "The API route checks the daily limit in DynamoDB, then sends through SES using a short-lived role, never a stored key.", path: [["you", "vercel"], ["vercel", "dynamo"], ["vercel", "ses"], ["ses", "inbox"]] },
-    { id: "reads", label: "Read counts", description: "A post page asks the API route to count you, once per browser. It counts each IP once per post a day, in a table with fixed capacity, so a flood is slowed down, not billed.", path: [["you", "vercel"], ["vercel", "dynamo"]] },
-    { id: "cost-cutoff", label: "Cost cutoff", description: "Alarms watch the channel minute by minute. If one trips, or the month passes $2, the cutoff function deletes the keys.", path: [["appsync", "alarms"], ["alarms", "cutoff"], ["budget", "cutoff"], ["cutoff", "appsync"]] },
-    { id: "deploys", label: "Deploys", description: "A merged pull request runs Pulumi from GitHub Actions, which updates the AWS side to match the code.", path: [["actions", "pulumi"], ["pulumi", "appsync"], ["pulumi", "ses"], ["pulumi", "alarms"]] },
-  ],
-});

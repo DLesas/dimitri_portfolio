@@ -3,10 +3,12 @@ import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
 import { Callout } from "@/components/blog/Callout";
 import { Diagram3D } from "@/components/blog/diagram/Diagram3D";
+import { NetworkFigure } from "@/components/blog/network/NetworkFigure";
 
 /**
  * How every blog post's text looks: Markdown's elements styled once here, plus the
- * components posts can use without importing them (Callout, Diagram3D). Required by @next/mdx.
+ * components posts can use without importing them (Callout, Diagram3D, NetworkFigure).
+ * Required by @next/mdx.
  * Section titles (##) are Playfair italic; sub-section titles (###) stay in the body font.
  */
 
@@ -87,6 +89,7 @@ const components = {
   },
   Callout,
   Diagram3D,
+  NetworkFigure,
 } satisfies MDXComponents;
 
 export function useMDXComponents(): MDXComponents {
