@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ComponentType } from "react";
 import { z } from "zod";
-import { WORDS_PER_MINUTE } from "./format";
+import { SLUG_PATTERN, WORDS_PER_MINUTE } from "./format";
 import { postMetadataSchema } from "./metadata";
 
 /**
@@ -77,7 +77,7 @@ function countWords(source: string) {
 
 async function loadPost(slug: string): Promise<Post> {
   const problems: string[] = [];
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) problems.push("its file name must be lowercase words joined by hyphens");
+  if (!SLUG_PATTERN.test(slug)) problems.push("its file name must be lowercase words joined by hyphens");
 
   const mod: { default: ComponentType; metadata?: unknown; tableOfContents?: TocEntry[] } = await import(
     `@/content/blog/${slug}.mdx`

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Fragment, type CSSProperties } from "react";
 import { formatPostDate } from "@/lib/blog/format";
 import type { Post } from "@/lib/blog/posts";
+import { PostReads } from "./ReadCount";
 
 /** Each word of the title rises in after the one before (the site's CSS entrance, so no JavaScript) */
 const WORD_STAGGER_MS = 70;
 
-/** A post's title, summary and details: date, reading time and tags */
+/** A post's title, summary and details: date, reading time, reads and tags */
 export function PostHeader({ post }: { post: Post }) {
   const { title, description, published, updated, tags } = post.metadata;
   const words = title.split(" ");
@@ -46,6 +47,7 @@ export function PostHeader({ post }: { post: Post }) {
           </span>
         )}
         <span>{post.readingMinutes} min read</span>
+        <PostReads slug={post.slug} />
         {post.metadata.draft && <span className="rounded-full bg-warning/15 px-2.5 py-0.5 text-xs text-warning">Draft</span>}
         <ul className="flex flex-wrap gap-2" aria-label="Tags">
           {tags.map((tag) => (

@@ -34,3 +34,5 @@ const accessOutput = (name: string) => access.requireOutput(name) as pulumi.Outp
 export const cutoffRoleArn = accessOutput("cutoffRoleArn");
 /** The role the contact form's Vercel functions assume */
 export const contactRoleArn = accessOutput("contactRoleArn");
+/** The role the blog's read counts (Vercel functions) assume */
+export const readsRoleArn = accessOutput("readsRoleArn");
