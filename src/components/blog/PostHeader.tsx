@@ -7,6 +7,9 @@ import { PostReads } from "./ReadCount";
 /** Each word of the title rises in after the one before (the site's CSS entrance, so no JavaScript) */
 const WORD_STAGGER_MS = 70;
 
+/** When the post's text rises in: just after its header */
+export const textDelayMs = (title: string) => title.split(" ").length * WORD_STAGGER_MS + 300;
+
 /** A post's title, summary and details: date, reading time, reads and tags */
 export function PostHeader({ post }: { post: Post }) {
   const { title, description, published, updated, tags } = post.metadata;

@@ -93,3 +93,8 @@
 .reveal:not([data-shown]) {
   --enter-play: paused;
 }
+
+/* Pages whose entrances play only when navigated to in the browser, not on a page load (PostArticle.tsx) */
+.enter-on-navigation:not([data-navigated]) .enter {
+  animation: none;
+}

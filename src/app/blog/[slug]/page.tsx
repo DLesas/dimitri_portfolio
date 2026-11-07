@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { MobileSections } from "@/components/blog/MobileSections";
-import { PostHeader } from "@/components/blog/PostHeader";
+import { PostArticle } from "@/components/blog/PostArticle";
+import { PostHeader, textDelayMs } from "@/components/blog/PostHeader";
 import { SectionRail } from "@/components/blog/SectionRail";
 import { POST_BODY_ID, POST_END_ID } from "@/components/blog/useReadingProgress";
 import { getPost, getPosts } from "@/lib/blog/posts";
@@ -22,30 +24,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return post ? postMetadata(post) : {};
 }
 
-/** A blog post: its title and details, its text, and the section rail beside it */
+/** The text and its sections rise in together, just after the header */
+const TEXT_ENTER = "enter enter-duration-600 [--enter-y:12px]";
+
+/**
+ * A blog post: its title and details, its text, and the section rail beside it. Navigated
+ * to in the browser, it all rises in; on a page load it's simply there (PostArticle).
+ */
 export default async function PostPage({ params }: Props) {
   const post = await getPost((await params).slug);
   if (!post) notFound();
   const { Content } = post;
+  const textDelay = { "--enter-delay": `${textDelayMs(post.metadata.title)}ms` } as CSSProperties;
 
   return (
-    <article className="mx-auto w-full max-w-6xl px-6">
+    <PostArticle className="mx-auto w-full max-w-6xl px-6">
       <JsonLd data={postJsonLd(post)} />
       <PostHeader post={post} />
       <div className="grid gap-14 pb-28 lg:grid-cols-[minmax(0,1fr)_250px]">
         <div className="min-w-0">
           <div className="lg:hidden">
-            <MobileSections sections={post.sections} words={post.words} />
+            <MobileSections sections={post.sections} words={post.words} className={TEXT_ENTER} style={textDelay} />
           </div>
-          <div id={POST_BODY_ID} className="max-w-[68ch] text-[1.06rem] leading-[1.75] text-foreground/85">
+          <div
+            id={POST_BODY_ID}
+            className={`max-w-[68ch] text-[1.06rem] leading-[1.75] text-foreground/85 ${TEXT_ENTER}`}
+            style={textDelay}
+          >
             <Content />
           </div>
           <div id={POST_END_ID} />
         </div>
-        <div className="hidden lg:block">
+        <div className={`hidden lg:block ${TEXT_ENTER}`} style={textDelay}>
           <SectionRail sections={post.sections} words={post.words} seed={post.slug} />
         </div>
       </div>
-    </article>
+    </PostArticle>
   );
 }
