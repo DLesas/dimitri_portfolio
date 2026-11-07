@@ -10,10 +10,18 @@ import { readsRoleArn } from "./config";
 import { BLOG_READS_TABLE } from "./names";
 
 // Each post's count, plus short-lived items that hold back repeat and runaway counting
-// (the route sets their `expires`, and DynamoDB deletes them a while after)
+// (the route sets their `expires`, and DynamoDB deletes them a while after).
+//
+// Fixed capacity rather than paying per request, so a flood of requests is throttled
+// rather than billed: within DynamoDB's always-free 25 read and 25 write units, this costs
+// nothing whatever the traffic. A read takes 6 write units (three items, in a
+// transaction), so it counts about 1.7 a second, with up to five minutes of unused
+// capacity saved up for bursts; a repeat costs only the route's first read.
 const reads = new aws.dynamodb.Table("blog-reads", {
   name: BLOG_READS_TABLE,
-  billingMode: "PAY_PER_REQUEST",
+  billingMode: "PROVISIONED",
+  readCapacity: 10,
+  writeCapacity: 10,
   hashKey: "id",
   attributes: [{ name: "id", type: "S" }],
   ttl: { attributeName: "expires", enabled: true },

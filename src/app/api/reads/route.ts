@@ -21,7 +21,9 @@ import { visitorKey } from "@/lib/visitorKey";
  *
  * A post page counts its reader once per browser (the browser remembers). Here, each IP
  * counts once per post a day, and for at most DAILY_READS_PER_IP posts a day, so a script
- * can't run the counts up (the firewall's one rate limit is the contact form's).
+ * can't run the counts up (the firewall's one rate limit is the contact form's). Repeats
+ * and IPs past the limit are answered from one read, without writing, and the table's
+ * fixed capacity (infra/blog.ts) throttles a flood rather than billing for it.
  *
  * Production only: elsewhere (previews, local development) there's no table, and both
  * answer 204, no content.
@@ -90,6 +92,24 @@ export async function POST(request: NextRequest) {
   const day = new Date().toISOString().slice(0, 10);
   // The IP isn't kept, only a hash of it, in items deleted within a day or two
   const ip = createHash("sha256").update(visitorKey(ipAddress(request))).digest("base64url").slice(0, 22);
+  const seenKey = { id: { S: `seen#${slug}#${ip}` } };
+  const ipKey = { id: { S: `ip#${ip}#${day}` } };
+
+  // First, one read: a repeat, or an IP past its day's limit, is answered without writing
+  // anything. The transaction's conditions still decide; this only spares it the work.
+  try {
+    const { Responses } = await dynamo.send(
+      new BatchGetItemCommand({ RequestItems: { [table]: { Keys: [seenKey, ipKey, countKey(slug)] } } })
+    );
+    const items = new Map((Responses?.[table] ?? []).map((item) => [item.id.S, item]));
+    const seenUntil = Number(items.get(seenKey.id.S)?.expires?.N ?? 0);
+    const readsToday = Number(items.get(ipKey.id.S)?.count?.N ?? 0);
+    if (seenUntil >= now || readsToday >= DAILY_READS_PER_IP) {
+      return NextResponse.json({ reads: readsOf(items.get(`post#${slug}`)) }, { headers: { "Cache-Control": "no-store" } });
+    }
+  } catch (error) {
+    return failed(error);
+  }
 
   // All three, or none
   const countIt = () =>
@@ -99,7 +119,7 @@ export async function POST(request: NextRequest) {
         {
           Put: {
             TableName: table,
-            Item: { id: { S: `seen#${slug}#${ip}` }, expires: { N: String(now + DAY) } },
+            Item: { ...seenKey, expires: { N: String(now + DAY) } },
             ConditionExpression: "attribute_not_exists(#id) OR #expires < :now",
             ExpressionAttributeNames: { "#id": "id", "#expires": "expires" },
             ExpressionAttributeValues: { ":now": { N: String(now) } },
@@ -109,7 +129,7 @@ export async function POST(request: NextRequest) {
         {
           Update: {
             TableName: table,
-            Key: { id: { S: `ip#${ip}#${day}` } },
+            Key: ipKey,
             UpdateExpression: "ADD #count :one SET #expires = if_not_exists(#expires, :expires)",
             ConditionExpression: "attribute_not_exists(#count) OR #count < :limit",
             ExpressionAttributeNames: { "#count": "count", "#expires": "expires" },
