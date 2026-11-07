@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { SceneBoundary } from "@/components/three/SceneBoundary";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
@@ -19,9 +19,8 @@ const TITLES: Record<FigureView, string> = {
 
 /** The draws view's draw calls, in the order they're drawn */
 const DRAW_CALLS = ["Visitors' glows", "Your glow", "Connections", "Nodes"];
-/** Its frame, built up a draw call at a time, then held */
-const PLAY = [0, 1, 2, 3, 3];
-const PLAY_MS = 1600;
+/** How long each is shown as they play: the last, the finished frame, for longer */
+const SHOW_MS = [1600, 1600, 1600, 3200];
 
 /** No box around the network: it fades out at the stage's edges instead */
 const FADE_EDGES = {
@@ -120,16 +119,13 @@ export function NetworkFigure({ show }: { show: FigureView }) {
   const [failed, setFailed] = useState(false);
   const [readout, setReadout] = useState<Readout | null>(null);
   const [pinned, setPinned] = useState<number | null>(null);
-  const [beat, setBeat] = useState(0);
+  const [played, setPlayed] = useState(0);
 
-  // Plays through the draw calls while on screen, unless one is picked or motion is reduced
-  const playing = show === "draws" && live && onScreen && pinned === null && !still;
-  useEffect(() => {
-    if (!playing) return;
-    const id = window.setInterval(() => setBeat((b) => (b + 1) % PLAY.length), PLAY_MS);
-    return () => window.clearInterval(id);
-  }, [playing]);
-  const step = pinned ?? (still ? DRAW_CALLS.length - 1 : PLAY[beat]);
+  // Plays through the draw calls while on screen, unless one is picked or motion is reduced.
+  // The playing one's button fills in as it's shown, and the next starts when it's full.
+  const timed = pinned === null && !still;
+  const playing = show === "draws" && live && onScreen && timed;
+  const step = pinned ?? (still ? DRAW_CALLS.length - 1 : played);
 
   return (
     <figure aria-label={TITLES[show]} className="my-10">
@@ -155,15 +151,39 @@ export function NetworkFigure({ show }: { show: FigureView }) {
               key={label}
               type="button"
               aria-pressed={pinned === i}
-              // Picking a draw call holds it; picking it again plays them through again
-              onClick={() => setPinned((current) => (current === i ? null : i))}
-              className={`rounded-full border px-3 py-1.5 text-[0.82rem] font-medium leading-none transition-colors ${
+              // Picking a draw call holds it; picking it again plays on from it
+              onClick={() => {
+                if (pinned === i) setPlayed(i);
+                setPinned(pinned === i ? null : i);
+              }}
+              className={`relative overflow-hidden rounded-full border px-3 py-1.5 text-[0.82rem] font-medium leading-none transition-colors ${
                 step === i
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "border-primary text-foreground"
                   : "border-default-200 text-default-500 hover:border-default-400 hover:text-foreground"
               }`}
             >
               {i + 1}. {label}
+              {step === i && (
+                // The fill, with the label over it in the fill's colours: uncovered from the
+                // left while playing (paused off screen), whole when held
+                <span
+                  aria-hidden
+                  className="absolute inset-0 bg-primary px-3 py-1.5 text-primary-foreground"
+                  style={
+                    timed
+                      ? {
+                          animationName: "fill-x",
+                          animationDuration: `${SHOW_MS[i]}ms`,
+                          animationTimingFunction: "linear",
+                          animationPlayState: playing ? "running" : "paused",
+                        }
+                      : undefined
+                  }
+                  onAnimationEnd={() => setPlayed((s) => (s + 1) % DRAW_CALLS.length)}
+                >
+                  {i + 1}. {label}
+                </span>
+              )}
             </button>
           ))}
         </div>
