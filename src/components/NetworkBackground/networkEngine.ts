@@ -295,8 +295,17 @@ export function createNetworkEngine() {
     }
   }
 
-  /** Keep existing nodes, append or trim (same as the original) */
-  function setNodeCount(nodeCount: number, viewWidth: number, viewHeight: number, inputs: NetworkInputs) {
+  /**
+   * Keep existing nodes, append or trim (same as the original). New nodes spawn over
+   * `area` when given (world units, centred), else as below.
+   */
+  function setNodeCount(
+    nodeCount: number,
+    viewWidth: number,
+    viewHeight: number,
+    inputs: NetworkInputs,
+    area?: { width: number; height: number }
+  ) {
     const wanted = Math.max(0, Math.floor(nodeCount) || 0);
     if (wanted > cap) {
       const newCap = Math.max(wanted, 320);
@@ -321,8 +330,8 @@ export function createNetworkEngine() {
     }
     const pos = position!.array as Float32Array;
     // New nodes spawn over the visible area, or the original 100 x 60 world if larger
-    const width = Math.max(WORLD_CONFIG.WIDTH, viewWidth);
-    const height = Math.max(WORLD_CONFIG.HEIGHT, viewHeight);
+    const width = area?.width ?? Math.max(WORLD_CONFIG.WIDTH, viewWidth);
+    const height = area?.height ?? Math.max(WORLD_CONFIG.HEIGHT, viewHeight);
     for (let i = count; i < wanted; i++) {
       base[i * 3] = (Math.random() - 0.5) * width;
       base[i * 3 + 1] = (Math.random() - 0.5) * height;
@@ -710,7 +719,24 @@ export function createNetworkEngine() {
     remoteMaterial.dispose();
   }
 
-  return { root, setNodeCount, setPalette, settle, frame, dispose };
+  // For the blog's figures of the network, which show what it does while it runs
+
+  /** What it draws, one draw call each, in the order they're drawn */
+  const parts = { otherCursors: remoteCursors, cursor, links, nodes };
+
+  /** Its state at the moment, read-only: node positions (x, y, z each) and counts */
+  function inspect() {
+    const positions = (position?.array ?? new Float32Array(0)) as Float32Array;
+    return { positions, count, links: conn.count, time, steps };
+  }
+
+  /** Where node i's drift path has it now: what the return force pulls it towards */
+  function homeOf(i: number, inputs: NetworkInputs): readonly number[] {
+    driftTarget(i, time, inputs.settings.organicMovementSpeed);
+    return target;
+  }
+
+  return { root, setNodeCount, setPalette, settle, frame, dispose, parts, inspect, homeOf };
 }
 
 export type NetworkEngine = ReturnType<typeof createNetworkEngine>;

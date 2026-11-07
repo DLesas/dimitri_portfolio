@@ -1,26 +1,13 @@
 "use client";
 
-import { Component, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { SceneBoundary } from "@/components/three/SceneBoundary";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { CORE, LABEL_GAP, NODE_SIZE, fitCss, type DiagramGraph, type DiagramPicture } from "./layout";
 
 // three.js and the scene load in their own chunk, once the diagram is nearly on screen
 const DiagramCanvas = dynamic(() => import("./DiagramCanvas"), { ssr: false });
-
-/** Without WebGL, or if the scene fails, the still picture stays */
-class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  componentDidCatch() {
-    this.props.onError();
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
 
 interface Item {
   label: string;
@@ -104,6 +91,7 @@ export function DiagramFigure({ title, nodes, flows, graph, picture }: DiagramFi
             ))}
           </svg>
 
+          {/* Without WebGL, or if the scene fails, the still picture stays */}
           {near && (
             <SceneBoundary onError={() => setLive(false)}>
               <div className="absolute inset-0 transition-opacity duration-500" style={{ opacity: live ? 1 : 0 }}>
