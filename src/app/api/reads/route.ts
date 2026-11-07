@@ -97,15 +97,21 @@ export async function POST(request: NextRequest) {
 
   // First, one read: a repeat, or an IP past its day's limit, is answered without writing
   // anything. The transaction's conditions still decide; this only spares it the work.
+  let counting = true;
   try {
-    const { Responses } = await dynamo.send(
+    const { Responses, UnprocessedKeys } = await dynamo.send(
       new BatchGetItemCommand({ RequestItems: { [table]: { Keys: [seenKey, ipKey, countKey(slug)] } } })
     );
     const items = new Map((Responses?.[table] ?? []).map((item) => [item.id.S, item]));
     const seenUntil = Number(items.get(seenKey.id.S)?.expires?.N ?? 0);
     const readsToday = Number(items.get(ipKey.id.S)?.count?.N ?? 0);
     if (seenUntil >= now || readsToday >= DAILY_READS_PER_IP) {
-      return NextResponse.json({ reads: readsOf(items.get(`post#${slug}`)) }, { headers: { "Cache-Control": "no-store" } });
+      // Under load DynamoDB can leave keys unread: then the count comes from its own read below
+      const countUnread = UnprocessedKeys?.[table]?.Keys?.some((key) => key.id.S === `post#${slug}`);
+      if (!countUnread) {
+        return NextResponse.json({ reads: readsOf(items.get(`post#${slug}`)) }, { headers: { "Cache-Control": "no-store" } });
+      }
+      counting = false;
     }
   } catch (error) {
     return failed(error);
@@ -153,7 +159,8 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-  for (let attempt = 1; ; attempt++) {
+  // Skipped for a repeat whose count is still to be read
+  for (let attempt = 1; counting; attempt++) {
     try {
       await dynamo.send(countIt());
       break;
