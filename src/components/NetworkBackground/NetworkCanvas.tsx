@@ -9,7 +9,7 @@ import { ANIMATION_CONFIG, PERFORMANCE_CONFIGS, VISUAL_CONFIG } from "./constant
 import { PX_PER_UNIT } from "./world";
 import NetworkScene from "./NetworkScene";
 import DebugColliders from "./DebugColliders";
-import { networkPalette } from "./networkEngine";
+import { networkPalette } from "@/components/three/palette";
 import { createLiveCursors, presenceStore, type LiveCursors } from "./liveCursors";
 import DebugPerf from "@/components/three/DebugPerf";
 import { useSettings } from "@/contexts/SettingsContext";
