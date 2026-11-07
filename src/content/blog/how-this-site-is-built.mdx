@@ -21,7 +21,7 @@ Pages are React Server Components on Next.js 16, so the text you're reading arri
 
 Each time the CPU asks the GPU to draw something is a draw call, and every call costs the CPU a fixed amount of work before anything appears: three.js places the object and sets up its shader, and the browser checks the call before passing it on. Drawn one object at a time, the largest network, 200 nodes and up to 150 connections, would take **about 350 draw calls a frame**.
 
-Instead, each kind of thing is drawn in a single call. Every node's position goes into one array that's handed over once, and the GPU, which is built to draw thousands of points at once, draws them all. That makes **four draw calls**: other visitors' cursor glows, your cursor's glow, every connection and every node. It stays at four however many nodes there are: a bigger network means a bigger array, not more calls. And since nothing in the render loop allocates memory, there are no garbage-collection pauses mid-animation.
+Instead, each kind of thing is drawn in a single call. Every node's position goes into one array that's handed over once, and the GPU, which is built to draw thousands of points at once, draws them all. That makes **four draw calls**: other visitors' cursor glows (yes, I have implemented realtime features, if someone else is on the home page you will see them), your cursor's glow, every connection and every node. It stays at four however many nodes there are: a bigger network means a bigger array, not more calls. And since nothing in the render loop allocates memory, there are no garbage-collection pauses mid-animation.
 
 <NetworkFigure show="draws" />
 
