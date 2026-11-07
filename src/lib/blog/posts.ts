@@ -66,8 +66,8 @@ function sectionsOf(toc: TocEntry[], problems: string[]): Section[] {
 /** Roughly the words a reader reads: prose only, without code, markup or the metadata */
 function countWords(source: string) {
   const text = source
-    // import/export blocks run to the next blank line in MDX
-    .replace(/^(?:import|export)\b[\s\S]*?(?:\n\s*\n|$)/gm, " ")
+    // import/export blocks run to the next blank line in MDX (or the end of the file)
+    .replace(/^(?:import|export)\b[\s\S]*?(?:\n[ \t]*\n|(?![\s\S]))/gm, " ")
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\]\([^)]*\)/g, " ")

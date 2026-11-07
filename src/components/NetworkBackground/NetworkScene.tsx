@@ -8,10 +8,10 @@ import {
   type FrameContext,
   type MousePosition,
   type NetworkInputs,
-  type NetworkPalette,
 } from "./networkEngine";
 import type { LiveCursors, RemoteCursor } from "./liveCursors";
 import { drawCursorMarks } from "./cursorMarks";
+import type { NetworkPalette } from "@/components/three/palette";
 import { useSceneEngine } from "@/components/three/useSceneEngine";
 import type { NetworkBackgroundSettings } from "@/contexts/SettingsContext";
 

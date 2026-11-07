@@ -11,7 +11,9 @@ export const metadata = /** @satisfies {import("@/lib/blog/metadata").PostMetada
 
 I rebuilt this site with four goals, in this order. It had to be **fast on any device**, including a mid-range phone on a train. It had to be **cheap enough to forget about**: the AWS side averages around twenty cents a month. It had to be **safe to leave running**, with no keys stored anywhere and hard caps on anything that costs money. And it needed one thing that is simply fun to play with: the network of nodes behind every page, which you can push around with your cursor, along with everyone else who happens to be reading.
 
-Each goal ended up deciding something concrete. This post walks through those decisions, roughly from the browser outwards.
+Each goal ended up deciding something concrete. This post walks through those decisions, roughly from the browser outwards. Here is the whole of it: pick a flow to follow it through, point at a part to see what it does, or drag to turn it.
+
+<Diagram3D {...architecture} />
 
 ## Server first, 3D after
 
@@ -106,3 +108,28 @@ And what the background network costs per frame, physics and connections include
 ## What's next
 
 Case studies of the systems I've built at work, written up with the sensitive parts taken out, and more posts like this one on the decisions behind them. If there's something here you'd like me to go deeper on, the [contact form](/contact) works, within its five-a-day limit.
+
+export const architecture = /** @satisfies {import("@/components/blog/diagram/schema").DiagramData} */ ({
+  // The diagram in "What I wanted from it". No blank lines in here: in MDX they end the export
+  title: "How the services behind this site connect",
+  nodes: [
+    { id: "you", label: "Your browser", position: [-14, 1, 2], description: "This page. It publishes your cursor and listens for everyone else's." },
+    { id: "others", label: "Other visitors", position: [-14, -8, -2], description: "Anyone else reading right now, on the same channel." },
+    { id: "vercel", label: "Vercel · Next.js", position: [-4, 7, 0], description: "Serves the pages and runs the contact form's API route." },
+    { id: "appsync", label: "AppSync Events", position: [-3, -4, 3], description: "One real-time channel. Its handler rebuilds every message." },
+    { id: "dynamo", label: "DynamoDB", position: [5, 10, -3], description: "Counts contact messages: five per visitor per day." },
+    { id: "ses", label: "Amazon SES", position: [7, 4, 1], description: "Sends the contact email, through a role Vercel assumes over OIDC." },
+    { id: "inbox", label: "My inbox", position: [15, 6, 0], description: "The only address the sending role is allowed to email." },
+    { id: "alarms", label: "CloudWatch alarms", position: [6, -6, -2], description: "Per-minute alarms on messages, connections and subscriptions." },
+    { id: "cutoff", label: "Cutoff function", position: [15, -4, 2], description: "Deletes the API keys, switching cursors off, when an alarm or the $2 check trips." },
+    { id: "budget", label: "AWS Budgets", position: [14, -12, -2], description: "A last backstop on the month's spend." },
+    { id: "actions", label: "GitHub Actions", position: [-12, 12, -4], description: "Previews infrastructure changes on every pull request, deploys on merge." },
+    { id: "pulumi", label: "Pulumi", position: [-3, 15, -5], description: "Describes all of the AWS and DNS setup in TypeScript." },
+  ],
+  flows: [
+    { id: "cursors", label: "Cursor moves", description: "Your browser publishes a move to the channel, the handler rebuilds it from known fields, and every other visitor receives it.", path: [["you", "appsync"], ["appsync", "others"]] },
+    { id: "contact", label: "Contact form", description: "The API route checks the daily limit in DynamoDB, then sends through SES using a short-lived role, never a stored key.", path: [["you", "vercel"], ["vercel", "dynamo"], ["vercel", "ses"], ["ses", "inbox"]] },
+    { id: "cost-cutoff", label: "Cost cutoff", description: "Alarms watch the channel minute by minute. If one trips, or the month passes $2, the cutoff function deletes the keys.", path: [["appsync", "alarms"], ["alarms", "cutoff"], ["budget", "cutoff"], ["cutoff", "appsync"]] },
+    { id: "deploys", label: "Deploys", description: "A merged pull request runs Pulumi from GitHub Actions, which updates the AWS side to match the code.", path: [["actions", "pulumi"], ["pulumi", "appsync"], ["pulumi", "ses"], ["pulumi", "alarms"]] },
+  ],
+});
