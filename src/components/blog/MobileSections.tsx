@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type CSSProperties } from "react";
 import { minutesLeft } from "@/lib/blog/format";
 import type { Section } from "@/lib/blog/posts";
 import { goToSection, useReadingProgress } from "./useReadingProgress";
@@ -8,8 +8,19 @@ import { goToSection, useReadingProgress } from "./useReadingProgress";
 /**
  * The section rail on narrower screens (below lg): the sections in an "On this page"
  * dropdown above the text, and a thin progress bar along the top of the screen.
+ * `className` and `style` are the dropdown's (the bar is fixed, so it mustn't move with it).
  */
-export function MobileSections({ sections, words }: { sections: Section[]; words: number }) {
+export function MobileSections({
+  sections,
+  words,
+  className = "",
+  style,
+}: {
+  sections: Section[];
+  words: number;
+  className?: string;
+  style?: CSSProperties;
+}) {
   const ids = useMemo(() => sections.map((s) => s.id), [sections]);
   const { current, progress } = useReadingProgress(ids);
   const details = useRef<HTMLDetailsElement>(null);
@@ -24,7 +35,11 @@ export function MobileSections({ sections, words }: { sections: Section[]; words
           style={{ transform: `scaleX(${progress})` }}
         />
       </div>
-      <details ref={details} className="group mb-8 rounded-2xl border border-default-200 bg-default-50/50">
+      <details
+        ref={details}
+        className={`group mb-8 rounded-2xl border border-default-200 bg-default-50/50 ${className}`}
+        style={style}
+      >
         <summary className="flex cursor-pointer list-none justify-between px-4 py-3 text-[0.92rem] font-semibold [&::-webkit-details-marker]:hidden">
           On this page <span className="font-normal tabular-nums text-default-500">{leftText}</span>
         </summary>
