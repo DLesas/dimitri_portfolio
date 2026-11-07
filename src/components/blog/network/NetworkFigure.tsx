@@ -98,7 +98,8 @@ function caption(view: FigureView, step: number, r: Readout | null, still: boole
     <>
       <strong>Cells one link-distance wide.</strong> A node&apos;s links can only be in its own cell or the eight
       around it, so this one is compared with {count(r?.checked)} nodes, not all {count(r?.others)}. Across the
-      network, that&apos;s {count(r?.compared)} comparisons instead of {count(r?.pairs)}.
+      network, that&apos;s <strong>{count(r?.compared)} comparisons</strong> instead of{" "}
+      <strong>{count(r?.pairs)}</strong>.
     </>
   );
 }
