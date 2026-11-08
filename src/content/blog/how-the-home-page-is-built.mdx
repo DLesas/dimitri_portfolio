@@ -1,16 +1,16 @@
 export const metadata = /** @satisfies {import("@/lib/blog/metadata").PostMetadata} */ ({
-  title: "How this site is built",
+  title: "How the home page is built",
   description:
-    "A Next.js site with a live 3D network, other visitors' cursors in real time and a hard $2 spending cap: the choices behind lesas.dev, and what each costs.",
+    "A live 3D network, other visitors' cursors in real time and a hard $2 spending cap: the choices behind lesas.dev's home page, and what each costs.",
   published: "2026-11-07",
   tags: ["Next.js", "three.js", "AWS"],
 });
 
 ## What I wanted from it
 
-I rebuilt this site with three goals, in this order. It had to be **fast on any device**, including a mid-range phone on a train. It had to be **cheap enough to forget about**: the AWS side averages around twenty cents a month. And it had to be **safe to leave running**, with no keys stored anywhere and hard caps on anything that costs money.
+I rebuilt this site with three goals, in this order. It had to be **fast on any device**, including a mid-range phone on a train. It had to be **cheap enough to forget about**: the AWS side averages around twenty cents a month. And it had to be **safe to leave running**, with hard caps on anything that costs money.
 
-Each goal ended up deciding something concrete. This post walks through those decisions, roughly from the browser outwards.
+Each goal ended up deciding something concrete. This post walks through those decisions on the home page, roughly from the browser outwards.
 
 ## Server first, 3D after
 
@@ -58,10 +58,6 @@ A small Lambda function deletes the AppSync API keys, which switches live cursor
 <Callout>
 The worst realistic case is a slow drain that stays under every per-minute alarm. Even that stops at the monthly check, a few dollars in.
 </Callout>
-
-### The contact form
-
-Messages go out through Amazon SES using a role that Vercel assumes over OIDC, so there is no AWS key stored anywhere. That role only works from production, and it can only send email to my own inbox. Each visitor can send five messages a day, counted in DynamoDB, and a firewall rule allows five requests per IP every ten minutes on top of that.
 
 ## Measuring it
 
