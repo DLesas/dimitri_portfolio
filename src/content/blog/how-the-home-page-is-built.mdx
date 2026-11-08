@@ -14,7 +14,9 @@ Each goal ended up deciding something concrete. This post walks through those de
 
 ## Server first, 3D after
 
-Pages are React Server Components on Next.js 16, so the text you're reading arrived as plain HTML. Entrance animations are CSS, so they play before React has loaded. The home page's 3D network loads in its own chunk once the browser is idle after the first paint, so it never competes with the text.
+Pages are React Server Components on Next.js 16, so each one is built on the server and arrives as finished HTML. The text you're reading appeared without waiting for any JavaScript, and search engines and AI tools can read it too, since many of them don't run JavaScript at all. Entrance animations are CSS for the same reason: they play as soon as the page arrives, rather than after React has loaded.
+
+The home page's 3D network is the heaviest part of the site, so it loads separately, once the text is on screen and the browser has nothing else to do. On a slow connection you can start reading straight away while it downloads in the background. That helps with search too: Google ranks pages partly on how quickly their main content appears.
 
 ### The network in four draw calls
 
