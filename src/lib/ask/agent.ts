@@ -128,12 +128,20 @@ export type AskMessage = UIMessage<never, never, InferUITools<ReturnType<typeof 
 /**
  * The conversation the model sees: the question and the exchanges before it, at most
  * HISTORY_EXCHANGES, and fewer if those come to more than MAX_HISTORY_CHARS (as sent).
- * Earlier searches' passages keep their numbers but are rebuilt from this deployment's
- * chunks (any it doesn't have are dropped), and each is marked read after its first
- * appearance; earlier page links are rebuilt from the site's pages. So nothing the
- * browser sends back is passed on to the model as the site's text.
+ * Only what the visitor and the assistant said goes: the visitor's text, the question
+ * exactly as the route checked it, and the assistant's text and finished tool calls (no
+ * "system" messages, files or anything else the browser might add). Earlier searches'
+ * passages keep their numbers but are rebuilt from this deployment's chunks (any it
+ * doesn't have are dropped), and each is marked read after its first appearance;
+ * earlier page links are rebuilt from the site's pages. So nothing the browser sends
+ * back is passed on to the model as the site's text.
  */
-export function recentHistory(messages: AskMessage[]): { messages: AskMessage[]; conversation: Conversation } {
+export function recentHistory(sent: AskMessage[]): { messages: AskMessage[]; conversation: Conversation } {
+  const said = sent.filter((m) => m.role === "user" || m.role === "assistant");
+  const question = said.at(-1);
+  const messages: AskMessage[] = question
+    ? [...said.slice(0, -1), { ...question, parts: [{ type: "text", text: lastQuestion(said) ?? "" }] }]
+    : [];
   const starts = messages.flatMap((m, i) => (m.role === "user" ? [i] : [])).slice(-1 - HISTORY_EXCHANGES);
   while (starts.length > 1 && JSON.stringify(messages.slice(starts[0])).length > MAX_HISTORY_CHARS) starts.shift();
   const recent = messages.slice(starts[0] ?? 0);
@@ -150,22 +158,21 @@ export function recentHistory(messages: AskMessage[]): { messages: AskMessage[];
       }
     }
   }
-  return {
-    conversation,
-    messages: recent.map((m) => ({
-      ...m,
-      parts: m.parts.map((part): AskMessage["parts"][number] => {
-        if (part.type === "tool-search_site" && part.state === "output-available") {
-          const passages = part.output.passages.map((p) => numbered(conversation, p.id)).filter((p) => p !== undefined);
-          return { ...part, output: { passages, tooMany: part.output.tooMany } };
-        }
-        if (part.type === "tool-link_page" && part.state === "output-available") {
-          return { ...part, output: pageLink(part.output.label) };
-        }
-        return part;
-      }),
-    })),
-  };
+  const sendable = (m: AskMessage) =>
+    m.parts.flatMap((part): AskMessage["parts"] => {
+      if (part.type === "text") return [part];
+      if (m.role !== "assistant") return [];
+      if (part.type === "step-start") return [part];
+      if (part.type === "tool-search_site" && part.state === "output-available") {
+        const passages = part.output.passages.map((p) => numbered(conversation, p.id)).filter((p) => p !== undefined);
+        return [{ ...part, output: { passages, tooMany: part.output.tooMany } }];
+      }
+      if (part.type === "tool-link_page" && part.state === "output-available") {
+        return [{ ...part, output: pageLink(part.output.label) }];
+      }
+      return [];
+    });
+  return { conversation, messages: recent.map((m) => ({ ...m, parts: sendable(m) })) };
 }
 
 /**
