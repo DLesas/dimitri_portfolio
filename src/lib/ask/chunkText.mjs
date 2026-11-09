@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * A chunk of the site's text, as Dimitri's assistant embeds, searches and cites it. Shared
+ * A chunk of the site's text, as Deeves embeds, searches and cites it. Shared
  * by the blog's MDX plugin (rehypeChunks.mjs), which Node loads directly, hence plain
  * JavaScript, and by the pages and tools (pageChunks.ts, siteChunks.ts).
  */

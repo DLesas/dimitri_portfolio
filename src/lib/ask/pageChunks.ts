@@ -8,7 +8,7 @@ import skillsData from "../../../public/languages_modules.json";
 import { chunk, type Chunk } from "./chunkText.mjs";
 
 /**
- * The chunks of Dimitri's assistant outside the blog: the home page's pitch, the About
+ * Deeves's chunks outside the blog: the home page's pitch, the About
  * page's introduction, each role and each skill. The pages put the ids on the elements
  * these chunks come from, and the tools index them (siteChunks.ts).
  */

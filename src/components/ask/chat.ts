@@ -4,7 +4,7 @@ import type { AskMessage } from "@/lib/ask/agent";
 import { REPLIES, type Reply } from "@/lib/ask/replies";
 
 /**
- * The conversation with Dimitri's assistant (/api/ask), kept for as long as the tab is
+ * The conversation with Deeves (/api/ask), kept for as long as the tab is
  * open: the palette can close and the visitor move between pages without losing it.
  */
 

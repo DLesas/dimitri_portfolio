@@ -39,7 +39,7 @@ function reduce(state: State, action: Action): State {
 }
 
 /**
- * The way in to Dimitri's assistant, in the nav: "Ask about Dimitri…" with its shortcut
+ * The way in to Deeves, the site's assistant, in the nav: "Ask about Dimitri…" with its shortcut
  * (⌘K, or Ctrl+K), or just an icon where the nav is short of room. A dot on it shows an
  * answer being written, or one that came while the palette was closed.
  */

@@ -69,7 +69,7 @@ interface AskPaletteProps {
 }
 
 /**
- * Dimitri's assistant: a keyboard-first palette over the page (full screen on phones).
+ * Deeves, the site's assistant: a keyboard-first palette over the page (full screen on phones).
  * Ask in the top row, read the answer as results, move through its sources with ↑ and ↓
  * and open one with ↵. Following a source, a citation or a page link closes the palette,
  * so the passage can be seen glowing on its page. Loaded the first time it's opened
@@ -259,7 +259,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
   return createPortal(
     <dialog
       ref={dialog}
-      aria-label="Dimitri's assistant"
+      aria-label="Deeves"
       onCancel={(event) => {
         event.preventDefault();
         onDismiss();
@@ -316,7 +316,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
                   maxLength={MAX_QUESTION_CHARS}
                   value={question}
                   placeholder={placeholder}
-                  aria-label="Ask Dimitri's assistant a question"
+                  aria-label="Ask Deeves a question"
                   aria-describedby={question.length >= COUNT_FROM ? countId : undefined}
                   autoComplete="off"
                   spellCheck={false}

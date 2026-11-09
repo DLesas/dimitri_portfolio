@@ -8,7 +8,7 @@ import { chunkStore } from "@/lib/ask/store";
 import { withinDailyLimit } from "@/lib/dailyLimit";
 
 /**
- * Dimitri's assistant (src/lib/ask/agent.ts). POST `{ messages }`: the conversation so far,
+ * Deeves, the site's assistant (src/lib/ask/agent.ts). POST `{ messages }`: the conversation so far,
  * as the AI SDK's useChat sends it, ending with the visitor's question. The answer
  * streams back as UI messages.
  *
