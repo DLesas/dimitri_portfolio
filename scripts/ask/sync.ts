@@ -1,10 +1,11 @@
 /**
  * Brings the site assistant's chunk table in line with the site: runs after every build
  * (npm's postbuild), but changes the table only for a production build, before it goes
- * live. If it can't, the build fails, so no deploy goes live with text the assistant
- * can't find. `npm run ask:diff` shows beforehand what it will do.
+ * live. It embeds the very chunks the build bundled (written by its prebuild). If it
+ * can't, the build fails, so no deploy goes live with text the assistant can't find.
+ * `npm run ask:diff` shows beforehand what it will do.
  */
-import { collectChunks } from "@/lib/ask/siteChunks";
+import { DEPLOYED_CHUNKS } from "@/lib/ask/deployedChunks";
 import { chunkStore, listChunks } from "@/lib/ask/store";
 import { applySync, describeSync, planSync } from "@/lib/ask/sync";
 
@@ -15,7 +16,7 @@ if (process.env.VERCEL_ENV !== "production") {
     const store = chunkStore();
     const key = process.env.OPENROUTER_BUILD_KEY;
     if (!store || !key) throw new Error("production builds need ASK_CHUNKS_TABLE and OPENROUTER_BUILD_KEY (infra/ask.ts)");
-    const plan = planSync(await collectChunks(), await listChunks(store));
+    const plan = planSync(DEPLOYED_CHUNKS, await listChunks(store));
     console.log(`Site assistant: ${describeSync(plan)}`);
     const tokens = await applySync(store, plan, key);
     console.log(`Site assistant: chunks up to date${tokens ? ` (${tokens.toLocaleString("en-GB")} tokens embedded)` : ""}`);
