@@ -42,3 +42,6 @@ next-env.d.ts
 
 # infra/: compiled output, if tsc is ever run to emit (Pulumi itself compiles in memory)
 /infra/**/bin/
+
+# the site assistant's chunks, written before each build (scripts/ask/chunks.ts)
+/src/generated/

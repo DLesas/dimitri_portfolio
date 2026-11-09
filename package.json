@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "tsx --conditions=react-server scripts/ask/chunks.ts",
     "dev": "next dev",
+    "prebuild": "tsx --conditions=react-server scripts/ask/chunks.ts",
     "build": "next build",
     "postbuild": "tsx --conditions=react-server scripts/ask/sync.ts",
     "start": "next start",

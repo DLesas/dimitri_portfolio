@@ -10,12 +10,15 @@ import { awsConfig } from "@/lib/aws";
 export interface ChunkStore {
   dynamo: DynamoDBClient;
   table: string;
+  /** Its vector index, which searches it by meaning */
+  vectorIndex: string;
 }
 
-/** The table, or null where the site has none (ASK_CHUNKS_TABLE, set in infra/site.ts) */
+/** The table, or null where the site has none (ASK_CHUNKS_TABLE and the rest, set in infra/ask.ts) */
 export function chunkStore(): ChunkStore | null {
   const table = process.env.ASK_CHUNKS_TABLE;
-  return table ? { dynamo: new DynamoDBClient(awsConfig(process.env.ASK_ROLE_ARN)), table } : null;
+  const vectorIndex = process.env.ASK_VECTOR_INDEX ?? "";
+  return table ? { dynamo: new DynamoDBClient(awsConfig(process.env.ASK_ROLE_ARN)), table, vectorIndex } : null;
 }
 
 /** What the table holds about a chunk, besides its text and embedding */
