@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
+import { CitedPassage } from "@/components/CitedPassage";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({
         <JsonLd data={structuredData} />
         <Providers>
           <ConsoleEasterEgg />
+          <CitedPassage />
           <Navigation />
           <main className="flex-1">{children}</main>
         </Providers>

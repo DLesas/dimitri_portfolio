@@ -89,27 +89,32 @@
 }
 
 /* A passage the site assistant cites (#c-…, src/lib/ask/chunkText.mjs): a link to it
-   lands just below the top of the screen, and the passage glows briefly. The shadow
-   extends the glow past the text without moving anything. */
+   lands just below the top of the screen, and its words light up in reading order
+   (src/lib/lightUp.ts), in bands from the primary colour to the secondary */
 [id^="c-"] {
   scroll-margin-top: 2rem;
 }
-[id^="c-"]:target {
-  border-radius: 0.5rem;
-  animation: cited 2.4s ease-out;
+/* How strongly the words are lit: more in the dark, where the colours sit on near-black */
+:root {
+  --cited-word: 28%;
 }
-@keyframes cited {
-  from {
-    background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
-    box-shadow: 0 0 0 0.6rem color-mix(in oklab, var(--color-primary) 14%, transparent);
-  }
+.dark {
+  --cited-word: 55%;
 }
-@media (prefers-reduced-motion: reduce) {
-  [id^="c-"]:target {
-    animation: none;
-    background-color: color-mix(in oklab, var(--color-primary) 10%, transparent);
-    box-shadow: 0 0 0 0.6rem color-mix(in oklab, var(--color-primary) 10%, transparent);
-  }
+::highlight(cited-0) {
+  background-color: color-mix(in oklab, var(--color-primary) var(--cited-word), transparent);
+}
+::highlight(cited-1) {
+  background-color: color-mix(in oklab, color-mix(in oklab, var(--color-primary) 75%, var(--color-secondary)) var(--cited-word), transparent);
+}
+::highlight(cited-2) {
+  background-color: color-mix(in oklab, color-mix(in oklab, var(--color-primary), var(--color-secondary)) var(--cited-word), transparent);
+}
+::highlight(cited-3) {
+  background-color: color-mix(in oklab, color-mix(in oklab, var(--color-primary) 25%, var(--color-secondary)) var(--cited-word), transparent);
+}
+::highlight(cited-4) {
+  background-color: color-mix(in oklab, var(--color-secondary) var(--cited-word), transparent);
 }
 
 /* The section rail's current star */
