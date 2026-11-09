@@ -15,11 +15,11 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { LuArrowUp, LuClock, LuPlus, LuSearch } from "react-icons/lu";
+import { LuArrowUp, LuClock, LuInfo, LuPlus, LuSearch } from "react-icons/lu";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { AskMessage } from "@/lib/ask/agent";
-import { MAX_QUESTION_CHARS } from "@/lib/ask/config";
+import { MAX_MESSAGES, MAX_QUESTION_CHARS } from "@/lib/ask/config";
 import { AskTurn, type Row, type Turn } from "./AskTurn";
 import { citedPassages, passagesByNumber, readAnswer } from "./answers";
 import { askChat, startOver, stopAnswer, thoughtFor, unansweredWhy } from "./chat";
@@ -31,6 +31,9 @@ import { PHONE, useConversationScroll } from "./useConversationScroll";
 
 /** The question's length shows from here on */
 const COUNT_FROM = 400;
+
+/** What takes the field's place once the conversation is as long as a request may carry */
+const FULL = "This conversation is full. Start a new conversation to keep asking.";
 
 const textOf = (message: AskMessage) => message.parts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n");
 
@@ -102,10 +105,12 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
 
   const lastTurn = turns.at(-1);
   const limit = useSyncExternalStore(subscribeLimit, currentLimit, () => undefined);
+  /** What takes the field's place: a limit reached, or a conversation another question won't fit (MAX_MESSAGES) */
+  const blocked = limit ?? (messages.length >= MAX_MESSAGES ? FULL : undefined);
   const rows = turns.flatMap((turn) => turn.rows);
   const highlighted = rows.some((row) => row.key === chosenRow) ? chosenRow : lastTurn?.live ? undefined : lastTurn?.rows[0]?.key;
   // ↵ opens the highlighted row after ↑ or ↓, or with nothing to ask
-  const enterOpens = !!highlighted && (navigating || !!limit || !question.trim());
+  const enterOpens = !!highlighted && (navigating || !!blocked || !question.trim());
 
   const focusField = useCallback(() => {
     const el = field.current;
@@ -143,11 +148,11 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
   useEffect(() => onBusyChange(busy), [busy, onBusyChange]);
 
   // The focus stays inside when what had it goes (Stop once the answer's done, the field at
-  // the limit), and goes back to the field when it comes back
+  // a limit), and goes back to the field when it comes back
   useEffect(() => {
     const active = document.activeElement;
     if (open && (!panel.current?.contains(active) || active === panel.current)) focusField();
-  }, [open, busy, limit, focusField]);
+  }, [open, busy, blocked, focusField]);
 
   // The field grows with the question
   useLayoutEffect(() => {
@@ -155,7 +160,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
-  }, [question, phone, limit, open]);
+  }, [question, phone, blocked, open]);
 
   const follow = useCallback(
     (href: string) => {
@@ -167,7 +172,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
 
   function ask() {
     const text = question.trim();
-    if (!text || busy || limit) return;
+    if (!text || busy || blocked) return;
     setQuestion("");
     setChosenRow(undefined);
     setNavigating(false);
@@ -232,7 +237,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
     if (row?.dataset.row && row.dataset.row !== highlighted) setChosenRow(row.dataset.row);
   }
 
-  const [limitHeadline, ...limitRest] = limit?.split(/(?<=\.) /) ?? [];
+  const [blockedHeadline, ...blockedRest] = blocked?.split(/(?<=\.) /) ?? [];
   const placeholder = messages.length
     ? "Ask a follow-up…"
     : phone
@@ -281,17 +286,17 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
           >
             {/* Only a box of its own on phones */}
             <div
-              className={`contents max-md:flex max-md:min-h-11 max-md:min-w-0 max-md:flex-1 max-md:items-start max-md:gap-2 max-md:rounded-[22px] max-md:pr-1.5 ${limit ? "max-md:pl-1" : "max-md:bg-default-100 max-md:pl-3"}`}
+              className={`contents max-md:flex max-md:min-h-11 max-md:min-w-0 max-md:flex-1 max-md:items-start max-md:gap-2 max-md:rounded-[22px] max-md:pr-1.5 ${blocked ? "max-md:pl-1" : "max-md:bg-default-100 max-md:pl-3"}`}
             >
               <span
                 aria-hidden="true"
-                className={`mt-[21px] grid size-[18px] flex-none place-items-center transition-colors max-md:mt-[13px] ${limit ? "text-primary-text" : "text-default-500 group-focus-within/input:text-primary-text"}`}
+                className={`mt-[21px] grid size-[18px] flex-none place-items-center transition-colors max-md:mt-[13px] ${blocked ? "text-primary-text" : "text-default-500 group-focus-within/input:text-primary-text"}`}
               >
-                {limit ? <LuClock size={18} /> : <LuSearch size={18} />}
+                {limit ? <LuClock size={18} /> : blocked ? <LuInfo size={18} /> : <LuSearch size={18} />}
               </span>
-              {limit ? (
+              {blocked ? (
                 <p role="status" className="min-w-0 flex-1 py-[18px] text-[15px] leading-6 text-default-500 max-md:py-2.5 max-md:pr-1.5 max-md:text-sm max-md:leading-[22px]">
-                  <strong className="font-medium text-foreground">{limitHeadline}</strong> {limitRest.join(" ")}
+                  <strong className="font-medium text-foreground">{blockedHeadline}</strong> {blockedRest.join(" ")}
                 </p>
               ) : (
                 <textarea
@@ -312,7 +317,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
                   className="h-[60px] max-h-[132px] min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent py-[18px] text-lg leading-6 text-foreground caret-primary outline-none [scrollbar-color:hsl(var(--heroui-foreground)/0.18)_transparent] [scrollbar-width:thin] placeholder:text-default-500 max-md:h-11 max-md:max-h-28 max-md:py-[11px] max-md:text-[17px] max-md:leading-[22px]"
                 />
               )}
-              {!limit && question.length >= COUNT_FROM && (
+              {!blocked && question.length >= COUNT_FROM && (
                 <span
                   id={countId}
                   className={`mt-[21px] flex-none text-xs leading-[18px] tabular-nums max-md:mt-[13px] ${question.length >= MAX_QUESTION_CHARS ? "text-foreground" : "text-default-500"}`}
@@ -333,7 +338,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
                   <span>Stop</span>
                 </button>
               ) : (
-                !limit && (
+                !blocked && (
                   <button
                     type="button"
                     aria-label="Ask"
@@ -398,7 +403,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
                   <span>Sources</span>
                 </span>
               )}
-              {(enterOpens || !limit) && (
+              {(enterOpens || !blocked) && (
                 <span className="flex items-center gap-1.5">
                   <Kbd>↵</Kbd>
                   <span>{enterOpens ? "Open" : "Ask"}</span>

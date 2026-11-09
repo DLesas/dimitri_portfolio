@@ -29,6 +29,12 @@ export const SEARCH_CANDIDATES = { meaning: 50, keyword: 20 };
 
 /** The longest question, in characters */
 export const MAX_QUESTION_CHARS = 500;
+/**
+ * The most messages a request may carry, the question included (the route refuses more).
+ * The browser sends the whole conversation, which the server needs to keep citation
+ * numbers as the visitor sees them, so a conversation this long has to start again.
+ */
+export const MAX_MESSAGES = 100;
 /** Earlier exchanges (a question and its answer, searches included) sent with each question */
 export const HISTORY_EXCHANGES = 3;
 /**

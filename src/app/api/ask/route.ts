@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ProvisionedThroughputExceededException } from "@aws-sdk/client-dynamodb";
 import { answer, lastQuestion, validateConversation } from "@/lib/ask/agent";
-import { DAILY_QUESTIONS, MAX_QUESTION_CHARS } from "@/lib/ask/config";
+import { DAILY_QUESTIONS, MAX_MESSAGES, MAX_QUESTION_CHARS } from "@/lib/ask/config";
 import { REPLIES } from "@/lib/ask/replies";
 import { chunkStore } from "@/lib/ask/store";
 import { withinDailyLimit } from "@/lib/dailyLimit";
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
   if (!store || !apiKey) return refuse(503, REPLIES.unavailable);
 
-  const body = z.object({ messages: z.array(z.unknown()).min(1).max(100) }).safeParse(await request.json().catch(() => undefined));
+  const body = z.object({ messages: z.array(z.unknown()).min(1).max(MAX_MESSAGES) }).safeParse(await request.json().catch(() => undefined));
   if (!body.success) return refuse(400, "Invalid request");
   const messages = await validateConversation(body.data.messages).catch(() => undefined);
   const question = messages && lastQuestion(messages);
