@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/Reveal";
 import { ABOUT_INTRO } from "@/content/intro";
+import { aboutIntroChunk, roleChunks } from "@/lib/ask/pageChunks";
 import { pageMetadata } from "@/lib/seo";
 import { fadeInUp } from "./entrance";
 import { SkillsSection } from "./SkillsSection";
@@ -21,7 +22,7 @@ export default function AboutPage() {
           <span className="text-gradient">Dimitri</span>
         </h1>
 
-        <p className={`text-xl text-gray-600 leading-relaxed max-w-3xl ${fadeInUp} enter-delay-300`}>
+        <p id={aboutIntroChunk().id} className={`text-xl text-gray-600 leading-relaxed max-w-3xl ${fadeInUp} enter-delay-300`}>
           {ABOUT_INTRO}
         </p>
       </section>
@@ -34,7 +35,7 @@ export default function AboutPage() {
           Work Experience
         </h3>
         <div className={`${fadeInUp} enter-delay-300`}>
-          <WorkExperienceTimeline />
+          <WorkExperienceTimeline ids={roleChunks().map((role) => role.id)} />
         </div>
       </Reveal>
     </div>

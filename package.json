@@ -2,11 +2,15 @@
   "name": "dimitri_portfolio",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "tsx --conditions=react-server scripts/ask/sync.ts",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "tsx --conditions=react-server --test \"src/**/*.test.ts\"",
+    "ask:diff": "AWS_PROFILE=${AWS_PROFILE:-personal} tsx --conditions=react-server scripts/ask/diff.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1161.0",
@@ -14,12 +18,15 @@
     "@heroui/react": "^3.2.7",
     "@heroui/styles": "^3.2.7",
     "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/mdx": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.4.3",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@react-three/fiber": "^9.8.2",
     "@stefanprobst/rehype-extract-toc": "^3.0.0",
     "@tanstack/react-query": "^5.105.0",
     "@vercel/functions": "^3.10.5",
+    "ai": "^7.0.166",
     "leaflet": "^1.9.4",
     "next": "16.4.3",
     "next-themes": "^0.4.6",
@@ -33,9 +40,11 @@
     "rehype-pretty-code": "^0.14.6",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "server-only": "^0.0.1",
     "shiki": "^4.6.0",
     "three": "^0.187.0",
     "troika-three-text": "^0.52.5",
+    "vfile": "^6.0.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -51,6 +60,7 @@
     "eslint-plugin-react": "^7.37.5",
     "r3f-perf": "^7.2.3",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   }
 }

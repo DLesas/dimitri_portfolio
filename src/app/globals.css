@@ -88,6 +88,30 @@
   color: var(--shiki-dark);
 }
 
+/* A passage the site assistant cites (#c-…, src/lib/ask/chunkText.mjs): a link to it
+   lands just below the top of the screen, and the passage glows briefly. The shadow
+   extends the glow past the text without moving anything. */
+[id^="c-"] {
+  scroll-margin-top: 2rem;
+}
+[id^="c-"]:target {
+  border-radius: 0.5rem;
+  animation: cited 2.4s ease-out;
+}
+@keyframes cited {
+  from {
+    background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+    box-shadow: 0 0 0 0.6rem color-mix(in oklab, var(--color-primary) 14%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [id^="c-"]:target {
+    animation: none;
+    background-color: color-mix(in oklab, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 0.6rem color-mix(in oklab, var(--color-primary) 10%, transparent);
+  }
+}
+
 /* The section rail's current star */
 @keyframes rail-pulse {
   50% {

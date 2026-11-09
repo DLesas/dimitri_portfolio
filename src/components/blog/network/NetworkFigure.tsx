@@ -6,16 +6,13 @@ import { SceneBoundary } from "@/components/three/SceneBoundary";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { NETWORK_FIGURE_TITLES } from "./figureTitles.mjs";
 import type { FigureView, Readout } from "./NetworkFigureCanvas";
 
 // three.js and the network load in their own chunk, once the figure is nearly on screen
 const NetworkFigureCanvas = dynamic(() => import("./NetworkFigureCanvas"), { ssr: false });
 
-const TITLES: Record<FigureView, string> = {
-  draws: "The network drawn one draw call at a time",
-  physics: "Nodes pushed by a cursor and pulled back to their drift paths",
-  grid: "The grid connections are found with",
-};
+const TITLES: Record<FigureView, string> = NETWORK_FIGURE_TITLES;
 
 /** The draws view's draw calls, in the order they're drawn */
 const DRAW_CALLS = ["Visitors' glows", "Your glow", "Connections", "Nodes"];
