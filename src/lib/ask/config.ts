@@ -1,4 +1,4 @@
-/** Dimitri's assistant: its settings, in one place */
+/** Deeves, the site's assistant: its settings, in one place */
 
 /** A post section shorter than this joins a neighbour; one longer splits between blocks (rehypeChunks.mjs) */
 export const CHUNK_WORDS = { min: 50, max: 400 };
@@ -20,7 +20,7 @@ export const CHAT_REASONING_EFFORT = "low";
 /** The most an answer may run to, in tokens (OpenRouter's max_tokens), reasoning included */
 export const MAX_ANSWER_TOKENS = 64_000;
 /** Searches the model may make for one question, before it has to answer */
-export const MAX_SEARCHES = 3;
+export const MAX_SEARCHES = 5;
 
 /** Passages each search returns: the best by meaning and by keyword, ranked together */
 export const SEARCH_RESULTS = 10;

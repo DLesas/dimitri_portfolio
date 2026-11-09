@@ -110,7 +110,10 @@ describe("search_site", () => {
     );
     const outputs = await Promise.all(calls);
     assert.equal(searches, MAX_SEARCHES);
-    assert.deepEqual(outputs.map((o) => "tooMany" in o && o.tooMany === true), [false, false, false, true, true]);
+    assert.deepEqual(
+      outputs.map((o) => "tooMany" in o && o.tooMany === true),
+      calls.map((_, i) => i >= MAX_SEARCHES),
+    );
   });
 });
 
