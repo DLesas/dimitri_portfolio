@@ -1,7 +1,9 @@
 import { Chat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessageChunk } from "ai";
 import type { AskMessage } from "@/lib/ask/agent";
-import { REPLIES, type Reply } from "@/lib/ask/replies";
+import type { Reply } from "@/lib/ask/replies";
+import { replyFor } from "./answers";
+import { isLimit, reachLimit } from "./limit";
 
 /**
  * The conversation with Deeves (/api/ask), kept for as long as the tab is
@@ -13,17 +15,6 @@ const timings = new Map<string, { from: number; to?: number }>();
 
 /** What became of the questions that weren't answered in full: stopped, or refused */
 const unanswered = new Map<string, "stopped" | Reply>();
-
-const KNOWN_REPLIES = new Set<string>(Object.values(REPLIES));
-
-/** The visitor's words for a failed answer: the assistant's own, as a refusal's body or the stream's error, or REPLIES.failed */
-function replyTo(error: Error): Reply {
-  let text: unknown = error.message;
-  try {
-    text = JSON.parse(error.message).message;
-  } catch {}
-  return typeof text === "string" && KNOWN_REPLIES.has(text) ? (text as Reply) : REPLIES.failed;
-}
 
 /** The answers' stream, timing each one's thinking as it arrives */
 class TimedTransport extends DefaultChatTransport<AskMessage> {
@@ -47,56 +38,16 @@ class TimedTransport extends DefaultChatTransport<AskMessage> {
   }
 }
 
-/**
- * The limit the visitor has reached, until it lifts: the day's questions at midnight UTC
- * (dailyLimit.ts counts by the UTC date), and the query key's monthly spend at the start
- * of the UTC month (OpenRouter's monthly reset). It's the visitor's, not the
- * conversation's, so starting over keeps it.
- */
-let limit: { reply: Reply; lifts: number } | undefined;
-let liftTimer: ReturnType<typeof setTimeout> | undefined;
-const limitListeners = new Set<() => void>();
-
-function setLimit(next: typeof limit) {
-  limit = next;
-  clearTimeout(liftTimer);
-  // A timer waits at most about 24 days, so a longer wait is checked again then
-  if (next) liftTimer = setTimeout(checkLimit, Math.min(Math.max(0, next.lifts - Date.now()), 2 ** 31 - 1));
-  for (const listener of limitListeners) listener();
-}
-
-/** Lifts the limit once its time has come; the palette checks too as it opens, as a computer that slept can run its timers late */
-export function checkLimit() {
-  if (limit) setLimit(Date.now() < limit.lifts ? limit : undefined);
-}
-
-/** The limit's words while it holds, for useSyncExternalStore */
-export const currentLimit = () => limit?.reply;
-export function subscribeLimit(listener: () => void) {
-  limitListeners.add(listener);
-  return () => {
-    limitListeners.delete(listener);
-  };
-}
-
-/** When `reply`'s limit lifts: the next UTC midnight, or the next UTC month */
-function liftsAt(reply: typeof REPLIES.daily | typeof REPLIES.monthly) {
-  const now = new Date();
-  return reply === REPLIES.daily
-    ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
-    : Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
-}
-
 const lastQuestionId = (messages: AskMessage[]) => messages.findLast((m) => m.role === "user")?.id;
 
 export const askChat: Chat<AskMessage> = new Chat<AskMessage>({
   transport: new TimedTransport({ api: "/api/ask" }),
   // Before the chat's status changes, so the render that shows the failure has its words
   onError: (error) => {
-    const reply = replyTo(error);
+    const reply = replyFor(error);
     const question = lastQuestionId(askChat.messages);
     if (question) unanswered.set(question, reply);
-    if (reply === REPLIES.daily || reply === REPLIES.monthly) setLimit({ reply, lifts: liftsAt(reply) });
+    if (isLimit(reply)) reachLimit(reply);
   },
 });
 
@@ -123,69 +74,4 @@ export const unansweredWhy = (question: string) => unanswered.get(question);
 export function thoughtFor(question: string) {
   const timing = timings.get(question);
   return timing?.to === undefined ? undefined : Math.max(1, Math.round((timing.to - timing.from) / 1000));
-}
-
-/** A passage a search found, as the answers cite it: [n] */
-export interface Passage {
-  n: number;
-  path: string[];
-  url: string;
-}
-
-/** Every passage the conversation's searches found, by number (numbers hold across the conversation) */
-export function passagesByNumber(messages: AskMessage[]) {
-  const passages = new Map<number, Passage>();
-  for (const message of messages) {
-    for (const part of message.parts) {
-      if (part.type !== "tool-search_site" || part.state !== "output-available") continue;
-      for (const { n, path, url } of part.output.passages) passages.set(n, { n, path, url });
-    }
-  }
-  return passages;
-}
-
-/** One search, as its line shows it */
-export interface Search {
-  /** Undefined while the model is still writing it */
-  query?: string;
-  state: "searching" | "done" | "failed";
-  /** How many passages it found, once it has */
-  found?: number;
-}
-
-/** What the assistant has said so far in `message`, as the palette shows it */
-export function readAnswer(message: AskMessage | undefined) {
-  const parts = message?.parts ?? [];
-  const reasoning: string[] = [];
-  const text: string[] = [];
-  const searches: Search[] = [];
-  const links: { label: string; href: string }[] = [];
-  let writing = false;
-  for (const part of parts) {
-    if (part.type === "reasoning" && part.text.trim()) reasoning.push(part.text.trim());
-    else if (part.type === "text") {
-      if (part.text.trim()) text.push(part.text.trim());
-      writing ||= part.state === "streaming";
-    } else if (part.type === "tool-search_site") {
-      // A search past the limit wasn't made (agent.ts), so it isn't shown
-      if (part.state === "output-available" && part.output.tooMany) continue;
-      const query = part.input?.query;
-      if (part.state === "output-available") searches.push({ query, state: "done", found: part.output.passages.length });
-      else if (part.state === "output-error") searches.push({ query, state: "failed" });
-      else searches.push({ query, state: "searching" });
-    } else if (part.type === "tool-link_page" && part.state === "output-available") links.push(part.output);
-  }
-  return { reasoning: reasoning.join("\n\n"), text: text.join("\n\n"), writing, searches, links };
-}
-
-/** A citation in an answer: [3], or several at once, [1, 4] */
-export const CITATION = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
-
-/** The passages `text` cites, in number order */
-export function citedPassages(text: string, passages: Map<number, Passage>) {
-  const cited = new Set<number>();
-  for (const [, numbers] of text.matchAll(CITATION)) {
-    for (const n of numbers.split(",")) if (passages.has(Number(n))) cited.add(Number(n));
-  }
-  return [...cited].sort((a, b) => a - b).map((n) => passages.get(n)!);
 }

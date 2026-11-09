@@ -1,6 +1,6 @@
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CITATION, type Passage } from "./chat";
+import { CITATION, type Passage } from "./answers";
 import { PassageLink } from "./PassageLink";
 
 /** The little of Markdown's syntax tree that citing needs */

@@ -15,7 +15,7 @@ import { SITE_URL } from "@/lib/site";
 import { AnswerText } from "./AnswerText";
 import { Kbd } from "./Kbd";
 import { StopIcon } from "./StopIcon";
-import type { Passage, Search, readAnswer } from "./chat";
+import type { Passage, Search, readAnswer } from "./answers";
 import { PassageLink } from "./PassageLink";
 
 /** A result row under an answer: a passage it cites, or a page it links to */
