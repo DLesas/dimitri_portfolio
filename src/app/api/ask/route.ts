@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
       return refuse(429, `You've asked ${DAILY_QUESTIONS} questions today. Please come back tomorrow.`);
     }
   } catch (error) {
-    // The count's table has fixed capacity (infra/ask.ts): a flood is turned away, not billed
+    // The count's table has fixed capacity (infra/ask.ts): a flood is turned away, not
+    // billed. Chosen knowingly: a flood from enough IPs makes everyone wait while it lasts,
+    // which beats paying for it (and the query key's monthly limit is the last word anyway)
     if (error instanceof ProvisionedThroughputExceededException) {
       return refuse(429, "Dimitri's assistant is busy. Please try again in a minute.");
     }
