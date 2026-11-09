@@ -8,6 +8,7 @@ import { githubRepo, vercelProject } from "./config";
 import { realtimeEnv } from "./realtime";
 import { contactEnv } from "./email";
 import { readsEnv } from "./blog";
+import { askEnv, askSecrets } from "./ask";
 
 export const site = new vercel.Project(
   "site",
@@ -21,7 +22,8 @@ export const site = new vercel.Project(
     automaticallyExposeSystemEnvironmentVariables: true,
     buildMachineType: "basic",
     prioritiseProductionBuilds: true,
-    resourceConfig: { fluid: true, functionDefaultRegions: ["iad1"] },
+    // Functions run in London, next to the AWS services they call (eu-west-2)
+    resourceConfig: { fluid: true, functionDefaultRegions: ["lhr1"] },
     // Functions can swap Vercel OIDC tokens for AWS credentials (see email.ts)
     oidcTokenConfig: { issuerMode: "team" },
     vercelAuthentication: { deploymentType: "standard_protection" },
@@ -63,15 +65,22 @@ new vercel.FirewallConfig("firewall", {
   },
 });
 
-// Not secrets: the realtime values ship in the browser bundle, and the roles can only be
-// assumed from this project's production deployments. Read counts are for production
-// only, so previews and local development don't count their own visits.
-const siteEnv: [Record<string, pulumi.Input<string>>, vercel.ProjectEnvironmentVariableArgs["targets"]][] = [
-  [{ ...realtimeEnv, ...contactEnv }, ["production", "preview", "development"]],
-  [readsEnv, ["production"]],
+// Mostly not secrets: the realtime values ship in the browser bundle, and the roles can
+// only be assumed from this project's production deployments. Read counts are for
+// production only, so previews and local development don't count their own visits, and
+// so is the assistant, whose roles previews can't assume. Its OpenRouter keys are
+// Sensitive: Vercel never shows them again.
+const siteEnv: [
+  Record<string, pulumi.Input<string>>,
+  vercel.ProjectEnvironmentVariableArgs["targets"],
+  { sensitive: boolean },
+][] = [
+  [{ ...realtimeEnv, ...contactEnv }, ["production", "preview", "development"], { sensitive: false }],
+  [{ ...readsEnv, ...askEnv }, ["production"], { sensitive: false }],
+  [askSecrets, ["production"], { sensitive: true }],
 ];
-for (const [env, targets] of siteEnv) {
+for (const [env, targets, { sensitive }] of siteEnv) {
   for (const [key, value] of Object.entries(env)) {
-    new vercel.ProjectEnvironmentVariable(key, { projectId: site.id, key, value, sensitive: false, targets });
+    new vercel.ProjectEnvironmentVariable(key, { projectId: site.id, key, value, sensitive, targets });
   }
 }
