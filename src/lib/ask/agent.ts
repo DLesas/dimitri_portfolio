@@ -13,6 +13,7 @@ import { SITE_PAGES } from "@/lib/site";
 import { pathText } from "./chunkText.mjs";
 import { HISTORY_EXCHANGES, MAX_ANSWER_TOKENS, MAX_HISTORY_CHARS, MAX_SEARCHES } from "./config";
 import { chunkById } from "./deployedChunks";
+import { REPLIES } from "./replies";
 import { chatModel } from "./models";
 import { searchSite } from "./search";
 import type { ChunkStore } from "./store";
@@ -220,6 +221,6 @@ function describeError(error: unknown) {
   console.error("Site assistant: answering failed", error);
   const status = (error as { statusCode?: number }).statusCode;
   // OpenRouter refuses with 402 or 403 once the query key's monthly limit is spent
-  if (status === 402 || status === 403) return "Dimitri's assistant has answered all it can this month. Please try again next month.";
-  return "Something went wrong. Please try again in a moment.";
+  if (status === 402 || status === 403) return REPLIES.monthly;
+  return REPLIES.failed;
 }
