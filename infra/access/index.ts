@@ -4,8 +4,8 @@
  *
  * - The S3 bucket holding Pulumi's state, for this stack and the main one (../), and when
  *   its old object versions expire
- * - The roles the main stack's resources run as: the cutoff Lambda, the contact form and
- *   the blog's read counts
+ * - The roles the main stack's resources run as: the cutoff Lambda, the contact form, the
+ *   blog's read counts and the site assistant
  * - Sign-in trust (OIDC) for Vercel and GitHub Actions, and the roles GitHub Actions
  *   assumes to preview and deploy the main stack. The deploy role can't change IAM, so
  *   CI can't grant itself more than it has.
@@ -15,6 +15,9 @@ import * as aws from "@pulumi/aws";
 // Names shared with the main stack. It imports nothing from @pulumi, so this stack still
 // loads only its own copy (from this folder's node_modules).
 import {
+  ASK_CHUNKS_TABLE,
+  ASK_LIMITS_TABLE,
+  ASK_VECTOR_INDEX,
   BLOG_READS_TABLE,
   BUDGETS,
   CONTACT_LIMITS_TABLE,
@@ -218,6 +221,48 @@ new aws.iam.RolePolicy(
   { protect: true }
 );
 
+// The site assistant (../ask.ts): production deployments swap their OIDC token for this
+// role. Their builds bring the chunk table up to date with the site's text, and their
+// functions search it by meaning and count each visitor's questions. A build and its
+// functions sign in as the same production deployment, so the role holds both, for the
+// assistant's two tables only.
+const askRole = new aws.iam.Role(
+  "ask",
+  {
+    name: "lesas-ask",
+    description: "Assumed by the site's production builds and Vercel functions (OIDC) for its assistant",
+    assumeRolePolicy: vercelProductionTrust,
+  },
+  { protect: true }
+);
+new aws.iam.RolePolicy(
+  "ask-tables",
+  {
+    role: askRole.id,
+    policy: policy([
+      // A build lists the chunks already embedded, then writes new ones and deletes old
+      {
+        Effect: "Allow",
+        Action: ["dynamodb:Scan", "dynamodb:BatchWriteItem"],
+        Resource: arn("dynamodb", `table/${ASK_CHUNKS_TABLE}`),
+      },
+      // A question searches the chunks by meaning
+      {
+        Effect: "Allow",
+        Action: "dynamodb:SearchVectors",
+        Resource: arn("dynamodb", `table/${ASK_CHUNKS_TABLE}/index/${ASK_VECTOR_INDEX}`),
+      },
+      // and counts against its visitor's daily limit
+      {
+        Effect: "Allow",
+        Action: "dynamodb:UpdateItem",
+        Resource: arn("dynamodb", `table/${ASK_LIMITS_TABLE}`),
+      },
+    ]),
+  },
+  { protect: true }
+);
+
 // ---- GitHub Actions (.github/workflows/infra.yml) ----
 
 const githubIssuer = "token.actions.githubusercontent.com";
@@ -321,6 +366,20 @@ new aws.iam.RolePolicy("ci-deploy", {
     { Effect: "Allow", Action: "cloudwatch:*", Resource: arn("cloudwatch", "alarm:lesas-*") },
     { Effect: "Allow", Action: "events:*", Resource: arn("events", "rule/lesas-*") },
     { Effect: "Allow", Action: "dynamodb:*", Resource: arn("dynamodb", "table/lesas-*") },
+    // Pulumi's Cloud Control provider makes the assistant's vector index (../ask.ts).
+    // Cloud Control's actions can't be narrowed to a resource, but it acts with this
+    // role's own credentials, so it can only make what the role could make directly.
+    {
+      Effect: "Allow",
+      Action: [
+        "cloudformation:CreateResource",
+        "cloudformation:GetResource",
+        "cloudformation:UpdateResource",
+        "cloudformation:DeleteResource",
+        "cloudformation:GetResourceRequestStatus",
+      ],
+      Resource: "*",
+    },
     { Effect: "Allow", Action: "logs:*", Resource: arn("logs", "log-group:/aws/lambda/lesas-*") },
     {
       Effect: "Allow",
@@ -340,5 +399,6 @@ new aws.iam.RolePolicy("ci-deploy", {
 export const cutoffRoleArn = cutoffRole.arn;
 export const contactRoleArn = contactRole.arn;
 export const readsRoleArn = readsRole.arn;
+export const askRoleArn = askRole.arn;
 export const ciPreviewRoleArn = previewRole.arn;
 export const ciDeployRoleArn = deployRole.arn;

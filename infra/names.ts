@@ -27,6 +27,15 @@ export const CONTACT_LIMITS_TABLE = "lesas-contact-limits";
 /** The DynamoDB table counting each blog post's reads */
 export const BLOG_READS_TABLE = "lesas-blog-reads";
 
+// ---- Dimitri's assistant (ask.ts) ----
+
+/** The DynamoDB table of the site's text in chunks, with their embeddings */
+export const ASK_CHUNKS_TABLE = "lesas-ask-chunks";
+/** The chunk table's vector index, which searches it by meaning */
+export const ASK_VECTOR_INDEX = "by-meaning";
+/** The DynamoDB table counting each visitor's questions for the daily limit */
+export const ASK_LIMITS_TABLE = "lesas-ask-limits";
+
 // ---- The live cursors (realtime.ts) and costs (budget.ts) ----
 
 /** The cutoff's SNS topic and Lambda function (and its log group, /aws/lambda/<this>) */

@@ -36,3 +36,14 @@ export const cutoffRoleArn = accessOutput("cutoffRoleArn");
 export const contactRoleArn = accessOutput("contactRoleArn");
 /** The role the blog's read counts (Vercel functions) assume */
 export const readsRoleArn = accessOutput("readsRoleArn");
+/** The role the site assistant's production builds and functions assume */
+export const askRoleArn = accessOutput("askRoleArn");
+
+/**
+ * The assistant's OpenRouter keys, each with its own monthly spending limit set in
+ * OpenRouter: the build key embeds the site's text during production builds, and the
+ * query key embeds visitors' questions and runs the chat model. Set with
+ * `pulumi config set --secret`.
+ */
+export const openrouterBuildKey = config.requireSecret("openrouterBuildKey");
+export const openrouterQueryKey = config.requireSecret("openrouterQueryKey");

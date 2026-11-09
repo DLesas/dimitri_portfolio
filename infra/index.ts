@@ -7,6 +7,9 @@
  * - email.ts: SES for the contact form, the DynamoDB table behind its daily limit, and
  *   keyless sending from Vercel
  * - blog.ts: the DynamoDB table counting blog posts' reads
+ * - ask.ts: the site assistant's tables (its chunks and their vector index, and its
+ *   daily limit) and OpenRouter keys
+ * - dailyCounts.ts: the table shape behind a per-visitor daily limit
  * - site.ts: the Vercel project, its domains, firewall and environment variables
  * - dns.ts: the lesas.dev records on Cloudflare
  * - budget.ts: a monthly cost alert for the AWS account (and the budget helper
@@ -22,6 +25,7 @@ import "./budget";
 import { apiKey, httpHost, realtimeHost } from "./realtime";
 import "./email";
 import "./blog";
+import "./ask";
 import "./site";
 import "./dns";
 

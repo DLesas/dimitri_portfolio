@@ -11,6 +11,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import { contactRoleArn } from "./config";
+import { dailyCountsTable } from "./dailyCounts";
 import { CONTACT_LIMITS_TABLE, EMAIL_DOMAIN, FROM_ADDRESS, INBOX } from "./names";
 
 // ---- SES identities ----
@@ -36,14 +37,10 @@ new aws.sesv2.EmailIdentity(
 
 // ---- Daily limit ----
 
-// How many messages each visitor has sent today: one item per visitor per day, which
-// DynamoDB deletes a couple of days later (the route sets `expires`)
-const contactLimits = new aws.dynamodb.Table("contact-limits", {
+// How many messages each visitor has sent today
+const contactLimits = dailyCountsTable("contact-limits", {
   name: CONTACT_LIMITS_TABLE,
   billingMode: "PAY_PER_REQUEST",
-  hashKey: "visitor",
-  attributes: [{ name: "visitor", type: "S" }],
-  ttl: { attributeName: "expires", enabled: true },
 });
 
 /** What the contact form reads (src/app/api/contact/route.ts) */
