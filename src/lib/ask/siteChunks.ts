@@ -9,7 +9,7 @@ import type { Chunk } from "./chunkText.mjs";
 import { aboutIntroChunk, homeChunk, roleChunks, skillChunks, type SiteChunk } from "./pageChunks";
 
 /**
- * Every chunk of the site's text, in page order: everything Dimitri's assistant can find
+ * Every chunk of the site's text, in page order: everything Deeves can find
  * and cite. Posts are compiled here as the site compiles them (the same plugins, so the
  * same ids), for the tools that run outside Next: the deploy's sync and `npm run ask:diff`.
  */

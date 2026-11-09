@@ -191,3 +191,14 @@
   --color-secondary: hsl(var(--heroui-secondary));
   --color-divider: hsl(var(--heroui-divider) / 0.15);
 }
+
+/* The accent as text: darkened in light mode and lightened in dark, so it stays readable
+   (4.5:1) on any accent the visitor picks */
+@theme {
+  --color-primary-text: color-mix(in srgb, hsl(var(--heroui-primary)) 86%, black);
+}
+@layer base {
+  .dark {
+    --color-primary-text: color-mix(in srgb, hsl(var(--heroui-primary)) 60%, white);
+  }
+}

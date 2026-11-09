@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Splits each blog post into the chunks Dimitri's assistant searches and cites, and wraps
+ * Splits each blog post into the chunks Deeves searches and cites, and wraps
  * each chunk in a <section> carrying its id, so a citation can link straight to it.
  *
  * A chunk is a ## or ### section, heading included, or the text before the first

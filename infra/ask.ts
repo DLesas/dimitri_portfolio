@@ -1,5 +1,5 @@
 /**
- * Dimitri's assistant, the site's chat agent: a table of the site's text in chunks with
+ * Deeves, the site's chat agent: a table of the site's text in chunks with
  * their embeddings, searched by meaning through its vector index, and a table counting
  * each visitor's questions for the daily limit.
  *

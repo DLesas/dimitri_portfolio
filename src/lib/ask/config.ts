@@ -1,4 +1,4 @@
-/** Dimitri's assistant: its settings, in one place */
+/** Deeves, the site's assistant: its settings, in one place */
 
 /** A post section shorter than this joins a neighbour; one longer splits between blocks (rehypeChunks.mjs) */
 export const CHUNK_WORDS = { min: 50, max: 400 };
@@ -20,7 +20,7 @@ export const CHAT_REASONING_EFFORT = "low";
 /** The most an answer may run to, in tokens (OpenRouter's max_tokens), reasoning included */
 export const MAX_ANSWER_TOKENS = 64_000;
 /** Searches the model may make for one question, before it has to answer */
-export const MAX_SEARCHES = 3;
+export const MAX_SEARCHES = 5;
 
 /** Passages each search returns: the best by meaning and by keyword, ranked together */
 export const SEARCH_RESULTS = 10;
@@ -29,6 +29,12 @@ export const SEARCH_CANDIDATES = { meaning: 50, keyword: 20 };
 
 /** The longest question, in characters */
 export const MAX_QUESTION_CHARS = 500;
+/**
+ * The most messages a request may carry, the question included (the route refuses more).
+ * The browser sends the whole conversation, which the server needs to keep citation
+ * numbers as the visitor sees them, so a conversation this long has to start again.
+ */
+export const MAX_MESSAGES = 100;
 /** Earlier exchanges (a question and its answer, searches included) sent with each question */
 export const HISTORY_EXCHANGES = 3;
 /**
