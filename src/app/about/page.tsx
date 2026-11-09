@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/Reveal";
+import { ABOUT_INTRO } from "@/content/intro";
 import { pageMetadata } from "@/lib/seo";
 import { fadeInUp } from "./entrance";
 import { SkillsSection } from "./SkillsSection";
@@ -21,11 +22,7 @@ export default function AboutPage() {
         </h1>
 
         <p className={`text-xl text-gray-600 leading-relaxed max-w-3xl ${fadeInUp} enter-delay-300`}>
-          I&apos;m a founding engineer based in London. I set technical
-          direction, mentor engineers and still write a lot of the code:
-          production web apps, data platforms and machine learning systems,
-          including for defence and national security. What I enjoy most is
-          turning messy, data-heavy problems into products people actually use.
+          {ABOUT_INTRO}
         </p>
       </section>
 

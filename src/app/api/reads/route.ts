@@ -9,7 +9,7 @@ import {
   TransactionCanceledException,
 } from "@aws-sdk/client-dynamodb";
 import { ipAddress } from "@vercel/functions";
-import { awsCredentialsProvider } from "@vercel/functions/oidc";
+import { awsConfig } from "@/lib/aws";
 import { SLUG_PATTERN } from "@/lib/blog/format";
 import { visitorKey } from "@/lib/visitorKey";
 
@@ -29,15 +29,10 @@ import { visitorKey } from "@/lib/visitorKey";
  * answer 204, no content.
  */
 
-// On Vercel the function swaps its OIDC token for the role's credentials, as the contact
-// form does, so no access key is stored
-const region = process.env.AWS_REGION;
-const roleArn = process.env.BLOG_READS_ROLE_ARN;
+// AWS as the read counts' role, with no access key stored (src/lib/aws.ts)
+const aws = awsConfig(process.env.BLOG_READS_ROLE_ARN);
 const table = process.env.BLOG_READS_TABLE;
-const store =
-  region && table
-    ? { table, dynamo: new DynamoDBClient({ region, credentials: roleArn ? awsCredentialsProvider({ roleArn }) : undefined }) }
-    : null;
+const store = aws.region && table ? { table, dynamo: new DynamoDBClient(aws) } : null;
 
 const DAILY_READS_PER_IP = 30;
 /** Tries at counting a read that keeps colliding with others' (see POST) */

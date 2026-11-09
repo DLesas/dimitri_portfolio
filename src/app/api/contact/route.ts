@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-import {
-  ConditionalCheckFailedException,
-  DynamoDBClient,
-  UpdateItemCommand,
-} from "@aws-sdk/client-dynamodb";
-import { ipAddress } from "@vercel/functions";
-import { awsCredentialsProvider } from "@vercel/functions/oidc";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { render, pretty } from "react-email";
 import { ContactFormEmail, contactFormText } from "./emailTemplate";
+import { awsConfig } from "@/lib/aws";
 import { CONTACT_DAILY_LIMIT, CONTACT_FIELD_MAX, CONTACT_FIELD_MIN } from "@/lib/contactForm";
+import { withinDailyLimit } from "@/lib/dailyLimit";
 import { CONTACT_EMAIL } from "@/lib/site";
-import { visitorKey } from "@/lib/visitorKey";
 
 // Validation schema
 const contactFormSchema = z.object({
@@ -33,48 +28,16 @@ const contactFormSchema = z.object({
     .max(CONTACT_FIELD_MAX.message, `Message must be at most ${CONTACT_FIELD_MAX.message} characters`),
 });
 
-// AWS configuration (infra/email.ts). On Vercel the function swaps its OIDC token for
-// AWS_ROLE_ARN's credentials, so no access key is stored; without a role (local
-// development) the SDK's usual credential chain applies
-const region = process.env.AWS_REGION;
-const credentials = process.env.AWS_ROLE_ARN
-  ? awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN })
-  : undefined;
-// Sending needs a verified sender as well as a region: SES rejects any other From address
+// AWS (infra/email.ts), as AWS_ROLE_ARN. Sending needs a verified sender as well as a
+// region: SES rejects any other From address
+const aws = awsConfig(process.env.AWS_ROLE_ARN);
 const fromEmail = process.env.SES_FROM_EMAIL;
-const sesClient = region && fromEmail ? new SESClient({ region, credentials }) : null;
+const sesClient = aws.region && fromEmail ? new SESClient(aws) : null;
 
-// How many messages each visitor sent today, one DynamoDB item per visitor per day. The
-// firewall (infra/site.ts) already stops bursts before they get here.
+// How many messages each visitor sent today. The firewall (infra/site.ts) already stops
+// bursts before they get here.
 const limitsTable = process.env.CONTACT_LIMITS_TABLE;
-const dynamo = region && limitsTable ? new DynamoDBClient({ region, credentials }) : null;
-
-/** Counts this message against the visitor's day: false once they've sent the day's limit */
-async function withinDailyLimit(request: NextRequest) {
-  if (!dynamo) return true;
-  const day = new Date().toISOString().slice(0, 10);
-  try {
-    await dynamo.send(
-      new UpdateItemCommand({
-        TableName: limitsTable,
-        Key: { visitor: { S: `${visitorKey(ipAddress(request))}#${day}` } },
-        UpdateExpression: "ADD #sent :one SET #expires = if_not_exists(#expires, :expires)",
-        ConditionExpression: "attribute_not_exists(#sent) OR #sent < :limit",
-        ExpressionAttributeNames: { "#sent": "sent", "#expires": "expires" },
-        ExpressionAttributeValues: {
-          ":one": { N: "1" },
-          ":limit": { N: String(CONTACT_DAILY_LIMIT) },
-          // DynamoDB deletes the count a couple of days later
-          ":expires": { N: String(Math.floor(Date.now() / 1000) + 2 * 24 * 60 * 60) },
-        },
-      })
-    );
-    return true;
-  } catch (error) {
-    if (error instanceof ConditionalCheckFailedException) return false;
-    throw error;
-  }
-}
+const dailyCounts = aws.region && limitsTable ? { dynamo: new DynamoDBClient(aws), table: limitsTable } : null;
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => undefined);
@@ -112,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (!(await withinDailyLimit(request))) {
+    if (dailyCounts && !(await withinDailyLimit(dailyCounts, request, CONTACT_DAILY_LIMIT))) {
       return NextResponse.json(
         {
           success: false,
