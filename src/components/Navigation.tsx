@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import { Button } from "@heroui/react";
 import { HiMenu, HiX } from "react-icons/hi";
 import { Logo } from "./Logo";
+import { AskButton } from "./ask/AskButton";
 import { HelperPopover } from "./HelperPopover";
 import { NavIconButton } from "./NavIconButton";
 import { SITE_PAGES } from "@/lib/site";
@@ -53,6 +54,7 @@ export function Navigation() {
 
           {/* Controls - rendered once for every viewport so the helper can point at the visible gear */}
           <div className="flex items-center gap-2 md:ml-4">
+            <AskButton />
             <ThemeSwitcher />
             <span ref={settingsAnchorRef} className="inline-flex">
               <SettingsMenu />
