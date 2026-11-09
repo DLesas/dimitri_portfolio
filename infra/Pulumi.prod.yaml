@@ -8,3 +8,7 @@ config:
   lesas-infra:realtimeMonthlyCapUsd: "2"
   lesas-infra:alertEmail: dlesas@hotmail.com
   lesas-infra:cloudflareZoneId: c446c2662c457e27422dcc9f28c41a94
+  lesas-infra:openrouterBuildKey:
+    secure: v1:xGpHYLGx23FE+m7z:rdYqesFth2Kg/kLnuuW5ojCqMopXEtTtylIDl97XEhNEwlP0klljvwyFMxBClcmH4ROsMph5J8nyGHHVSBYSjrwKlanZofoLdpsvr0v1dms4VpE8ZrwdK9g=
+  lesas-infra:openrouterQueryKey:
+    secure: v1:3OhPT1/0BprQIuIc:0WXvX+eTTKYyVukQmO9xN53D1r4RUw1jAx0mArA5jOFQr8CzQ+urVLp7L5UnvvYGW9tobL3BrRBTA6+ZIP0zBx7zVDDWU9+C57Bfp0SeO5sg9ofXJlrbvlQ=
