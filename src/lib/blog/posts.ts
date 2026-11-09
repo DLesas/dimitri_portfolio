@@ -18,9 +18,6 @@ import { postMetadataSchema } from "./metadata";
 
 const POSTS_DIR = path.join(process.cwd(), "src/content/blog");
 
-/** Drafts show in development and on Vercel previews, never in production */
-const SHOW_DRAFTS = process.env.VERCEL_ENV !== "production";
-
 /** A section (##) or sub-section (###) of a post, for the section rail */
 export interface Section {
   id: string;
@@ -102,8 +99,8 @@ async function loadPost(slug: string): Promise<Post> {
 
 let everyPost: Promise<Post[]> | undefined;
 
-/** Every post, drafts included, newest first; loaded once per build */
-function loadAll() {
+/** Every post, newest first; loaded once per build */
+export function getPosts(): Promise<Post[]> {
   return (everyPost ??= (async () => {
     const files = (await readdir(POSTS_DIR)).filter((f) => f.endsWith(".mdx"));
     const posts = await Promise.all(files.map((f) => loadPost(f.slice(0, -".mdx".length))));
@@ -115,11 +112,6 @@ function loadAll() {
     }
     return posts.sort((a, b) => b.metadata.published.localeCompare(a.metadata.published));
   })());
-}
-
-/** The posts this deployment shows, newest first */
-export async function getPosts(): Promise<Post[]> {
-  return (await loadAll()).filter((p) => SHOW_DRAFTS || !p.metadata.draft);
 }
 
 export async function getPost(slug: string): Promise<Post | undefined> {

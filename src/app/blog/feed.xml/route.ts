@@ -3,14 +3,14 @@ import { getPosts } from "@/lib/blog/posts";
 import { BLOG_DESCRIPTION } from "@/lib/blog/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-// The blog's RSS feed, built with the site: published posts only, newest first
+// The blog's RSS feed, built with the site: every post, newest first
 export const dynamic = "force-static";
 
 const escape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export async function GET() {
-  const posts = (await getPosts()).filter((p) => !p.metadata.draft);
+  const posts = await getPosts();
   const items = posts
     .map((p) => {
       const url = `${SITE_URL}${postPath(p.slug)}`;

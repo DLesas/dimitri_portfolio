@@ -42,8 +42,6 @@ export const postMetadataSchema = z
     updated: date.optional(),
     /** One to five topics, from TAGS */
     tags: z.array(z.enum(TAGS)).min(1).max(5),
-    /** Shown in development and on Vercel previews, but never in production */
-    draft: z.boolean().optional(),
   })
   .refine((m) => !m.updated || m.updated >= m.published, {
     message: "updated is before published",
