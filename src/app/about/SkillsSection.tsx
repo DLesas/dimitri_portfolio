@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Skeleton } from "@heroui/react";
 import WordCloud from "@/components/WordCloud/WordCloud";
 import { Reveal } from "@/components/Reveal";
@@ -12,7 +12,18 @@ import { fadeInUp } from "./entrance";
 /** The About page's interactive part: the skills word cloud and the panel describing the hovered skill */
 export function SkillsSection() {
   const [hoveredSkill, setHoveredSkill] = useState<SkillRecord | null>(null);
+  // A link to one skill (/about?skill=Name, as the site assistant cites skills) shows its
+  // details until the visitor points at one. Read once, in the browser; it shows only
+  // when the skills have loaded, so the server's render (none) still matches.
+  const [linkedName, setLinkedName] = useState(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("skill")
+  );
   const { data: skills, isLoading, error } = useSkillsData();
+  const linkedSkill = skills?.find((skill) => skill.name === linkedName) ?? null;
+  const onHoverChange = useCallback((skill: SkillRecord | null) => {
+    setLinkedName(null);
+    setHoveredSkill(skill);
+  }, []);
 
   return (
     <Reveal id="skills" className="pb-16 -mx-6 enter">
@@ -46,7 +57,7 @@ export function SkillsSection() {
               <WordCloud
                 skills={skills}
                 style={{ width: "100%", height: "100%" }}
-                onHoverChange={setHoveredSkill}
+                onHoverChange={onHoverChange}
               />
               {/* The cloud is drawn on a canvas: the same skills as text, for
                   screen readers and search engines */}
@@ -66,7 +77,7 @@ export function SkillsSection() {
         </div>
         {/* Info Panel */}
         <div className="lg:w-1/3 px-6 w-full">
-          <SkillInfoPanel hoveredSkill={hoveredSkill} />
+          <SkillInfoPanel hoveredSkill={hoveredSkill ?? linkedSkill} />
         </div>
       </div>
     </Reveal>

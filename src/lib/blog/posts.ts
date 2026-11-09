@@ -16,7 +16,8 @@ import { postMetadataSchema } from "./metadata";
  * Images without alt text fail too, in mdx-components.tsx.
  */
 
-const POSTS_DIR = path.join(process.cwd(), "src/content/blog");
+/** Where the posts are: one .mdx file each, named by its slug */
+export const POSTS_DIR = path.join(process.cwd(), "src/content/blog");
 
 /** A section (##) or sub-section (###) of a post, for the section rail */
 export interface Section {

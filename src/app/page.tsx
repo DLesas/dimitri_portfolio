@@ -3,6 +3,7 @@ import Link from "next/link";
 import NetworkBackground from "@/components/NetworkBackground";
 import { PageShell } from "@/components/PageShell";
 import { HOME_PITCH } from "@/content/intro";
+import { homeChunk } from "@/lib/ask/pageChunks";
 import { JOB_TITLE } from "@/lib/seo";
 import { SITE_NAME } from "@/lib/site";
 
@@ -31,6 +32,7 @@ export default function HomePage() {
           </h2>
 
           <p
+            id={homeChunk().id}
             className={`text-md md:text-lg lg:text-xl text-foreground/60 mb-12 max-w-2xl mx-auto leading-relaxed ${itemEntrance} enter-delay-500`}
             data-network-collider
           >

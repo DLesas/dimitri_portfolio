@@ -5,6 +5,8 @@ import { FaMapMarkerAlt } from "react-icons/fa";
 import { WORK_EXPERIENCE } from "@/content/experience";
 
 interface TimelineEntry {
+  /** On the entry's content, for the site assistant's citations (src/lib/ask/pageChunks.ts) */
+  id: string;
   title: string;
   content: React.ReactNode;
 }
@@ -71,7 +73,7 @@ function Timeline({ data }: { data: TimelineEntry[] }) {
               </h3>
             </div>
 
-            <div className="relative pl-20 pr-4 md:pl-4 w-full">
+            <div id={item.id} className="relative pl-20 pr-4 md:pl-4 w-full">
               <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-foreground">
                 {item.title}
               </h3>
@@ -99,10 +101,12 @@ function Timeline({ data }: { data: TimelineEntry[] }) {
 /**
  * The About page's work experience, one entry per role along a scroll-drawn line. It
  * imports the content itself: passed in from the server page, the keyless bullet
- * elements would trip React's key check as they're serialised.
+ * elements would trip React's key check as they're serialised. `ids` are the roles'
+ * chunk ids, in the same order, from the server (they're hashes, made with Node's crypto).
  */
-export function WorkExperienceTimeline() {
-  const timelineData = WORK_EXPERIENCE.map((exp) => ({
+export function WorkExperienceTimeline({ ids }: { ids: string[] }) {
+  const timelineData = WORK_EXPERIENCE.map((exp, i) => ({
+    id: ids[i],
     title: exp.period,
     content: (
       <div>

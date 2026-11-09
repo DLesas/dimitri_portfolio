@@ -28,7 +28,9 @@ function HeadingLink({ id }: { id?: string }) {
 
 const components = {
   h2: ({ id, children }: ComponentPropsWithoutRef<"h2">) => (
-    <h2 id={id} className="group scroll-mt-8 font-display text-[1.9rem] leading-tight text-foreground text-balance mt-[3.1em] mb-[1em] first:mt-1">
+    // The post's first heading sits close to the top. Each section is in its own <section>
+    // (src/lib/ask/rehypeChunks.mjs), so that's the first child of the first one.
+    <h2 id={id} className="group scroll-mt-8 font-display text-[1.9rem] leading-tight text-foreground text-balance mt-[3.1em] mb-[1em] [section:first-child>&:first-child]:mt-1">
       {children}
       <HeadingLink id={id} />
     </h2>
