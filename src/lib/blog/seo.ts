@@ -30,7 +30,7 @@ export function blogMetadata(): Metadata {
 
 /** A post's title, description, canonical URL, feed link and article share tags */
 export function postMetadata(post: Post): Metadata {
-  const { title, description, published, updated, tags, draft } = post.metadata;
+  const { title, description, published, updated, tags } = post.metadata;
   return {
     title,
     description,
@@ -48,8 +48,6 @@ export function postMetadata(post: Post): Metadata {
       authors: [SITE_URL],
       tags: [...tags],
     },
-    // Drafts only show on previews, which search engines shouldn't index
-    ...(draft && { robots: { index: false, follow: false } }),
   };
 }
 

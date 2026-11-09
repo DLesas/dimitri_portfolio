@@ -22,7 +22,7 @@ export default async function BlogPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 pb-24 pt-12">
-      <JsonLd data={blogJsonLd(posts.filter((p) => !p.metadata.draft))} />
+      <JsonLd data={blogJsonLd(posts)} />
       <header className="mb-14 flex flex-col gap-4">
         <h1 className="font-display text-5xl text-foreground enter enter-duration-600 [--enter-y:20px] md:text-6xl">Blog</h1>
         <p className="max-w-2xl text-lg text-default-500 enter enter-delay-100 enter-duration-600 [--enter-y:20px]">{BLOG_DESCRIPTION}</p>
