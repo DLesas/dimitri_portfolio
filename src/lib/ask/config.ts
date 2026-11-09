@@ -33,9 +33,9 @@ export const MAX_QUESTION_CHARS = 500;
 export const HISTORY_EXCHANGES = 3;
 /**
  * The most history sent with a question, in characters as the browser sends it (about
- * 10,000 tokens): past this, the oldest exchanges are dropped. Three ordinary exchanges
- * come to about half; the site's text that searches add is bounded by the site's size.
+ * 30,000 tokens): past this, the oldest exchanges are dropped. Three ordinary exchanges
+ * come to about a sixth; the site's text that searches add is bounded by the site's size.
  */
-export const MAX_HISTORY_CHARS = 40_000;
+export const MAX_HISTORY_CHARS = 120_000;
 /** Questions each visitor (IP) may ask a day */
 export const DAILY_QUESTIONS = 10;
