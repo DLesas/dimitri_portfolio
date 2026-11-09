@@ -129,8 +129,10 @@ export type AskMessage = UIMessage<never, never, InferUITools<ReturnType<typeof 
  * The conversation the model sees: the question and the exchanges before it, at most
  * HISTORY_EXCHANGES, and fewer if those come to more than MAX_HISTORY_CHARS (as sent).
  * Only what the visitor and the assistant said goes: the visitor's text, the question
- * exactly as the route checked it, and the assistant's text and finished tool calls (no
- * "system" messages, files or anything else the browser might add). Earlier searches'
+ * exactly as the route checked it, and the assistant's reasoning, text and finished tool
+ * calls (no "system" messages, files or anything else the browser might add). Earlier
+ * reasoning goes back as OpenRouter suggests, so the model can carry on from its own
+ * thinking. Earlier searches'
  * passages keep their numbers but are rebuilt from this deployment's chunks (any it
  * doesn't have are dropped), and each is marked read after its first appearance;
  * earlier page links are rebuilt from the site's pages. So nothing the browser sends
@@ -162,7 +164,7 @@ export function recentHistory(sent: AskMessage[]): { messages: AskMessage[]; con
     m.parts.flatMap((part): AskMessage["parts"] => {
       if (part.type === "text") return [part];
       if (m.role !== "assistant") return [];
-      if (part.type === "step-start") return [part];
+      if (part.type === "step-start" || part.type === "reasoning") return [part];
       if (part.type === "tool-search_site" && part.state === "output-available") {
         const passages = part.output.passages.map((p) => numbered(conversation, p.id)).filter((p) => p !== undefined);
         return [{ ...part, output: { passages, tooMany: part.output.tooMany } }];
@@ -209,7 +211,8 @@ export async function answer(messages: AskMessage[], { store, apiKey, signal }: 
     maxRetries: 2,
     abortSignal: signal,
   });
-  return result.toUIMessageStreamResponse({ originalMessages: messages, sendReasoning: false, onError: describeError });
+  // The reasoning streams too: the box can show it, and the next question sends it back
+  return result.toUIMessageStreamResponse({ originalMessages: messages, sendReasoning: true, onError: describeError });
 }
 
 /** What the visitor's told when the model or a search fails: plain words, never the error itself */
