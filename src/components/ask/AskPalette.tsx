@@ -19,9 +19,20 @@ import { LuArrowUp, LuClock, LuPlus, LuSearch } from "react-icons/lu";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { AskMessage } from "@/lib/ask/agent";
 import { MAX_QUESTION_CHARS } from "@/lib/ask/config";
-import { REPLIES } from "@/lib/ask/replies";
 import { AskTurn, type Row, type Turn } from "./AskTurn";
-import { askChat, citedPassages, passagesByNumber, readAnswer, startOver, stopAnswer, thoughtFor, unansweredWhy } from "./chat";
+import {
+  askChat,
+  checkLimit,
+  citedPassages,
+  currentLimit,
+  passagesByNumber,
+  readAnswer,
+  startOver,
+  stopAnswer,
+  subscribeLimit,
+  thoughtFor,
+  unansweredWhy,
+} from "./chat";
 import { Kbd } from "./Kbd";
 import { FollowContext, openPage } from "./PassageLink";
 import { StopIcon } from "./StopIcon";
@@ -106,7 +117,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
   });
 
   const lastTurn = turns.at(-1);
-  const limit = lastTurn?.why === REPLIES.daily || lastTurn?.why === REPLIES.monthly ? lastTurn.why : undefined;
+  const limit = useSyncExternalStore(subscribeLimit, currentLimit, () => undefined);
   const rows = turns.flatMap((turn) => turn.rows);
   const highlighted = rows.some((row) => row.key === chosenRow) ? chosenRow : lastTurn?.live ? undefined : lastTurn?.rows[0]?.key;
   // ↵ opens the highlighted row after ↑ or ↓, or with nothing to ask
@@ -124,6 +135,7 @@ export default function AskPalette({ open, returnFocusTo, onDismiss, onBusyChang
     const el = dialog.current;
     if (!el) return;
     if (open) {
+      checkLimit();
       if (!el.open) el.showModal();
       el.dataset.state = "open";
       scroll.current.reopen();

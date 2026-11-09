@@ -47,14 +47,56 @@ class TimedTransport extends DefaultChatTransport<AskMessage> {
   }
 }
 
+/**
+ * The limit the visitor has reached, until it lifts: the day's questions at midnight UTC
+ * (dailyLimit.ts counts by the UTC date), and the query key's monthly spend at the start
+ * of the UTC month (OpenRouter's monthly reset). It's the visitor's, not the
+ * conversation's, so starting over keeps it.
+ */
+let limit: { reply: Reply; lifts: number } | undefined;
+let liftTimer: ReturnType<typeof setTimeout> | undefined;
+const limitListeners = new Set<() => void>();
+
+function setLimit(next: typeof limit) {
+  limit = next;
+  clearTimeout(liftTimer);
+  // A timer waits at most about 24 days, so a longer wait is checked again then
+  if (next) liftTimer = setTimeout(checkLimit, Math.min(Math.max(0, next.lifts - Date.now()), 2 ** 31 - 1));
+  for (const listener of limitListeners) listener();
+}
+
+/** Lifts the limit once its time has come; the palette checks too as it opens, as a computer that slept can run its timers late */
+export function checkLimit() {
+  if (limit) setLimit(Date.now() < limit.lifts ? limit : undefined);
+}
+
+/** The limit's words while it holds, for useSyncExternalStore */
+export const currentLimit = () => limit?.reply;
+export function subscribeLimit(listener: () => void) {
+  limitListeners.add(listener);
+  return () => {
+    limitListeners.delete(listener);
+  };
+}
+
+/** When `reply`'s limit lifts: the next UTC midnight, or the next UTC month */
+function liftsAt(reply: typeof REPLIES.daily | typeof REPLIES.monthly) {
+  const now = new Date();
+  return reply === REPLIES.daily
+    ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+    : Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+}
+
 const lastQuestionId = (messages: AskMessage[]) => messages.findLast((m) => m.role === "user")?.id;
 
 export const askChat: Chat<AskMessage> = new Chat<AskMessage>({
   transport: new TimedTransport({ api: "/api/ask" }),
   // Before the chat's status changes, so the render that shows the failure has its words
   onError: (error) => {
+    const reply = replyTo(error);
     const question = lastQuestionId(askChat.messages);
-    if (question) unanswered.set(question, replyTo(error));
+    if (question) unanswered.set(question, reply);
+    if (reply === REPLIES.daily || reply === REPLIES.monthly) setLimit({ reply, lifts: liftsAt(reply) });
   },
 });
 
