@@ -31,5 +31,11 @@ export const SEARCH_CANDIDATES = { meaning: 50, keyword: 20 };
 export const MAX_QUESTION_CHARS = 500;
 /** Earlier exchanges (a question and its answer, searches included) sent with each question */
 export const HISTORY_EXCHANGES = 3;
+/**
+ * The most history sent with a question, in characters as the browser sends it (about
+ * 10,000 tokens): past this, the oldest exchanges are dropped. Three ordinary exchanges
+ * come to about half; the site's text that searches add is bounded by the site's size.
+ */
+export const MAX_HISTORY_CHARS = 40_000;
 /** Questions each visitor (IP) may ask a day */
 export const DAILY_QUESTIONS = 10;

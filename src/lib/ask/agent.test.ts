@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { lastQuestion, recentHistory, validateConversation, type AskMessage } from "./agent";
+import { askTools, lastQuestion, recentHistory, validateConversation, type AskMessage } from "./agent";
+import { MAX_HISTORY_CHARS, MAX_SEARCHES } from "./config";
 import { DEPLOYED_CHUNKS } from "./deployedChunks";
 
 const [first, second, third] = DEPLOYED_CHUNKS;
@@ -32,6 +33,25 @@ describe("recentHistory", () => {
     );
   });
 
+  it("drops the oldest exchanges when the history is too long, but never the question", () => {
+    const long: AskMessage = { id: "long", role: "assistant", parts: [{ type: "text", text: "x".repeat(MAX_HISTORY_CHARS) }] };
+    const ids = (messages: AskMessage[]) => recentHistory(messages).messages.map((m) => m.id);
+    assert.deepEqual(ids([question("q1"), long, question("q2"), answered([]), question("now")]), ["q2", "a", "now"]);
+    assert.deepEqual(ids([question("q1"), long, question("now")]), ["now"]);
+  });
+
+  it("numbers new passages after any number shown, even in exchanges no longer sent", () => {
+    const { messages, conversation } = recentHistory([
+      question("q1"),
+      answered([{ n: 7, id: first.id }]),
+      ...[2, 3, 4].flatMap((i) => [question(`q${i}`), answered([])]),
+      question("now"),
+    ]);
+    assert.ok(!messages.some((m) => m.id === "q1"));
+    assert.equal(conversation.highest, 7);
+    assert.equal(conversation.numbers.get(first.id), 7);
+  });
+
   it("rebuilds earlier passages from this deployment's chunks, dropping any it doesn't have", () => {
     const sent = answered([
       { n: 1, id: first.id, path: ["Made up"], url: "https://elsewhere.example" },
@@ -55,6 +75,22 @@ describe("recentHistory", () => {
     assert.deepEqual(messages.flatMap(passagesIn).map((p) => [p.n, p.seen]), [[4, false], [4, true], [5, false]]);
     assert.equal(Math.max(...conversation.numbers.values()), 5);
     assert.equal(conversation.numbers.has(third.id), false);
+  });
+});
+
+describe("search_site", () => {
+  it("searches at most MAX_SEARCHES times a question, however the calls come", async () => {
+    let searches = 0;
+    const tools = askTools(recentHistory([question("now")]).conversation, async () => {
+      searches++;
+      return [first];
+    });
+    const calls = Array.from({ length: MAX_SEARCHES + 2 }, (_, i) =>
+      tools.search_site.execute!({ query: `query ${i}` }, { toolCallId: `t${i}`, messages: [] } as never)
+    );
+    const outputs = await Promise.all(calls);
+    assert.equal(searches, MAX_SEARCHES);
+    assert.deepEqual(outputs.map((o) => "tooMany" in o && o.tooMany === true), [false, false, false, true, true]);
   });
 });
 

@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 import { SITE_PAGES } from "@/lib/site";
 import { pathText } from "./chunkText.mjs";
-import { HISTORY_EXCHANGES, MAX_ANSWER_TOKENS, MAX_SEARCHES } from "./config";
+import { HISTORY_EXCHANGES, MAX_ANSWER_TOKENS, MAX_HISTORY_CHARS, MAX_SEARCHES } from "./config";
 import { chunkById } from "./deployedChunks";
 import { chatModel } from "./models";
 import { searchSite } from "./search";
@@ -49,45 +49,61 @@ type Passage = z.infer<typeof passageSchema>;
 
 const pageNames = SITE_PAGES.map((page) => page.label) as [string, ...string[]];
 
-/** The numbers passages have in a conversation, and which the model has already read */
+/** One question's view of its conversation */
 interface Conversation {
+  /** Each passage's number, from anywhere in the conversation */
   numbers: Map<string, number>;
+  /** The highest number given so far, in exchanges the model no longer sees too */
+  highest: number;
+  /** The passages the model has read */
   read: Set<string>;
+  /** Searches made for this question */
+  searches: number;
 }
 
-/**
- * A passage numbered for `conversation`: its number from earlier, or one past the highest
- * (earlier exchanges dropped from the history leave gaps)
- */
+const newConversation = (): Conversation => ({ numbers: new Map(), highest: 0, read: new Set(), searches: 0 });
+
+/** A passage numbered for `conversation`: its number from earlier, or the next after the highest */
 function numbered(conversation: Conversation, id: string): Passage | undefined {
   const chunk = chunkById.get(id);
   if (!chunk) return undefined;
-  const n = conversation.numbers.get(id) ?? Math.max(0, ...conversation.numbers.values()) + 1;
-  conversation.numbers.set(id, n);
+  let n = conversation.numbers.get(id);
+  if (n === undefined) {
+    n = ++conversation.highest;
+    conversation.numbers.set(id, n);
+  }
   const seen = conversation.read.has(id);
   conversation.read.add(id);
   return { n, id, path: chunk.path, url: chunk.url, seen };
 }
 
 /** The assistant's tools, keeping each found passage's number for `conversation` */
-function askTools(conversation: Conversation, search: (query: string) => ReturnType<typeof searchSite>) {
+export function askTools(conversation: Conversation, search: (query: string) => ReturnType<typeof searchSite>) {
   return {
     search_site: tool({
       description:
         "Search Dimitri's website (his About page, work experience, skills and blog posts) for passages about a topic. Returns up to 10 numbered passages; cite the ones you use as [n].",
       inputSchema: z.object({ query: z.string().min(2).max(200).describe("What to look for: a few words, or a question") }),
-      outputSchema: z.object({ passages: z.array(passageSchema) }),
-      execute: async ({ query }) => ({
-        passages: (await search(query)).map((chunk) => numbered(conversation, chunk.id)).filter((p) => p !== undefined),
+      outputSchema: z.object({
+        passages: z.array(passageSchema),
+        /** Past MAX_SEARCHES for this question, so not searched */
+        tooMany: z.boolean().optional(),
       }),
+      execute: async ({ query }) => {
+        // Every call counts, several in one step included: each costs an embedding and a search
+        if (++conversation.searches > MAX_SEARCHES) return { passages: [], tooMany: true };
+        return { passages: (await search(query)).map((chunk) => numbered(conversation, chunk.id)).filter((p) => p !== undefined) };
+      },
       // The text, from this deployment's chunks: once per conversation, then only a pointer
       toModelOutput: ({ output }) => ({
         type: "text",
-        value: output.passages.length
-          ? output.passages
-              .map((p) => (p.seen ? `[${p.n}] ${pathText(p.path)} (already above)` : `[${p.n}] ${chunkById.get(p.id)?.text}`))
-              .join("\n\n")
-          : "Nothing on the site matches that.",
+        value: output.tooMany
+          ? "That's all the searching for this question: answer with the passages you have."
+          : output.passages.length
+            ? output.passages
+                .map((p) => (p.seen ? `[${p.n}] ${pathText(p.path)} (already above)` : `[${p.n}] ${chunkById.get(p.id)?.text}`))
+                .join("\n\n")
+            : "Nothing on the site matches that.",
       }),
     }),
     link_page: tool({
@@ -111,20 +127,27 @@ export type AskMessage = UIMessage<never, never, InferUITools<ReturnType<typeof 
 
 /**
  * The conversation the model sees: the question and the exchanges before it, at most
- * HISTORY_EXCHANGES. Earlier searches' passages keep their numbers but are rebuilt from
- * this deployment's chunks (any it doesn't have are dropped), and each is marked read
- * after its first appearance; earlier page links are rebuilt from the site's pages. So
- * nothing the browser sends back is passed on to the model as the site's text.
+ * HISTORY_EXCHANGES, and fewer if those come to more than MAX_HISTORY_CHARS (as sent).
+ * Earlier searches' passages keep their numbers but are rebuilt from this deployment's
+ * chunks (any it doesn't have are dropped), and each is marked read after its first
+ * appearance; earlier page links are rebuilt from the site's pages. So nothing the
+ * browser sends back is passed on to the model as the site's text.
  */
 export function recentHistory(messages: AskMessage[]): { messages: AskMessage[]; conversation: Conversation } {
-  const questions = messages.flatMap((m, i) => (m.role === "user" ? [i] : []));
-  const recent = messages.slice(questions.at(-1 - HISTORY_EXCHANGES) ?? 0);
-  const conversation: Conversation = { numbers: new Map(), read: new Set() };
-  // Earlier numbers first, so the answers' citations still match them
-  for (const m of recent) {
+  const starts = messages.flatMap((m, i) => (m.role === "user" ? [i] : [])).slice(-1 - HISTORY_EXCHANGES);
+  while (starts.length > 1 && JSON.stringify(messages.slice(starts[0])).length > MAX_HISTORY_CHARS) starts.shift();
+  const recent = messages.slice(starts[0] ?? 0);
+
+  // Numbers come from the whole conversation, as the visitor still sees all of it: a new
+  // passage gets the next after any number shown so far, and an old one keeps its own
+  const conversation = newConversation();
+  for (const m of messages) {
     for (const part of m.parts) {
       if (part.type !== "tool-search_site" || part.state !== "output-available") continue;
-      for (const p of part.output.passages) if (chunkById.has(p.id) && !conversation.numbers.has(p.id)) conversation.numbers.set(p.id, p.n);
+      for (const p of part.output.passages) {
+        conversation.highest = Math.max(conversation.highest, p.n);
+        if (chunkById.has(p.id) && !conversation.numbers.has(p.id)) conversation.numbers.set(p.id, p.n);
+      }
     }
   }
   return {
@@ -134,7 +157,7 @@ export function recentHistory(messages: AskMessage[]): { messages: AskMessage[];
       parts: m.parts.map((part): AskMessage["parts"][number] => {
         if (part.type === "tool-search_site" && part.state === "output-available") {
           const passages = part.output.passages.map((p) => numbered(conversation, p.id)).filter((p) => p !== undefined);
-          return { ...part, output: { passages } };
+          return { ...part, output: { passages, tooMany: part.output.tooMany } };
         }
         if (part.type === "tool-link_page" && part.state === "output-available") {
           return { ...part, output: pageLink(part.output.label) };
@@ -150,7 +173,7 @@ export function recentHistory(messages: AskMessage[]): { messages: AskMessage[];
  * throws if they don't fit
  */
 export const validateConversation = (messages: unknown) =>
-  validateUIMessages<AskMessage>({ messages, tools: askTools({ numbers: new Map(), read: new Set() }, async () => []) });
+  validateUIMessages<AskMessage>({ messages, tools: askTools(newConversation(), async () => []) });
 
 /** The question at the end of `messages`: the last message's text, if the visitor sent it */
 export function lastQuestion(messages: AskMessage[]) {
