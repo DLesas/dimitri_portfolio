@@ -1,0 +1,88 @@
+export const metadata = /** @satisfies {import("@/lib/blog/metadata").PostMetadata} */ ({
+  title: "How this site finds its own words",
+  description: "Ask this site a question and it finds the passages that answer it. A visual tour of how text becomes 4,096 numbers.",
+  published: "2026-11-13",
+  tags: ["AI", "Data", "AWS"],
+});
+
+## A site you can ask
+
+Press **⌘K** (or the search button up top) and you can ask this site about me: what I built at a past job, which databases I've used, how the home page works. An assistant I called Deeves (the reference to the old Jeeves was intended) answers, and every claim it makes links back to the exact passage it came from.
+
+The chat model writing the answer is the visible part. This post is about the part underneath: how the site **finds the right passages** out of everything written here, in a fraction of a second, for a question it has never seen. It's built on an idea worth seeing rather than reading about, so most of this post is things you can play with.
+
+## Cutting the site into passages
+
+A whole page is too big to be the answer to anything. Ask about one job and you'd get every job. So before anything else, the site is cut into **passages**: pieces small enough to be about one thing. Each role on the About page is one, each skill is one, and blog posts are cut along their headings. Right now that makes **<Stat of="passages" /> passages**.
+
+Headings aren't quite enough by themselves, because sections come in all sizes, so two rules tidy them up.
+
+<EmbeddingFigure show="chunks" />
+
+Each passage also carries its trail of headings as its first line ("About › Work experience › Machine Learning Engineer, Roke"), so a paragraph that only says "there" or "this project" still knows where it lives.
+
+## Turning words into numbers
+
+Computers compare numbers far better than they compare sentences. An **embedding model** is a neural network trained for one job: read some text and write down a long list of numbers, such that texts meaning similar things get similar lists. That list is the text's **embedding**. This site uses Qwen3-Embedding-8B, which writes **4,096 numbers** for anything you give it.
+
+Nobody can read 4,096 numbers, but you can see them as colours. Here are a few of this site's real passages, side by side:
+
+<EmbeddingFigure show="numbers" />
+
+No single number stands for "databases" or "leadership". The meaning is spread across all of them, the way no single pixel is the face in a photo, and it shows up as a pattern: two jobs look alike, a blog section about animation doesn't.
+
+### A list of numbers is a place
+
+Two numbers are a point on a map. Three are a point in a room. 4,096 numbers are a point too, in a space with 4,096 directions, which nobody can picture but which obeys the same rules: points can be near each other or far apart. So every passage on this site has a **place**, and passages about similar things are neighbours.
+
+## The map
+
+To look at that space, it has to be squashed down to the three dimensions a screen can show. That's a real data science problem with more than one answer, and each answer keeps something different. Here are this site's <Stat of="passages" /> passages, flattened two ways: drag to turn them, and switch between the two in the corner.
+
+<EmbeddingFigure show="map" />
+
+**PCA** (principal component analysis) is the straightforward one: find the three directions the points spread out along the most, keep those, and drop the other 4,093. It's simple and always gives the same picture, but here those three directions hold only <Stat of="varianceKept" /> of the spread. Meaning really is smeared across thousands of directions, and only <Stat of="keptPca" /> of each passage's nearest neighbours are still its nearest afterwards.
+
+**UMAP** takes the opposite approach. It doesn't try to keep the overall shape; it tries to keep each point **next to its real neighbours**, and lets long distances stretch and bend to make that fit. The skills pull apart into clearer groups and <Stat of="keptUmap" /> of nearest neighbours survive. The price is that distances between far-apart clusters mean little.
+
+<Callout>
+Neither picture is what the search uses. Pick a question above and look at its lines: they join it to its nearest passages measured in all 4,096 dimensions, and sometimes they reach straight past a point that looks closer. The map is for people; the search never flattens anything.
+</Callout>
+
+## Close means pointing the same way
+
+To find the passages nearest a question, "near" needs a definition. Picture each passage's numbers as an arrow from the middle of the space to its place. Two passages about the same thing point in about the same direction, whatever their length: a long passage and a short one about databases point the same way.
+
+So nearness is measured as the **angle between two arrows**. The smaller the angle, the more alike; its cosine turns that into a score from 1 (the same direction) down to 0 (nothing in common). That's **cosine similarity**. With two made-up numbers per passage it can be drawn:
+
+<EmbeddingFigure show="closeness" />
+
+A question is embedded by the same model, so it becomes an arrow in the same space, and answering it starts with geometry: **which passages' arrows point most nearly the question's way?** The real search does exactly this sum, with 4,096 numbers instead of two. A vector index in the database finds the nearest without comparing against every passage one by one, which matters little at <Stat of="passages" /> passages and a great deal at millions.
+
+## Meaning alone isn't enough
+
+Search by meaning, with embeddings, has a blind spot, and my own site showed it to me. The home page's introduction says a little about everything I do, so its arrow points somewhere in the middle and is "sort of close" to nearly every question. Ask which databases I've used and the passage nearest in meaning is... the introduction, which names none.
+
+The fix is an old one. Alongside the embeddings, the site runs **BM25**, a word-matching formula from 1990s search research that became the default in search engines like Elasticsearch in 2016. It ranks passages that share the question's words, and counts rare words for more than common ones: a passage with "Drizzle" in it matters, one with "he" doesn't. It has the opposite weakness to embeddings: it can't tell that "led a team" and "mentored 5 engineers" mean much the same. So the two cover for each other: **embeddings for meaning, BM25 for words**. Their rankings are merged with **reciprocal rank fusion**, which gives each passage points for its place in both lists.
+
+<EmbeddingFigure show="fusion" />
+
+Try "Which databases has he used?" and switch between the three. By meaning, the introduction leads. Merged, the actual databases do.
+
+## Only redoing what changed
+
+Embedding costs money each time, so the site shouldn't re-embed every passage because I fixed a typo in one. Each passage gets a **fingerprint**: a short code worked out from its exact text (a hash), which doubles as its ID and as the link target that a citation jumps to. The same text always gives the same fingerprint, and changing even one character gives a completely different one.
+
+When the site deploys, it compares the fingerprints of the passages on the site with the ones already in the table. A fingerprint the table doesn't have is embedded; one the site no longer has is deleted; everything else is left alone.
+
+<EmbeddingFigure show="sync" />
+
+Embedding the entire site from scratch costs about **<Stat of="embedAllCost" />**, a fraction of a cent, and most deploys cost nothing at all. The keys that pay for it have hard monthly limits anyway ($1 for embedding the site, $3 for visitors' questions), because the first rule of this site is that nothing gets to run up a bill.
+
+## The whole journey
+
+Put together, there are two paths through the same few parts: one runs when the site deploys, the other every time someone asks.
+
+<EmbeddingFigure show="journey" />
+
+What happens after the passages are found (how Deeves reads them, why it must cite them, and how it's kept from making things up) is a story for the next post. In the meantime, press ⌘K and ask it something.

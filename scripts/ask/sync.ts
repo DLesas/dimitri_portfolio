@@ -1,8 +1,9 @@
 /**
- * Brings the site assistant's chunk table in line with the site: runs after every build
- * (npm's postbuild), but changes the table only for a production build, before it goes
- * live. It embeds the very chunks the build bundled (written by its prebuild). If it
- * can't, the build fails, so no deploy goes live with text the assistant can't find.
+ * Brings the site assistant's chunk table in line with the site: runs before every build
+ * (npm's prebuild, once chunks.ts has written this build's chunks), but changes the table
+ * only for a production build. It embeds the very chunks the build bundles, before the
+ * pages are built, so the embeddings post can be drawn from them (map.ts). If it can't,
+ * the build fails, so no deploy goes live with text the assistant can't find.
  * `npm run ask:diff` shows beforehand what it will do.
  */
 import { DEPLOYED_CHUNKS } from "@/lib/ask/deployedChunks";

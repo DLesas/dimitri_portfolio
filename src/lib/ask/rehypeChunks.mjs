@@ -13,6 +13,7 @@
  * themselves (siteChunks.ts). The last plugin in src/lib/blog/mdxOptions.ts, in plain
  * JavaScript as the MDX loader imports it with Node.
  */
+import { EMBEDDING_FIGURE_TITLES } from "../../components/blog/embeddings/figureTitles.mjs";
 import { NETWORK_FIGURE_TITLES } from "../../components/blog/network/figureTitles.mjs";
 import { chunk, countWords } from "./chunkText.mjs";
 
@@ -138,10 +139,9 @@ function sizedUp(sections, { min, max }) {
  */
 function blockText(node) {
   if (node.type === "mdxJsxFlowElement") {
-    if (node.name === "NetworkFigure") {
-      const title = /** @type {Record<string, string>} */ (NETWORK_FIGURE_TITLES)[attribute(node, "show") ?? ""];
-      if (title) return `Figure: ${title}`;
-    }
+    const titles = /** @type {Record<string, Record<string, string>>} */ ({ NetworkFigure: NETWORK_FIGURE_TITLES, EmbeddingFigure: EMBEDDING_FIGURE_TITLES })[node.name ?? ""];
+    const title = titles?.[attribute(node, "show") ?? ""];
+    if (title) return `Figure: ${title}`;
     // A component wrapping text, like <Callout>, reads as that text
     if (node.children?.length) return node.children.map(blockText).filter(Boolean).join("\n\n");
     throw new Error(`<${node.name}> has no text for the site assistant: say how to read it in src/lib/ask/rehypeChunks.mjs`);
@@ -207,7 +207,13 @@ function postTitle(tree, file) {
  * @returns {string}
  */
 const rawText = (node) =>
-  node.type === "text" ? (node.value ?? "") : node.type.startsWith("mdx") && node.type.endsWith("Expression") ? "" : (node.children ?? []).map(rawText).join("");
+  node.type === "text"
+    ? (node.value ?? "")
+    : // Expressions, and <Stat>s (the embeddings post's figures, which production builds work
+      // out from these very passages: their text mustn't depend on them), read as nothing
+      (node.type.startsWith("mdx") && node.type.endsWith("Expression")) || (node.type === "mdxJsxTextElement" && node.name === "Stat")
+      ? ""
+      : (node.children ?? []).map(rawText).join("");
 
 /**
  * A node's text on one line, as it reads
