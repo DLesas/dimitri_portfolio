@@ -8,11 +8,16 @@
  * Production builds run it before Next builds the pages (npm's prebuild, after sync.ts has
  * embedded every chunk), so the post always shows the site as deployed; if it can't, the
  * build fails, as the sync's does. Other builds and the dev server keep the committed
- * map.json, which `npm run ask:map` refreshes, signed in to AWS as for Pulumi:
+ * map.json, which `npm run ask:map` refreshes, signed in to AWS as for Pulumi.
+ *
+ * The preset questions' vectors are kept too (mapQuestions.json), so a build only calls
+ * OpenRouter for a question that's new or changed. Run it with the build key after changing
+ * one, and commit what it saves:
  *
  *   OPENROUTER_BUILD_KEY=… npm run ask:map
  */
-import { writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { ScanCommand, type AttributeValue } from "@aws-sdk/client-dynamodb";
 import { embedMany } from "ai";
 import seedrandom from "seedrandom";
@@ -33,6 +38,24 @@ const QUESTIONS = [
   "What does the site cost to run?",
   "Does he know Drizzle?",
 ];
+/**
+ * Where the preset questions' vectors are kept, each under a fingerprint of what made it
+ * (the model, the instruction and the question), so changing any of those embeds it afresh
+ */
+const SAVED_QUESTIONS = "scripts/ask/mapQuestions.json";
+type SavedQuestions = Record<string, { question: string; vector: string }>;
+const fingerprint = (question: string) =>
+  createHash("sha256").update(`${EMBEDDING_MODEL}\n${QUERY_INSTRUCTION}${question}`).digest("hex").slice(0, 16);
+/** A vector as 32-bit floats in base64: under half the size of its numbers written out */
+const packed = (vector: number[]) => {
+  const bytes = Buffer.alloc(vector.length * 4);
+  vector.forEach((v, i) => bytes.writeFloatLE(v, i * 4));
+  return bytes.toString("base64");
+};
+const unpacked = (text: string) => {
+  const bytes = Buffer.from(text, "base64");
+  return Array.from({ length: bytes.length / 4 }, (_, i) => bytes.readFloatLE(i * 4));
+};
 /** Neighbours counted when measuring how much of the real layout a flattening keeps */
 const NEIGHBOURS = 5;
 /** Passages listed per ranking for each question */
@@ -61,14 +84,15 @@ try {
   process.env.ASK_CHUNKS_TABLE ??= ASK_CHUNKS_TABLE;
   process.env.AWS_REGION ??= "eu-west-2";
   const store = chunkStore();
-  const apiKey = process.env.OPENROUTER_BUILD_KEY;
-  if (!store || !apiKey) throw new Error("it needs ASK_CHUNKS_TABLE and OPENROUTER_BUILD_KEY (infra/ask.ts)");
+  if (!store) throw new Error("it needs ASK_CHUNKS_TABLE (infra/ask.ts)");
 
-  // This build's chunks (scripts/ask/chunks.ts), with their vectors from the table
+  // This build's chunks (scripts/ask/chunks.ts), with their vectors from the table. Read
+  // consistently: the sync has only just written the new ones, and a scan by default might
+  // not see them yet
   const vectors = new Map<string, number[]>();
   let start: Record<string, AttributeValue> | undefined;
   do {
-    const page = await store.dynamo.send(new ScanCommand({ TableName: store.table, ExclusiveStartKey: start }));
+    const page = await store.dynamo.send(new ScanCommand({ TableName: store.table, ExclusiveStartKey: start, ConsistentRead: true }));
     for (const item of page.Items ?? []) vectors.set(item.id.S ?? "", (item.vector.L ?? []).map((n) => Number(n.N)));
     start = page.LastEvaluatedKey;
   } while (start);
@@ -77,7 +101,20 @@ try {
   const X = chunks.map((c) => vectors.get(c.id)!);
   const n = X.length;
 
-  const { embeddings: asked } = await embedMany({ model: embeddingModel(apiKey), values: QUESTIONS.map((q) => QUERY_INSTRUCTION + q), maxRetries: 5 });
+  // The preset questions' vectors: as saved, embedding only those that are new or changed
+  const saved: SavedQuestions = existsSync(SAVED_QUESTIONS) ? JSON.parse(readFileSync(SAVED_QUESTIONS, "utf8")) : {};
+  const keys = QUESTIONS.map(fingerprint);
+  const unsaved = QUESTIONS.filter((_, q) => !saved[keys[q]]);
+  if (unsaved.length) {
+    const apiKey = process.env.OPENROUTER_BUILD_KEY;
+    if (!apiKey) throw new Error(`it needs OPENROUTER_BUILD_KEY (infra/ask.ts) to embed ${unsaved.length} new or changed preset questions`);
+    const { embeddings } = await embedMany({ model: embeddingModel(apiKey), values: unsaved.map((q) => QUERY_INSTRUCTION + q), maxRetries: 5 });
+    unsaved.forEach((question, i) => (saved[fingerprint(question)] = { question, vector: packed(embeddings[i]) }));
+    if (fromBuild)
+      console.warn(`Site assistant: this build embedded ${unsaved.length} new or changed preset questions for the embeddings post: run npm run ask:map and commit ${SAVED_QUESTIONS}, so builds don't have to`);
+  }
+  // Read back from what's saved, so a question comes out the same whether embedded now or before
+  const asked = keys.map((key) => unpacked(saved[key].vector));
 
   const dot = (a: number[], b: number[]) => a.reduce((sum, x, i) => sum + x * b[i], 0);
   const length = (a: number[]) => Math.sqrt(dot(a, a));
@@ -212,6 +249,8 @@ try {
     console.warn(`Site assistant: the embeddings post says a database leads "${databases.text}" once merged, but ${label(databases.fused[0])} does now`);
 
   writeFileSync("src/components/blog/embeddings/map.json", `${JSON.stringify(data)}\n`);
+  // Only the questions asked now, so one that's gone doesn't linger
+  writeFileSync(SAVED_QUESTIONS, `${JSON.stringify(Object.fromEntries(keys.map((key) => [key, saved[key]])), null, 2)}\n`);
   console.log(
     `Site assistant: the embeddings post's data is up to date: ${n} passages; PCA keeps ${data.stats.varianceKept} of the spread and ${data.stats.keptPca} of nearest neighbours, UMAP ${data.stats.keptUmap}`,
   );
