@@ -7,7 +7,7 @@ It's also built to be left alone. Every page is server-rendered first, the 3D sc
 ## What's in it
 
 - **A 3D home page.** A network of nodes drawn in four draw calls, with physics at a fixed 60 Hz and a grid to find connections. Node count and detail adapt to the device's CPU, memory and GPU, so it holds up on a mid-range phone.
-- **Live cursors.** Visitors see each other's cursors over AppSync Events. If traffic spikes or the month's spend passes $2, a function deletes the API key and switches them off, so they can't run up a bill.
+- **Live cursors.** Visitors see each other's cursors over AppSync Events. If traffic spikes, a function deletes the API key and switches them off, so they can't run up a bill.
 - **Deeves, the site assistant.** Press ⌘K and ask about my work. The site's text is cut into passages, embedded (Qwen3-Embedding-8B, 4,096 dimensions) and stored in DynamoDB. A question is matched by meaning (vector search) and by words (BM25), the two rankings are merged, and the answer links back to the passages it used. Each deploy re-embeds only the passages that changed, and visitors have daily limits.
 - **A blog in MDX**, with interactive figures: 3D diagrams, a map of every passage on the site flattened with PCA or UMAP, and data remade from the live site on each production build. Every post is checked at build time (metadata, headings, alt text) and gets its SEO tags, structured data, share image and RSS entry automatically.
 - **Theming.** Pick one colour and the whole palette is generated from it, in light and dark, and remembered.
