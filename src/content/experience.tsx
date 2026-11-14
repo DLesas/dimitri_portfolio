@@ -15,25 +15,76 @@ export interface WorkExperience {
 /** The About page's timeline, most recent first */
 export const WORK_EXPERIENCE: WorkExperience[] = [
   {
-    period: "Dec 2023 - Present",
+    period: "Nov 2025 - Present",
+    jobTitle: "Co-Founder & Founding Engineer",
+    company: "Felix Research",
+    bullets: [
+      <>
+        Co-founded Felix Research, an AI research platform for financial analysts. Set much
+        of the product direction and built most of its <strong>10+ services</strong>: the
+        AI pipeline, all AWS infrastructure, the database schema and much of the frontend.
+      </>,
+      <>
+        Live in production <strong>within 3 months</strong>: used by{" "}
+        <strong>4 businesses</strong>, with <strong>500,000+ pages</strong> processed.
+      </>,
+      <>
+        Pitched to <strong>12+ investors</strong>, including at conferences, and fielded
+        their technical questions.
+      </>,
+      <>
+        Self-host all AI models on an auto-scaling <strong>50+ GPU cluster</strong>, with
+        sub-second inference and zero idle cost; cut GPU cold starts from{" "}
+        <strong>5+ minutes to ~30 s</strong> using CRIU and cuda-checkpoint snapshots.
+      </>,
+      <>
+        Brought GPU processing cost to <strong>~$0.03 per page</strong> (about a tenth of
+        the list price), cut idle database load by <strong>75%</strong>, and run the whole
+        platform, GPUs included, for <strong>under $2k a month</strong>.
+      </>,
+      <>
+        Designed a privacy-first architecture with a separate database for every customer
+        organisation; lead the technical side of <strong>3 compliance programmes</strong>:
+        SOC 2, ISO 27001 and GDPR.
+      </>,
+      <>
+        Lead engineering hiring for the founding team, running technical interviews for
+        candidates.
+      </>,
+    ],
+    skills: [
+      "LLMs",
+      "GPU Inference",
+      "AWS",
+      "Python",
+      "TypeScript",
+      "Postgres",
+      "Security & Compliance",
+      "Hiring",
+    ],
+  },
+  {
+    period: "Dec 2023 - Nov 2025",
     jobTitle: "Senior Full Stack Engineer & Data Scientist",
     clearance: "SC",
     company: "Capita",
     bullets: [
       <>
-        Built a production React + TypeScript app on top of Palantir Foundry, enabling
-        advanced tracking for <strong>500+ RN personnel</strong> via fully data-driven,
-        extensible workflows; owned system design and optimised Spark-based pipelines
-        processing <strong>multiple terabytes of data daily</strong>.
+        Partnered directly with Royal Navy stakeholders to design, develop and deploy a
+        full-stack AI application on the Palantir Foundry platform, serving{" "}
+        <strong>500+ personnel</strong>.
       </>,
       <>
-        Mentored <strong>5 engineers</strong> bi-weekly in React, TypeScript, Python, and
-        Spark, supporting their growth across frontend, backend and data engineering best
-        practices.
+        Owned the end-to-end system design, including Spark pipelines processing{" "}
+        <strong>hundreds of GB daily</strong>.
       </>,
       <>
-        Delivered automation saving <strong>5 days of manual effort each month</strong>;
-        project commended at the <strong>Rear Admiral&apos;s annual address</strong>.
+        Mentored <strong>5 engineers</strong> bi-weekly across frontend and data
+        engineering.
+      </>,
+      <>
+        Delivered automation saving <strong>5 days a month</strong>; commended at the{" "}
+        <strong>Rear Admiral&apos;s annual address</strong>.
       </>,
     ],
     skills: [
@@ -53,22 +104,20 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     company: "Roke",
     bullets: [
       <>
-        Tech led <strong>3 cross functional projects</strong> spanning engineering, data
-        science, and domain teams, delivering scalable production systems for critical
-        National Security use cases.
+        Tech lead on <strong>3 long-term cross-functional projects</strong> delivering
+        national security systems.
       </>,
       <>
-        Designed and deployed a novel <strong>GAN-based computer vision model</strong> for
-        real-time image analysis; built entirely from scratch in a restricted environment.
+        Built and deployed a novel <strong>image-to-image GAN</strong> from scratch:
+        real-time video at <strong>99% accuracy</strong>.
       </>,
       <>
-        Integrated diverse cloud-native databases (time-series, columnar, geo-spatial,
-        graph), enabling ingestion of <strong>~20–30GB/day</strong> and powering both a
-        live dashboard and a model-driven application.
+        Integrated <strong>4 databases</strong> (time-series, columnar, geospatial, graph)
+        ingesting <strong>20–30 GB daily</strong>.
       </>,
       <>
-        Supervised MSc research projects in collaboration with university partners,
-        helping align academic work with production objectives.
+        Published a Roke paper on hyperdimensional computing; supervised{" "}
+        <strong>3 Russell Group MSc theses</strong>.
       </>,
     ],
     skills: [
@@ -87,20 +136,17 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
     company: "Capita",
     bullets: [
       <>
-        Led development of a global carbon reporting platform covering <strong>7,905
-        cost centres</strong>, enabling a <strong>30% CO₂ reduction</strong> in one year.
+        Led the customer-facing build of a global carbon reporting platform covering{" "}
+        <strong>7,905 cost centres</strong>, enabling a <strong>30% CO₂ reduction</strong>{" "}
+        in one year; the customer&apos;s primary technical contact.
       </>,
       <>
-        Managed a team of <strong>5 juniors</strong> across delivery and technical planning
-        for multiple enterprise clients.
+        Managed a team of <strong>5</strong> and mentored <strong>7 engineers</strong>{" "}
+        bi-weekly across two teams.
       </>,
       <>
-        Presented complex data insights to C-level and non-technical stakeholders; achieved
-        a <strong>60% client contract extension rate</strong>.
-      </>,
-      <>
-        Mentored <strong>7 engineers</strong> bi-weekly across two teams in Python and
-        Power BI to improve delivery.
+        Presented to C-level and non-technical stakeholders, achieving a{" "}
+        <strong>60% client contract extension rate</strong>.
       </>,
     ],
     skills: [
