@@ -1,6 +1,6 @@
 export const metadata = /** @satisfies {import("@/lib/blog/metadata").PostMetadata} */ ({
   title: "How this site finds its own words",
-  description: "Ask this site a question and it finds the passages that answer it. A visual tour of embeddings: how text becomes 4,096 numbers.",
+  description: "Ask this site a question and it finds the passages that answer it. A hands-on look at how a computer turns words into numbers it can compare.",
   published: "2026-11-13",
   tags: ["AI", "Data", "AWS"],
 });
@@ -23,7 +23,7 @@ Each passage also carries its trail of headings as its first line ("About › Wo
 
 ## Turning words into numbers
 
-Computers compare numbers far better than they compare sentences. An **embedding model** is a neural network trained for one job: read some text and write down a long list of numbers, such that texts meaning similar things get similar lists. That list is the text's **embedding**. This site uses Qwen3-Embedding-8B, which writes **4,096 numbers** for anything you give it.
+Computers compare numbers far better than they compare sentences. An **embedding model** is a neural network trained for one job: read some text and write down a long list of numbers, such that texts meaning similar things get similar lists. That list is the text's **embedding**. This site uses Qwen3-Embedding-8B, which writes **4,096 numbers** for anything you give it. It can be asked for fewer, as few as 32, and fewer numbers are cheaper to store and quicker to compare. But each number is one more way the embedding model can make two texts differ, so the more of them there are, the finer the differences in meaning they can pick up. With only a few hundred passages to search, keeping all 4,096 costs next to nothing, so the site keeps them all.
 
 Nobody can read 4,096 numbers, but you can see them as colours. Here are a few of this site's real passages, side by side:
 
@@ -51,7 +51,7 @@ Neither picture is what the search uses. Pick a question above and look at its l
 
 ## Close means pointing the same way
 
-To find the passages nearest a question, "near" needs a definition. Picture each passage's numbers as an arrow from the middle of the space to its place. Two passages about the same thing point in about the same direction, whatever their length: a long passage and a short one about databases point the same way.
+To find the passages nearest a question, "near" needs a definition. Picture each passage's numbers as an arrow from the middle of the space to its place. Two passages about the same thing point in about the same direction, whatever their length.
 
 So nearness is measured as the **angle between two arrows**. The smaller the angle, the more alike; its cosine turns that into a score from 1 (the same direction) down to 0 (nothing in common). That's **cosine similarity**. With two made-up numbers per passage it can be drawn:
 
