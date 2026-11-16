@@ -40,3 +40,9 @@ export const SITE_PAGES = [
 export const CV_PATH = "/Dimitri Lesas.pdf";
 /** The name a downloaded CV is saved under */
 export const CV_FILENAME = "Dimitri_Lesas_CV.pdf";
+
+/**
+ * The site's Cloudflare Web Analytics token (Cloudflare dashboard, Web Analytics). It's
+ * public: it appears in every page's HTML. Empty switches analytics off.
+ */
+export const CLOUDFLARE_ANALYTICS_TOKEN = "2e06c6a199834aacb60fe4c594319ef9";

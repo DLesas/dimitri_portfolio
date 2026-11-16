@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
+import { Analytics } from "@/components/Analytics";
 import { CitedPassage } from "@/components/CitedPassage";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import { JsonLd } from "@/components/JsonLd";
@@ -51,6 +52,7 @@ export default function RootLayout({
           <Navigation />
           <main className="flex-1">{children}</main>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
