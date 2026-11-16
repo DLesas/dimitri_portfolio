@@ -17,12 +17,12 @@ const BLOCKS = [
 const STEPS = [
   { label: "One per section", passages: [0, 1, 2, 2, 2, 3], about: "To begin with, each section of a page is one passage." },
   {
-    label: "Join the short",
+    label: "Join the short sections",
     passages: [0, 0, 1, 1, 1, 2],
     about: `A section under ${CHUNK_WORDS.min} words says too little to be found by itself, so it joins its neighbour.`,
   },
   {
-    label: "Split the long",
+    label: "Split the long sections",
     passages: [0, 0, 1, 1, 2, 3],
     about: `A section over ${CHUNK_WORDS.max} words covers too much for one point, so it splits between paragraphs: never inside one, or inside code or a table.`,
   },
